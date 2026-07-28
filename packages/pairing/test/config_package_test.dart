@@ -23,7 +23,11 @@ void main() {
         ),
       ],
       favorites: [
-        Favorite(channel: channel, order: 0, updatedAt: DateTime.utc(2026, 1, 2)),
+        Favorite(
+          channel: channel,
+          order: 0,
+          updatedAt: DateTime.utc(2026, 1, 2),
+        ),
       ],
       watchState: [
         WatchState(
@@ -38,20 +42,23 @@ void main() {
   }
 
   group('round-trip', () {
-    test('el canal cifrado conserva sources, favoritos, watch-state y secretos', () {
-      final original = samplePackage();
-      final wire = jsonEncode(original.toJsonForSecureChannel());
-      final decoded = ConfigPackage.fromJson(
-        jsonDecode(wire) as Map<String, Object?>,
-      );
+    test(
+      'el canal cifrado conserva sources, favoritos, watch-state y secretos',
+      () {
+        final original = samplePackage();
+        final wire = jsonEncode(original.toJsonForSecureChannel());
+        final decoded = ConfigPackage.fromJson(
+          jsonDecode(wire) as Map<String, Object?>,
+        );
 
-      expect(decoded.sources, hasLength(1));
-      expect(decoded.sources.single.source, original.sources.single.source);
-      expect(decoded.sources.single.secret, 'contraseña-super-secreta');
-      expect(decoded.favorites, original.favorites);
-      expect(decoded.watchState, original.watchState);
-      expect(decoded.settings, original.settings);
-    });
+        expect(decoded.sources, hasLength(1));
+        expect(decoded.sources.single.source, original.sources.single.source);
+        expect(decoded.sources.single.secret, 'contraseña-super-secreta');
+        expect(decoded.favorites, original.favorites);
+        expect(decoded.watchState, original.watchState);
+        expect(decoded.settings, original.settings);
+      },
+    );
 
     test(
       'la exportación a archivo nunca serializa el secreto, ni siquiera dentro del JSON',
@@ -73,7 +80,10 @@ void main() {
     test('ignora campos desconocidos de una versión igual o anterior', () {
       final json = samplePackage().toJsonForSecureChannel();
       json['un_campo_del_futuro_que_no_conocemos'] = {'x': 1};
-      (json['sources'] as List).cast<Map<String, Object?>>().first['otro_campo_futuro'] = 42;
+      (json['sources'] as List)
+              .cast<Map<String, Object?>>()
+              .first['otro_campo_futuro'] =
+          42;
 
       expect(() => ConfigPackage.fromJson(json), returnsNormally);
     });

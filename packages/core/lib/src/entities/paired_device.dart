@@ -37,37 +37,37 @@ final class PairedDevice with Syncable {
   final DateTime? deletedAt;
 
   PairedDevice markDeleted(DateTime at) => PairedDevice(
-        deviceId: deviceId,
-        name: name,
-        platform: platform,
-        publicKey: publicKey,
-        lastSeen: lastSeen,
-        autoSyncEnabled: autoSyncEnabled,
-        updatedAt: at,
-        deletedAt: at,
-      );
+    deviceId: deviceId,
+    name: name,
+    platform: platform,
+    publicKey: publicKey,
+    lastSeen: lastSeen,
+    autoSyncEnabled: autoSyncEnabled,
+    updatedAt: at,
+    deletedAt: at,
+  );
 
   PairedDevice withAutoSync(bool value, DateTime at) => PairedDevice(
-        deviceId: deviceId,
-        name: name,
-        platform: platform,
-        publicKey: publicKey,
-        lastSeen: lastSeen,
-        autoSyncEnabled: value,
-        updatedAt: at,
-        deletedAt: deletedAt,
-      );
+    deviceId: deviceId,
+    name: name,
+    platform: platform,
+    publicKey: publicKey,
+    lastSeen: lastSeen,
+    autoSyncEnabled: value,
+    updatedAt: at,
+    deletedAt: deletedAt,
+  );
 
   PairedDevice seenAt(DateTime at) => PairedDevice(
-        deviceId: deviceId,
-        name: name,
-        platform: platform,
-        publicKey: publicKey,
-        lastSeen: at,
-        autoSyncEnabled: autoSyncEnabled,
-        updatedAt: updatedAt,
-        deletedAt: deletedAt,
-      );
+    deviceId: deviceId,
+    name: name,
+    platform: platform,
+    publicKey: publicKey,
+    lastSeen: at,
+    autoSyncEnabled: autoSyncEnabled,
+    updatedAt: updatedAt,
+    deletedAt: deletedAt,
+  );
 
   @override
   bool operator ==(Object other) =>
@@ -83,15 +83,15 @@ final class PairedDevice with Syncable {
 
   @override
   int get hashCode => Object.hash(
-        deviceId,
-        name,
-        platform,
-        publicKey,
-        lastSeen,
-        autoSyncEnabled,
-        updatedAt,
-        deletedAt,
-      );
+    deviceId,
+    name,
+    platform,
+    publicKey,
+    lastSeen,
+    autoSyncEnabled,
+    updatedAt,
+    deletedAt,
+  );
 
   @override
   String toString() => 'PairedDevice($name, $platform)';

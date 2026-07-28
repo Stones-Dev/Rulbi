@@ -60,23 +60,21 @@ final class ConfigPackage {
   /// Serialización para la exportación manual a archivo (ui-spec §2.15,
   /// el "backup" serverless): nunca lleva secretos. Cifrar ese archivo o
   /// no es una decisión del flujo de exportación, no de este paquete.
-  Map<String, Object?> toJsonForFileExport() =>
-      _toJson(includeSecrets: false);
+  Map<String, Object?> toJsonForFileExport() => _toJson(includeSecrets: false);
 
   Map<String, Object?> _toJson({required bool includeSecrets}) => {
-        'v': currentVersion,
-        'sources': [
-          for (final export in sources)
-            {
-              ...export.source.toJson(),
-              if (includeSecrets && export.secret != null)
-                'secret': export.secret,
-            },
-        ],
-        'favorites': [for (final favorite in favorites) favorite.toJson()],
-        'watch_state': [for (final state in watchState) state.toJson()],
-        'settings': settings,
-      };
+    'v': currentVersion,
+    'sources': [
+      for (final export in sources)
+        {
+          ...export.source.toJson(),
+          if (includeSecrets && export.secret != null) 'secret': export.secret,
+        },
+    ],
+    'favorites': [for (final favorite in favorites) favorite.toJson()],
+    'watch_state': [for (final state in watchState) state.toJson()],
+    'settings': settings,
+  };
 
   /// Reconstruye el paquete. Tolerante a campos desconocidos (una
   /// versión futura pudo añadir claves que esta no entiende pero puede
@@ -111,6 +109,6 @@ final class ConfigPackage {
 }
 
 SourceExport _sourceExportFromJson(Map<String, Object?> json) => SourceExport(
-      source: sourceFromJson(json),
-      secret: json['secret'] as String?,
-    );
+  source: sourceFromJson(json),
+  secret: json['secret'] as String?,
+);

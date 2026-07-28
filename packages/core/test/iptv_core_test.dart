@@ -31,12 +31,15 @@ void main() {
       expect(ref.key, 'espana tv');
     });
 
-    test('es determinista: mismo canal en dos dispositivos produce el mismo ref', () {
-      final a = ChannelRef.derive(sourceId: 's1', tvgId: 'ES1', name: 'x');
-      final b = ChannelRef.derive(sourceId: 's1', tvgId: 'ES1', name: 'y');
-      expect(a, b);
-      expect(a.hashCode, b.hashCode);
-    });
+    test(
+      'es determinista: mismo canal en dos dispositivos produce el mismo ref',
+      () {
+        final a = ChannelRef.derive(sourceId: 's1', tvgId: 'ES1', name: 'x');
+        final b = ChannelRef.derive(sourceId: 's1', tvgId: 'ES1', name: 'y');
+        expect(a, b);
+        expect(a.hashCode, b.hashCode);
+      },
+    );
 
     test('ignora tvg-id/url en blanco y cae al siguiente candidato', () {
       final ref = ChannelRef.derive(

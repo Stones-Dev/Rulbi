@@ -24,8 +24,9 @@ final class LwwMerger<T extends Syncable> {
     void fold(T item) {
       final key = keyOf(item);
       final existing = byKey[key];
-      byKey[key] =
-          existing == null ? item : resolveConflict(existing, item, tiebreaker: tiebreaker);
+      byKey[key] = existing == null
+          ? item
+          : resolveConflict(existing, item, tiebreaker: tiebreaker);
     }
 
     local.forEach(fold);

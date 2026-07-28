@@ -46,16 +46,8 @@ final class Channel {
       other.logo == logo;
 
   @override
-  int get hashCode => Object.hash(
-        ref,
-        sourceId,
-        categoryId,
-        type,
-        name,
-        url,
-        tvgId,
-        logo,
-      );
+  int get hashCode =>
+      Object.hash(ref, sourceId, categoryId, type, name, url, tvgId, logo);
 
   @override
   String toString() => 'Channel($name, $ref)';

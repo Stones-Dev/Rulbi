@@ -39,12 +39,12 @@ final class WatchState with Syncable {
   bool get isFinished => fraction >= 0.95;
 
   WatchState markDeleted(DateTime at) => WatchState(
-        channel: channel,
-        position: position,
-        duration: duration,
-        updatedAt: at,
-        deletedAt: at,
-      );
+    channel: channel,
+    position: position,
+    duration: duration,
+    updatedAt: at,
+    deletedAt: at,
+  );
 
   @override
   bool operator ==(Object other) =>

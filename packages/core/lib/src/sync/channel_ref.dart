@@ -34,8 +34,8 @@ final class ChannelRef {
     final raw = (tvgId != null && tvgId.trim().isNotEmpty)
         ? tvgId
         : (url != null && url.trim().isNotEmpty)
-            ? url
-            : name;
+        ? url
+        : name;
     return ChannelRef(sourceId: sourceId, key: normalizeForMatching(raw));
   }
 

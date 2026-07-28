@@ -25,11 +25,11 @@ final class Favorite with Syncable {
       Favorite(channel: channel, order: order, updatedAt: at, deletedAt: at);
 
   Favorite withOrder(int newOrder, DateTime at) => Favorite(
-        channel: channel,
-        order: newOrder,
-        updatedAt: at,
-        deletedAt: deletedAt,
-      );
+    channel: channel,
+    order: newOrder,
+    updatedAt: at,
+    deletedAt: deletedAt,
+  );
 
   @override
   bool operator ==(Object other) =>

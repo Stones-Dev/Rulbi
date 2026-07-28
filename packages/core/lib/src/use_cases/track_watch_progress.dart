@@ -18,22 +18,28 @@ final class TrackWatchProgress {
     required Duration position,
     required Duration duration,
   }) {
-    return _repository.upsert(WatchState(
-      channel: channel,
-      position: position,
-      duration: duration,
-      updatedAt: _clock.now(),
-    ));
+    return _repository.upsert(
+      WatchState(
+        channel: channel,
+        position: position,
+        duration: duration,
+        updatedAt: _clock.now(),
+      ),
+    );
   }
 
   /// Candidatos a la fila "Continuar viendo" (ui-spec §2.2): con progreso
   /// real, sin terminar y sin borrar, más recientes primero.
   Future<List<WatchState>> continueWatching({int limit = 10}) async {
     final all = await _repository.getAll();
-    final inProgress = all
-        .where((w) => !w.isDeleted && !w.isFinished && w.position > Duration.zero)
-        .toList()
-      ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    final inProgress =
+        all
+            .where(
+              (w) =>
+                  !w.isDeleted && !w.isFinished && w.position > Duration.zero,
+            )
+            .toList()
+          ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
     return inProgress.take(limit).toList();
   }
 }

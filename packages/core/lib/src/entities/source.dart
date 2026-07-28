@@ -99,43 +99,43 @@ final class Source with Syncable {
   final DateTime? deletedAt;
 
   SourceKind get kind => switch (config) {
-        M3uFileSourceConfig() => SourceKind.m3uFile,
-        M3uUrlSourceConfig() => SourceKind.m3uUrl,
-        XtreamSourceConfig() => SourceKind.xtream,
-      };
+    M3uFileSourceConfig() => SourceKind.m3uFile,
+    M3uUrlSourceConfig() => SourceKind.m3uUrl,
+    XtreamSourceConfig() => SourceKind.xtream,
+  };
 
   Source markDeleted(DateTime at) => Source(
-        id: id,
-        config: config,
-        name: name,
-        enabled: enabled,
-        lastRefresh: lastRefresh,
-        refreshPolicy: refreshPolicy,
-        updatedAt: at,
-        deletedAt: at,
-      );
+    id: id,
+    config: config,
+    name: name,
+    enabled: enabled,
+    lastRefresh: lastRefresh,
+    refreshPolicy: refreshPolicy,
+    updatedAt: at,
+    deletedAt: at,
+  );
 
   Source withEnabled(bool value, DateTime at) => Source(
-        id: id,
-        config: config,
-        name: name,
-        enabled: value,
-        lastRefresh: lastRefresh,
-        refreshPolicy: refreshPolicy,
-        updatedAt: at,
-        deletedAt: deletedAt,
-      );
+    id: id,
+    config: config,
+    name: name,
+    enabled: value,
+    lastRefresh: lastRefresh,
+    refreshPolicy: refreshPolicy,
+    updatedAt: at,
+    deletedAt: deletedAt,
+  );
 
   Source withRefreshed(DateTime at) => Source(
-        id: id,
-        config: config,
-        name: name,
-        enabled: enabled,
-        lastRefresh: at,
-        refreshPolicy: refreshPolicy,
-        updatedAt: at,
-        deletedAt: deletedAt,
-      );
+    id: id,
+    config: config,
+    name: name,
+    enabled: enabled,
+    lastRefresh: at,
+    refreshPolicy: refreshPolicy,
+    updatedAt: at,
+    deletedAt: deletedAt,
+  );
 
   @override
   bool operator ==(Object other) =>
@@ -151,15 +151,15 @@ final class Source with Syncable {
 
   @override
   int get hashCode => Object.hash(
-        id,
-        config,
-        name,
-        enabled,
-        lastRefresh,
-        refreshPolicy,
-        updatedAt,
-        deletedAt,
-      );
+    id,
+    config,
+    name,
+    enabled,
+    lastRefresh,
+    refreshPolicy,
+    updatedAt,
+    deletedAt,
+  );
 
   @override
   String toString() => 'Source($id, $kind, $name)';

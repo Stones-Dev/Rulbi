@@ -77,15 +77,22 @@ void main() {
       expect(favorite!.isDeleted, isFalse);
     });
 
-    test('toggle sobre un favorito existente lo tumba (tombstone), no lo borra', () async {
-      await useCase.toggle(channel);
-      clock.advance(const Duration(minutes: 1));
-      await useCase.toggle(channel);
+    test(
+      'toggle sobre un favorito existente lo tumba (tombstone), no lo borra',
+      () async {
+        await useCase.toggle(channel);
+        clock.advance(const Duration(minutes: 1));
+        await useCase.toggle(channel);
 
-      final favorite = await repository.find(channel);
-      expect(favorite, isNotNull, reason: 'el registro debe seguir existiendo');
-      expect(favorite!.isDeleted, isTrue);
-    });
+        final favorite = await repository.find(channel);
+        expect(
+          favorite,
+          isNotNull,
+          reason: 'el registro debe seguir existiendo',
+        );
+        expect(favorite!.isDeleted, isTrue);
+      },
+    );
 
     test('toggle sobre un favorito ya tumbado lo revive', () async {
       await useCase.toggle(channel);
@@ -98,17 +105,20 @@ void main() {
       expect(favorite!.isDeleted, isFalse);
     });
 
-    test('reorder solo toca los favoritos vivos presentes en la lista', () async {
-      const a = ChannelRef(sourceId: 's1', key: 'a');
-      const b = ChannelRef(sourceId: 's1', key: 'b');
-      await useCase.toggle(a);
-      await useCase.toggle(b);
+    test(
+      'reorder solo toca los favoritos vivos presentes en la lista',
+      () async {
+        const a = ChannelRef(sourceId: 's1', key: 'a');
+        const b = ChannelRef(sourceId: 's1', key: 'b');
+        await useCase.toggle(a);
+        await useCase.toggle(b);
 
-      await useCase.reorder([b, a]);
+        await useCase.reorder([b, a]);
 
-      expect((await repository.find(b))!.order, 0);
-      expect((await repository.find(a))!.order, 1);
-    });
+        expect((await repository.find(b))!.order, 0);
+        expect((await repository.find(a))!.order, 1);
+      },
+    );
   });
 
   group('TrackWatchProgress', () {
@@ -123,41 +133,47 @@ void main() {
       useCase = TrackWatchProgress(repository, clock);
     });
 
-    test('updateProgress persiste posición/duración con el reloj inyectado', () async {
-      await useCase.updateProgress(
-        channel,
-        position: const Duration(minutes: 10),
-        duration: const Duration(minutes: 100),
-      );
-      final state = await repository.find(channel);
-      expect(state!.updatedAt, clock.now());
-      expect(state.fraction, closeTo(0.1, 0.0001));
-    });
+    test(
+      'updateProgress persiste posición/duración con el reloj inyectado',
+      () async {
+        await useCase.updateProgress(
+          channel,
+          position: const Duration(minutes: 10),
+          duration: const Duration(minutes: 100),
+        );
+        final state = await repository.find(channel);
+        expect(state!.updatedAt, clock.now());
+        expect(state.fraction, closeTo(0.1, 0.0001));
+      },
+    );
 
-    test('continueWatching excluye lo terminado y lo que no ha empezado', () async {
-      const started = ChannelRef(sourceId: 's1', key: 'started');
-      const finished = ChannelRef(sourceId: 's1', key: 'finished');
-      const notStarted = ChannelRef(sourceId: 's1', key: 'not-started');
+    test(
+      'continueWatching excluye lo terminado y lo que no ha empezado',
+      () async {
+        const started = ChannelRef(sourceId: 's1', key: 'started');
+        const finished = ChannelRef(sourceId: 's1', key: 'finished');
+        const notStarted = ChannelRef(sourceId: 's1', key: 'not-started');
 
-      await useCase.updateProgress(
-        started,
-        position: const Duration(minutes: 10),
-        duration: const Duration(minutes: 100),
-      );
-      await useCase.updateProgress(
-        finished,
-        position: const Duration(minutes: 99),
-        duration: const Duration(minutes: 100),
-      );
-      await useCase.updateProgress(
-        notStarted,
-        position: Duration.zero,
-        duration: const Duration(minutes: 100),
-      );
+        await useCase.updateProgress(
+          started,
+          position: const Duration(minutes: 10),
+          duration: const Duration(minutes: 100),
+        );
+        await useCase.updateProgress(
+          finished,
+          position: const Duration(minutes: 99),
+          duration: const Duration(minutes: 100),
+        );
+        await useCase.updateProgress(
+          notStarted,
+          position: Duration.zero,
+          duration: const Duration(minutes: 100),
+        );
 
-      final result = await useCase.continueWatching();
-      expect(result.map((w) => w.channel), [started]);
-    });
+        final result = await useCase.continueWatching();
+        expect(result.map((w) => w.channel), [started]);
+      },
+    );
 
     test('continueWatching devuelve lo más reciente primero', () async {
       const first = ChannelRef(sourceId: 's1', key: 'first');
