@@ -57,6 +57,34 @@ void main() {
     });
   });
 
+  group('Category.derive', () {
+    test('deriva el id de sourceId + nombre normalizado', () {
+      final category = Category.derive(
+        sourceId: 's1',
+        type: ContentType.live,
+        name: 'España',
+      );
+      expect(category.id, 's1::espana');
+    });
+
+    test(
+      'es determinista: mismo group-title en dos dispositivos produce el mismo id',
+      () {
+        final a = Category.derive(
+          sourceId: 's1',
+          type: ContentType.live,
+          name: 'Noticias',
+        );
+        final b = Category.derive(
+          sourceId: 's1',
+          type: ContentType.live,
+          name: 'NOTICIAS',
+        );
+        expect(a.id, b.id);
+      },
+    );
+  });
+
   group('normalizeForMatching', () {
     test('quita acentos y normaliza mayúsculas', () {
       expect(normalizeForMatching('España'), 'espana');
