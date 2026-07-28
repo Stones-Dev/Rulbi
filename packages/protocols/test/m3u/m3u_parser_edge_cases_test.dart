@@ -174,5 +174,21 @@ void main() {
         );
       },
     );
+
+    test(
+      'extbackup_fallback: #EXTBACKUP repetido antes de la URL primaria',
+      () async {
+        final channels = await _parseFile('$_dir/extbackup_fallback.m3u');
+
+        expect(channels, hasLength(1));
+        final channel = channels.single;
+        expect(channel.name, 'CNN');
+        expect(channel.url, Uri.parse('https://primary.m3u8'));
+        expect(
+          channel.metadata['x-fallback-urls'],
+          'https://fallback1.m3u8,https://fallback2.m3u8',
+        );
+      },
+    );
   });
 }
