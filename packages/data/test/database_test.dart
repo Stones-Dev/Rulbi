@@ -122,5 +122,27 @@ void main() {
     test('una consulta sin coincidencias no devuelve nada', () async {
       expect(await searchNames('inexistente'), isEmpty);
     });
+
+    test(
+      'el índice se actualiza al renombrar un canal (trigger AFTER UPDATE)',
+      () async {
+        await (db.update(db.channels)..where((c) => c.refKey.equals('otro')))
+            .write(const ChannelsCompanion(name: Value('Alemania TV')));
+
+        expect(await searchNames('alemania'), ['Alemania TV']);
+        expect(await searchNames('otro'), isEmpty);
+      },
+    );
+
+    test(
+      'el índice se actualiza al borrar un canal (trigger AFTER DELETE)',
+      () async {
+        await (db.delete(
+          db.channels,
+        )..where((c) => c.refKey.equals('espana-tv'))).go();
+
+        expect(await searchNames('espana'), isEmpty);
+      },
+    );
   });
 }
