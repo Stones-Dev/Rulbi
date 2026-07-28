@@ -64,5 +64,19 @@ void main() {
       // tvg-logo="" (vacío) no debe producir un Uri "vacío" espurio.
       expect(channel.logo, isNull);
     });
+
+    test('kodiprop_drm_multi_key: DRM clearkey de varias claves', () async {
+      final channels = await _parseFile('$_dir/kodiprop_drm_multi_key.m3u');
+
+      expect(channels, hasLength(1));
+      final channel = channels.single;
+      expect(channel.name, 'name2');
+      expect(
+        channel.metadata['x-kodiprop-inputstream.adaptive.license_key'],
+        '{15965a6dbafd12c4af6aca127b271d5b:23dd40b93306de23ec667fb17a61fd3,'
+            '88a3f1c2b6e04d7a9c5f3e2d1a0b9c8e:71f4e2d9c8b7a6958473625140302f1e,'
+            'ac3b9d8e7f6a5b4c3d2e1f0a9b8c7d6e:d4c3b2a190f8e7d6c5b4a392817065f4}',
+      );
+    });
   });
 }
