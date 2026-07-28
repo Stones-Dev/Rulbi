@@ -211,5 +211,16 @@ void main() {
         );
       },
     );
+
+    test('unquoted_attributes: tvg-id/tvg-logo/group-title sin comillas', () async {
+      final channels = await _parseFile('$_dir/unquoted_attributes.m3u');
+
+      expect(channels, hasLength(1));
+      final channel = channels.single;
+      expect(channel.name, 'Channel One');
+      expect(channel.tvgId, 'Channel1');
+      expect(channel.logo, Uri.parse('http://example.com/logo.png'));
+      expect(channel.metadata['group-title'], 'News');
+    });
   });
 }
