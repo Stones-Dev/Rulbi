@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:iptv_core/iptv_core.dart';
@@ -78,5 +79,73 @@ void main() {
             'ac3b9d8e7f6a5b4c3d2e1f0a9b8c7d6e:d4c3b2a190f8e7d6c5b4a392817065f4}',
       );
     });
+
+    test(
+      'pipe_user_agent_referer: sintaxis Kodi URL|clave=valor&clave=valor',
+      () async {
+        // El fixture reproduce el ejemplo LITERAL del issue #57, que trae
+        // un solo #EXTINF seguido de dos líneas de URL — M3U estrictamente
+        // mal formado (cada entrada necesita su propio #EXTINF). El
+        // comportamiento correcto y honesto es: la primera URL cierra el
+        // #EXTINF abierto; la segunda, al no tener #EXTINF propio, se
+        // descarta y se reporta — no se le inventa una identidad de canal.
+        final channels = <Channel>[];
+        final discardReasons = <String>[];
+        await for (final event in parseM3uCore(
+          bytes: File('$_dir/pipe_user_agent_referer.m3u').openRead(),
+          sourceId: 's1',
+        )) {
+          switch (event) {
+            case M3uChannelBatch(channels: final batch):
+              channels.addAll(batch);
+            case M3uDiscard(:final line):
+              discardReasons.add(line.reason);
+          }
+        }
+
+        expect(channels, hasLength(1));
+        final channel = channels.single;
+        expect(
+          channel.url,
+          Uri.parse('https://www.streamaway.net/fra/13e/mono.m3u8'),
+        );
+        expect(channel.metadata['x-http-user-agent'], 'Mozilla/5.0');
+        expect(
+          channel.metadata['x-http-referrer'],
+          'https://www.streamaway.net/fr/13erue-fr.php',
+        );
+
+        expect(discardReasons, ['URL sin #EXTINF previo']);
+      },
+    );
+
+    test(
+      'pipe suffix con un solo parámetro (Referer, sin User-Agent)',
+      () async {
+        // Complementa el test anterior: el fixture en disco no puede
+        // ejercitar esta rama con un #EXTINF propio (es el ejemplo mal
+        // formado literal del issue), así que se verifica aquí con un M3U
+        // sintético bien formado — el mismo patrón `URL|Referer=...` que
+        // la segunda línea del fixture, pero con su propio #EXTINF.
+        const m3u = '#EXTM3U\n'
+            '#EXTINF:0,Solo Referer\n'
+            'https://www.streamaway.net/fra/histo/index.m3u8|Referer=https://www.streamaway.net/fr/Histoire-fr.php\n';
+        final channels = <Channel>[];
+        await for (final event in parseM3uCore(
+          bytes: Stream.value(utf8.encode(m3u)),
+          sourceId: 's1',
+        )) {
+          if (event is M3uChannelBatch) channels.addAll(event.channels);
+        }
+
+        expect(channels, hasLength(1));
+        final channel = channels.single;
+        expect(channel.metadata.containsKey('x-http-user-agent'), isFalse);
+        expect(
+          channel.metadata['x-http-referrer'],
+          'https://www.streamaway.net/fr/Histoire-fr.php',
+        );
+      },
+    );
   });
 }
