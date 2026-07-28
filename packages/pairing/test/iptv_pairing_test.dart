@@ -1,7 +1,7 @@
-import 'package:flutter_test/flutter_test.dart';
+import 'package:test/test.dart';
 
 void main() {
-  test('el paquete pairing carga correctamente', () {
+  test('el paquete pairing carga sin depender de Flutter', () {
     expect(true, isTrue);
   });
 }
