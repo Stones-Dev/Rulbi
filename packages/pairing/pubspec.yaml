@@ -10,7 +10,17 @@ resolution: workspace
 dependencies:
   iptv_core:
     path: ../core
+  # Apache-2.0 (P8): X25519 + HKDF + AEAD para el protocolo de sesión
+  # (T1.7). Pura Dart — sin dependencia de Flutter (packages/pairing no
+  # arrastra la plataforma). Ver lib/src/session/session_crypto.dart:
+  # la elección definitiva del primitivo se cierra en un ADR tras el
+  # spike S5; esta es la implementación provisional razonable de hoy.
+  cryptography: ^2.7.0
 
 dev_dependencies:
   lints: ^6.0.0
   test: ^1.25.6
+  # BSD-3 (P8). Solo para el fake determinista de SessionCrypto en tests
+  # (test/session/fake_session_crypto.dart) — la implementación real usa
+  # HKDF-SHA256 vía `cryptography`, no este paquete.
+  crypto: ^3.0.6
