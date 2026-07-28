@@ -147,5 +147,32 @@ void main() {
         );
       },
     );
+
+    test(
+      'catchup_double_question_mark: catchup/-days/-source verbatim, URL intacta',
+      () async {
+        final channels = await _parseFile(
+          '$_dir/catchup_double_question_mark.m3u',
+        );
+
+        expect(channels, hasLength(1));
+        final channel = channels.single;
+        expect(channel.tvgId, 'channel1');
+        // La URL se conserva EXACTAMENTE como en el origen — el parser no
+        // intenta arreglar el `?` doble que produciría concatenarla con
+        // catchup-source; eso es responsabilidad de quien construya la
+        // URL de archivo después.
+        expect(
+          channel.url,
+          Uri.parse('https://provider.xyz/222/playback.m3u8?token=secret'),
+        );
+        expect(channel.metadata['catchup'], 'append');
+        expect(channel.metadata['catchup-days'], '7');
+        expect(
+          channel.metadata['catchup-source'],
+          '?utc={utc}&lutc={lutc}',
+        );
+      },
+    );
   });
 }
