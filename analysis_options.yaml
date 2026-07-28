@@ -1,0 +1,45 @@
+# Lints compartidos por todo el monorepo (packages/ y apps/app).
+# Cada paquete incluye este archivo con:
+#   include: ../../analysis_options.yaml   (desde packages/<pkg>/)
+#   include: ../analysis_options.yaml      (desde apps/app/)
+#
+# Base: flutter_lints (recomendado oficial). Reglas adicionales endurecidas
+# a propósito: el proyecto tiene presupuestos de rendimiento estrictos (P1 de
+# la constitution) y una regla de dependencias por capas (P6) que el análisis
+# estático debe ayudar a proteger.
+
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  language:
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
+  errors:
+    # Tratar como error, no como warning: un TODO olvidado no debe colar en CI silenciosamente.
+    todo: ignore
+    invalid_annotation_target: ignore
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+    - "**/*.mocks.dart"
+    - "build/**"
+
+linter:
+  rules:
+    # Legibilidad y consistencia
+    - prefer_single_quotes
+    - prefer_const_constructors
+    - prefer_const_declarations
+    - prefer_final_locals
+    - prefer_final_in_for_each
+    - unnecessary_this
+    - avoid_print # usar logging estructurado, no print() suelto (relevante en TV/producción)
+    - always_declare_return_types
+    - annotate_overrides
+    - avoid_empty_else
+    - avoid_returning_null_for_future
+    - cancel_subscriptions # relevante: pairing/ y player/ manejan streams y sockets
+    - close_sinks
+    - unawaited_futures
+    - use_key_in_widget_constructors

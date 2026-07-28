@@ -1,0 +1,14 @@
+name: iptv_protocols
+description: Parsers M3U/XMLTV en streaming y cliente Xtream. Sin Flutter.
+version: 0.0.1
+publish_to: "none"
+
+environment:
+  sdk: ^3.12.2
+resolution: workspace
+
+dependencies:
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.25.6

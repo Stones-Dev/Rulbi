@@ -1,0 +1,14 @@
+name: iptv_core
+description: Dominio puro del reproductor IPTV (entidades, casos de uso, puertos). Sin Flutter.
+version: 0.0.1
+publish_to: "none"
+
+environment:
+  sdk: ^3.12.2
+resolution: workspace
+
+dependencies:
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.25.6

@@ -1,0 +1,63 @@
+name: iptv_player
+publish_to: "none"
+
+environment:
+  sdk: ^3.12.2
+
+# Dart native workspace (SDK >= 3.6): resolución compartida de dependencias
+# entre todos los paquetes del monorepo. Cada miembro declara
+# `resolution: workspace` en su propio pubspec.yaml.
+workspace:
+  - packages/core
+  - packages/protocols
+  - packages/data
+  - packages/player
+  - packages/pairing
+  - packages/tokens
+  - apps/app
+
+dev_dependencies:
+  melos: ^8.2.2
+
+melos:
+  name: iptv_player
+
+  command:
+    bootstrap:
+      runPubGetInParallel: true
+
+  scripts:
+    analyze:
+      name: Analizar
+      description: flutter analyze en todos los paquetes del monorepo.
+      exec:
+        command: dart analyze --fatal-infos .
+        concurrency: 4
+
+    test:
+      name: Test
+      description: Tests de todos los paquetes (dart test en los puros, flutter test en el resto).
+      run: melos run test:dart && melos run test:flutter
+
+    test:dart:
+      description: Tests de los paquetes Dart puros (core, protocols).
+      exec:
+        command: dart test
+        concurrency: 4
+      packageFilters:
+        flutter: false
+
+    test:flutter:
+      description: Tests de los paquetes/apps Flutter.
+      exec:
+        command: flutter test
+        concurrency: 4
+      packageFilters:
+        flutter: true
+
+    format:
+      name: Formatear
+      description: dart format en todos los paquetes.
+      exec:
+        command: dart format --set-exit-if-changed .
+        concurrency: 4

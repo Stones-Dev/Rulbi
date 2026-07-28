@@ -1,0 +1,20 @@
+name: iptv_playback
+description: Implementaciones de PlayerPort por plataforma (media3, libmpv/libVLC, webOS). Único paquete con permiso de importar SDKs de reproducción nativos (P6).
+version: 0.0.1
+publish_to: "none"
+
+environment:
+  sdk: ^3.12.2
+  flutter: ">=1.17.0"
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:

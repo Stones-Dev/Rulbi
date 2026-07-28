@@ -1,0 +1,13 @@
+#!/bin/sh
+# Recordatorio de Graphify (norma 2 del proyecto, checklist T0.6 de tasks.md).
+# No bloquea el commit: solo avisa si el grafo puede haberse quedado desactualizado.
+
+echo ""
+echo "----------------------------------------------------------------------"
+echo "Graphify: recuerda regenerar el grafo si este commit tocó código:"
+echo "    graphify update ."
+echo "El grafo se enlaza al vault de Obsidian (02-Proyectos/.../Graphify/)."
+echo "----------------------------------------------------------------------"
+echo ""
+
+exit 0
