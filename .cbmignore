@@ -1,0 +1,25 @@
+# codebase-memory-mcp — patrones excluidos del análisis del grafo (ADR-005).
+# Equivalente al .graphifyignore retirado; codebase-memory-mcp ya excluye
+# .git/.dart_tool/build/etc. por convención (ver .git/info/exclude), esto
+# cubre lo que no detecta solo.
+build/
+.dart_tool/
+.pub-cache/
+*.g.dart
+*.freezed.dart
+*.mocks.dart
+pubspec.lock
+**/android/
+**/windows/
+**/linux/
+**/ios/
+**/web/
+*.png
+*.jpg
+*.jpeg
+*.svg
+*.ttf
+*.otf
+*.zip
+*.gz
+packages/protocols/test/fixtures/

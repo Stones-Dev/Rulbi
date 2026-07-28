@@ -6,9 +6,9 @@ Este repo implementa el reproductor IPTV multiplataforma (Flutter/Dart, monorepo
 
 ## Jerarquía de fuentes
 
-**Vault (qué/por qué) > Notion (cuándo/estado) > Figma (cómo se ve) > repo+Graphify (código).**
+**Vault (qué/por qué) > Notion (cuándo/estado) > Figma (cómo se ve) > repo+codebase-memory-mcp (código).**
 
-Ante cualquier duda de alcance o de diseño, el vault manda. Este repo y Graphify son la capa de implementación, no de decisión.
+Ante cualquier duda de alcance o de diseño, el vault manda. Este repo y su grafo de código (codebase-memory-mcp) son la capa de implementación, no de decisión.
 
 ## Spec-Driven Development — obligatorio
 
@@ -34,7 +34,7 @@ apps/app  →  packages/{player, data, pairing}  →  packages/protocols  →  p
 
 **Principio P6 (constitution)**: el dominio no conoce al reproductor. Si un archivo de `core`, `protocols` o `data` necesita importar algo de `player` o de una API de plataforma, es una señal de que el diseño está mal — para y repiensa el puerto, no lo fuerces.
 
-Antes de tocar un paquete que no conoces bien, consulta el grafo de Graphify (`graphify-out/GRAPH_REPORT.md`, enlazado también desde el vault) en vez de asumir la estructura.
+Antes de tocar un paquete que no conoces bien, consulta el grafo de código (codebase-memory-mcp) en vez de asumir la estructura — ver la sección de más abajo.
 
 ## Convenciones
 
@@ -44,15 +44,20 @@ Antes de tocar un paquete que no conoces bien, consulta el grafo de Graphify (`g
 - **TDD estricto en `packages/protocols/` y `packages/pairing/`** (principio P7): los parsers y el cliente Xtream se desarrollan contra una batería de *golden files* reales (`packages/protocols/test/fixtures/`), incluidos casos rotos y dialectos no estándar. **Todo bug de importación reportado se convierte primero en un golden file, y solo después se arregla.** `pairing/` se testea sin red real (streams/sockets en memoria).
 - **Sin dependencias GPL** en el núcleo mientras la decisión de licencia (D2) esté abierta (principio P8): preferir Apache-2.0/MIT/LGPL. Si algún día se adopta un componente GPL (p. ej. libmpv en escritorio), se aísla en `packages/player` y se documenta en un ADR con plan de salida.
 
-## Graphify — obligatorio (norma 2 del proyecto)
+## codebase-memory-mcp — obligatorio (norma 2 del proyecto, ADR-005)
 
-Graphify genera y mantiene un grafo de contexto del codebase, enlazado por junction al vault de Obsidian (`02-Proyectos/Reproductor IPTV Multiplataforma/Graphify/`). Es una fuente de contexto que se lee **antes** de tocar código en un paquete desconocido, y se regenera tras cambios relevantes:
+`codebase-memory-mcp` sustituyó a Graphify (ADR-005, 2026-07-28: validado en spike, Graphify no encontraba nodos que codebase-memory-mcp sí resuelve). Mantiene un grafo de conocimiento del codebase consultable por herramientas MCP — no un archivo estático que haya que regenerar a mano: un watcher en segundo plano (`auto_watch`, activo) reindexa solo tras cada cambio, y `auto_index` está activado para repos nuevos.
 
-```powershell
-graphify update .
-```
+Antes de tocar un paquete desconocido, consulta el grafo — no lo leas como texto, pregúntale:
 
-No es opcional. Si trabajas en este repo y no has corrido `graphify update .` recientemente, el grafo que lees puede estar obsoleto — regenera antes de fiarte de él para una decisión de diseño.
+- `get_architecture` — capas, boundaries entre paquetes, clusters, hotspots.
+- `trace_path` — quién llama/es llamado por una función (`direction: both|inbound|outbound`).
+- `search_graph` — por `name_pattern` (regex), `qn_pattern`, o `query` (texto libre con ranking BM25).
+- `detect_changes` — símbolos impactados por el diff actual (sin commitear o `--since <ref>`).
+
+**Limitación conocida (ADR-005)**: Dart no tiene Hybrid LSP (tier "Good", ~75-89 %); la resolución de llamadas es textual (tree-sitter), no de tipos — `trace_path` puede atribuir una llamada al archivo en vez de al método exacto. Sigue siendo mejor que la alternativa anterior, pero no asumas precisión de IDE.
+
+`.cbmignore` (raíz del repo) excluye lo mismo que excluía `.graphifyignore`. El artefacto de equipo `.codebase-memory/graph.db.zst` **se comittea a propósito** (ADR-005): un compañero que clona el repo arranca desde ahí en vez de reindexar todo desde cero.
 
 ## Protocolo de documentación del proyecto (regla operativa)
 
@@ -91,13 +96,3 @@ Dart es nuevo para ti — algunos paralelismos útiles mientras trabajamos:
 | isolates (para parsing pesado) | el equivalente a un worker thread de Node — memoria aislada, comunicación por mensajes |
 
 Si algo de Dart no tiene un paralelismo claro, dilo explícitamente en vez de asumir que ya lo conoces.
-
-## graphify
-
-This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
-
-Rules:
-- For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
-- If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
-- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
-- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).

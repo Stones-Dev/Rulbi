@@ -96,10 +96,11 @@ coverage/
 *.local.json
 !.claude/settings.local.json
 
-# Graphify (norma 2 del proyecto — checklist T0.6)
-graphify-out/
-.graphifyignore
-.claude/skills/graphify/
+# codebase-memory-mcp (norma 2 del proyecto, ADR-005): la BD de trabajo
+# vive fuera del repo (~/.cache/codebase-memory-mcp/), nada que ignorar
+# aquí. El artefacto de equipo .codebase-memory/ (graph.db.zst +
+# artifact.json + .gitattributes con merge=ours) se comittea a propósito
+# — no está en este archivo ni debe añadirse.
 
 # Fixtures grandes / golden files binarios pesados (ver protocols/test/fixtures/README)
 *.ts.bin
