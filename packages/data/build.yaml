@@ -1,0 +1,12 @@
+targets:
+  $default:
+    builders:
+      drift_dev:
+        options:
+          sqlite:
+            # Sin esto, drift_dev no reconoce la sintaxis del módulo fts5
+            # en fts.drift y descarta la tabla virtual en silencio (deja
+            # solo los triggers, que sí entiende) — bug reproducido con
+            # drift_dev 2.31.0/2.34.5 al declarar FTS5 sin este flag.
+            modules:
+              - fts5

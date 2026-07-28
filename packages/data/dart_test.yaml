@@ -1,0 +1,3 @@
+tags:
+  benchmark:
+    description: Micro-benchmarks sintéticos (más lentos; no bloquean CI por defecto).

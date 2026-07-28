@@ -1,0 +1,32 @@
+-- Índice FTS5 sobre el nombre de canal (T1.5, RNF-01/HU-04). Tabla
+-- virtual "external content": no duplica el texto en disco (RNF-04),
+-- solo indexa lo que ya vive en `channels`. `unicode61 remove_diacritics
+-- 2` resuelve la normalización de acentos/mayúsculas en el propio motor
+-- SQLite, con el mismo criterio que `normalizeForMatching` de
+-- `iptv_core` usa para derivar `ChannelRef` — buscar "espana" debe
+-- encontrar "España".
+--
+-- `content_rowid='id'` apunta al autoincremental físico de `channels`
+-- (no a la identidad lógica `ChannelRef`, que es `(sourceId, refKey)`
+-- — ver channels.dart). Requiere habilitar el módulo fts5 en
+-- build.yaml; sin eso, drift_dev descarta esta tabla en silencio.
+CREATE VIRTUAL TABLE channels_fts USING fts5(
+  name,
+  content='channels',
+  content_rowid='id',
+  tokenize='unicode61 remove_diacritics 2'
+);
+
+-- Mantener el índice sincronizado con la tabla real en cada escritura.
+CREATE TRIGGER channels_fts_ai AFTER INSERT ON channels BEGIN
+  INSERT INTO channels_fts(rowid, name) VALUES (new.id, new.name);
+END;
+
+CREATE TRIGGER channels_fts_ad AFTER DELETE ON channels BEGIN
+  INSERT INTO channels_fts(channels_fts, rowid, name) VALUES('delete', old.id, old.name);
+END;
+
+CREATE TRIGGER channels_fts_au AFTER UPDATE ON channels BEGIN
+  INSERT INTO channels_fts(channels_fts, rowid, name) VALUES('delete', old.id, old.name);
+  INSERT INTO channels_fts(rowid, name) VALUES (new.id, new.name);
+END;

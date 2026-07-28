@@ -1,0 +1,34 @@
+import 'package:drift/drift.dart';
+
+/// Espejo de `Channel` (`iptv_core`). `id` es un autoincremental
+/// puramente físico — existe solo para que FTS5 (`fts.drift`) pueda
+/// enlazar `content_rowid` a una columna real (SQLite no deja apuntar
+/// una external content table a su `rowid` implícito de forma fiable
+/// para drift_dev). La identidad lógica sigue siendo `(sourceId,
+/// refKey)` — `refKey` es `ChannelRef.key` (T1.6, ADR-003), la que
+/// sobrevive a un refresco de la fuente o a una transferencia entre
+/// dispositivos; `favorites`/`watch_state` referencian por ahí, nunca
+/// por `id`.
+// `ChannelRow`, no `Channel`: evita colisión con la entidad `Channel`
+// de iptv_core.
+@DataClassName('ChannelRow')
+class Channels extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get sourceId => text()();
+  TextColumn get refKey => text()();
+  TextColumn get categoryId => text().nullable()();
+  TextColumn get contentType => text()();
+  TextColumn get name => text()();
+  TextColumn get url => text()();
+  TextColumn get tvgId => text().nullable()();
+  TextColumn get logo => text().nullable()();
+
+  /// Atributos crudos no modelados (`group-title`, `#EXTVLCOPT`...),
+  /// serializados como JSON.
+  TextColumn get metadataJson => text().withDefault(const Constant('{}'))();
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {sourceId, refKey},
+  ];
+}

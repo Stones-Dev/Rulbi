@@ -6,15 +6,34 @@ publish_to: "none"
 environment:
   sdk: ^3.12.2
   flutter: ">=1.17.0"
-resolution: workspace
+
+# Deliberadamente FUERA del Dart native workspace raíz (T1.5): drift_dev
+# no resuelve en la misma resolución compartida que `melos` bajo el
+# `flutter_test` del SDK actual (ver pubspec.yaml raíz). Este paquete
+# tiene su propio pubspec.lock — `dart pub get`/`flutter pub get` se
+# ejecutan aquí dentro, no desde la raíz. Su CI y su codegen van aparte
+# (ci.yml), no por `melos bootstrap`/`run analyze`/`run test`.
 
 dependencies:
   flutter:
     sdk: flutter
 
+  iptv_core:
+    path: ../core
+
+  # MIT (P8). drift/SQLite + FTS5 (T1.5, plan §4.2).
+  drift: ^2.34.3
+  # Apertura de la BD por plataforma (rutas correctas en Win/Linux/Android)
+  # sin escribir ese cableado a mano; envuelve sqlite3_flutter_libs +
+  # path_provider.
+  drift_flutter: ^0.3.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+
+  drift_dev: ^2.34.5
+  build_runner: ^2.10.1
 
 flutter:
