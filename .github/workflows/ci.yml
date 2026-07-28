@@ -41,14 +41,31 @@ jobs:
       - name: melos bootstrap
         run: melos bootstrap
 
-      - name: Codegen (build_runner)
-        run: melos run generate
-
       - name: flutter analyze (fatal-infos)
         run: melos run analyze
 
       - name: Tests
         run: melos run test
+
+      # packages/data queda fuera del workspace Dart raíz (T1.5): drift_dev
+      # no resuelve junto a melos bajo el flutter_test del SDK actual (ver
+      # pubspec.yaml raíz). Tiene su propio pubspec.lock y su propio paso
+      # aquí, en vez de por `melos bootstrap`/`run analyze`/`run test`.
+      - name: packages/data — pub get
+        working-directory: packages/data
+        run: flutter pub get
+
+      - name: packages/data — codegen (drift)
+        working-directory: packages/data
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: packages/data — analyze (fatal-infos)
+        working-directory: packages/data
+        run: dart analyze --fatal-infos .
+
+      - name: packages/data — tests
+        working-directory: packages/data
+        run: flutter test
 
   android-build:
     name: Android debug build
@@ -71,9 +88,6 @@ jobs:
 
       - name: melos bootstrap
         run: melos bootstrap
-
-      - name: Codegen (build_runner)
-        run: melos run generate
 
       - name: Build APK (debug)
         working-directory: apps/app

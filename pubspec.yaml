@@ -7,10 +7,17 @@ environment:
 # Dart native workspace (SDK >= 3.6): resolución compartida de dependencias
 # entre todos los paquetes del monorepo. Cada miembro declara
 # `resolution: workspace` en su propio pubspec.yaml.
+#
+# `packages/data` queda deliberadamente FUERA (T1.5): drift_dev no
+# resuelve en la misma resolución compartida que `melos` (cli_util),
+# y downgradear melos no es viable (exige estar en este pubspec desde
+# la v3.0.0; solo ≤2.9.0 no lo exige, y esa versión no activa bajo el
+# Dart SDK actual). `packages/data` tiene su propio pubspec.lock
+# independiente y su propio paso en CI (ver ci.yml) — no pasa por
+# `melos bootstrap`/`run analyze`/`run test`.
 workspace:
   - packages/core
   - packages/protocols
-  - packages/data
   - packages/player
   - packages/pairing
   - packages/tokens
@@ -54,15 +61,6 @@ melos:
         concurrency: 4
       packageFilters:
         flutter: true
-
-    generate:
-      name: Generar
-      description: Codegen (drift, etc.) en los paquetes que lo necesitan.
-      exec:
-        command: dart run build_runner build --delete-conflicting-outputs
-        concurrency: 1
-      packageFilters:
-        dependsOn: build_runner
 
     format:
       name: Formatear
