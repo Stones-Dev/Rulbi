@@ -37,5 +37,32 @@ void main() {
       );
       expect(channel.metadata['x-vlcopt-http-origin'], 'https://example.com/');
     });
+
+    test('kodiprop_drm_single_key: DRM clearkey de una sola clave', () async {
+      final channels = await _parseFile('$_dir/kodiprop_drm_single_key.m3u');
+
+      expect(channels, hasLength(1));
+      final channel = channels.single;
+      expect(channel.name, 'name1');
+      expect(channel.metadata['x-vlcopt-http-user-agent'], 'Android');
+      expect(
+        channel.metadata['x-kodiprop-inputstreamaddon'],
+        'inputstream.adaptive',
+      );
+      expect(
+        channel.metadata['x-kodiprop-inputstream.adaptive.manifest_type'],
+        'dash',
+      );
+      expect(
+        channel.metadata['x-kodiprop-inputstream.adaptive.license_type'],
+        'clearkey',
+      );
+      expect(
+        channel.metadata['x-kodiprop-inputstream.adaptive.license_key'],
+        'a18b6aa739be4c0b114605fcfb5d6b68:b41c3a6f7511b2e3a828d9580124c89d',
+      );
+      // tvg-logo="" (vacío) no debe producir un Uri "vacío" espurio.
+      expect(channel.logo, isNull);
+    });
   });
 }
