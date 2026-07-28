@@ -104,3 +104,10 @@ coverage/
 
 # Fixtures grandes / golden files binarios pesados (ver protocols/test/fixtures/README)
 *.ts.bin
+
+# Golden files descargados bajo demanda por tool/fetch_fixtures.dart (T1.1):
+# el benchmark de 100k canales y la prueba de estrés XMLTV (~193 MB) no se
+# commitean — se redescargan y se verifican por SHA-256 contra
+# tool/fixtures_manifest.json. Ver packages/protocols/test/fixtures/*/README.md.
+packages/protocols/test/fixtures/m3u/large/*
+!packages/protocols/test/fixtures/m3u/large/.gitkeep

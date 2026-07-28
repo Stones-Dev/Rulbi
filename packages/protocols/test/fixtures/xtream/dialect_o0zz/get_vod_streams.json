@@ -1,0 +1,20 @@
+[
+  {
+    "num": 1,
+    "name": "Pelicula de Prueba",
+    "stream_type": "movie",
+    "stream_id": 1908388221,
+    "stream_icon": "https://example.com/poster1.jpg",
+    "added": "0",
+    "is_adult": "0",
+    "category_id": "2130693104",
+    "category_ids": [
+      2130693104
+    ],
+    "custom_sid": null,
+    "direct_source": "",
+    "rating_5based": "3",
+    "rating": 7.5,
+    "container_extension": "mkv"
+  }
+]

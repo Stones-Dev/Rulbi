@@ -1,0 +1,16 @@
+#EXTM3U
+# Fuente: 4gray/iptvnator issue #656 (https://github.com/4gray/iptvnator/issues/656),
+# variante "multiple keys, 3 or 5 keys". El ejemplo del issue queda truncado en
+# la captura (termina a media clave), así que este fichero reconstruye el
+# patrón de license_key envuelta en `{}` con pares clave_id:clave separados
+# por coma que el propio issue empieza a mostrar, extendido a 3 claves
+# plausibles del mismo formato hexadecimal de 32 caracteres que el ejemplo de
+# clave única. Documentar aquí por si el parser necesita reconciliarse con el
+# formato real del issue más adelante.
+#EXTINF:-1 tvg-logo="", name2
+#EXTVLCOPT:http-user-agent=Android
+#KODIPROP:inputstreamaddon=inputstream.adaptive
+#KODIPROP:inputstream.adaptive.manifest_type=dash
+#KODIPROP:inputstream.adaptive.license_type=clearkey
+#KODIPROP:inputstream.adaptive.license_key={15965a6dbafd12c4af6aca127b271d5b:23dd40b93306de23ec667fb17a61fd3,88a3f1c2b6e04d7a9c5f3e2d1a0b9c8e:71f4e2d9c8b7a6958473625140302f1e,ac3b9d8e7f6a5b4c3d2e1f0a9b8c7d6e:d4c3b2a190f8e7d6c5b4a392817065f4}
+https://example.com/dash/multi/index.mpd

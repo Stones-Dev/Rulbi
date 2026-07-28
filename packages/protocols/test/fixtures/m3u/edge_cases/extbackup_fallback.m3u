@@ -1,0 +1,11 @@
+#EXTM3U
+# Fuente: 4gray/iptvnator issue #1107 (https://github.com/4gray/iptvnator/issues/1107)
+# "Feature: Automatic fallback to backup stream URLs per channel" — el propio
+# issue aclara que ESTO NO ES UN ESTÁNDAR M3U ESTABLECIDO, es una propuesta de
+# sintaxis (tag custom, retrocompatible: los reproductores que no lo conocen
+# lo ignoran). No lo trates como un caso ya soportado por ningún parser real;
+# es útil igualmente para decidir si `protocols` lo adopta o no.
+#EXTINF:-1,CNN
+#EXTBACKUP:https://fallback1.m3u8
+#EXTBACKUP:https://fallback2.m3u8
+https://primary.m3u8

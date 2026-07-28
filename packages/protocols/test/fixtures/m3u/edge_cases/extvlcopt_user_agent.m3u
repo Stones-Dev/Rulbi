@@ -1,0 +1,11 @@
+#EXTM3U
+# Fuente: uso real y documentado de VLC (no de un issue concreto de iptvnator —
+# el issue citado originalmente, #465, pide un campo de UI para User-Agent pero
+# no trae un ejemplo de sintaxis M3U). #EXTVLCOPT es la extensión que usa VLC
+# para pasar cabeceras HTTP; aparece igualmente en el ejemplo real del issue
+# #656 (ver kodiprop_drm_single_key.m3u), entre #EXTINF y la URL del stream.
+#EXTINF:-1 tvg-id="Channel1.us" tvg-logo="http://example.com/logo.png" group-title="News",Channel One
+#EXTVLCOPT:http-user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64)
+#EXTVLCOPT:http-referrer=https://example.com/
+#EXTVLCOPT:http-origin=https://example.com/
+https://stream.example.com/channel1/index.m3u8

@@ -1,0 +1,13 @@
+#EXTM3U
+# Fuente: 4gray/iptvnator issue #1107 (https://github.com/4gray/iptvnator/issues/1107),
+# variante alternativa de la misma propuesta (no estándar, ver
+# extbackup_fallback.m3u): URLs separadas por `|` en la misma línea.
+# AMBIGÜEDAD REAL a resolver en el parser (T1.2): esta sintaxis es
+# indistinguible a nivel de tokenizer de la de pipe_user_agent_referer.m3u
+# (`URL|User-Agent=...&Referer=...`, issue #57) — ambas son "URL seguida de
+# `|` y más texto". El parser tiene que decidir si lo que sigue al `|` es
+# `Clave=Valor(&Clave=Valor)*` (cabeceras Kodi) o más URLs (fallback); un
+# criterio razonable es intentar parsear como pares clave=valor conocidos
+# primero y solo tratarlo como fallback si no cuadra.
+#EXTINF:-1,CNN
+https://primary.m3u8|https://fallback1.m3u8|https://fallback2.m3u8

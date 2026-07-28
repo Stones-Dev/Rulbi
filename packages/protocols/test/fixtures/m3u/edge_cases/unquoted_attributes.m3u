@@ -1,0 +1,8 @@
+#EXTM3U
+# Fuente: dialecto no estándar habitual en generadores de M3U caseros —
+# atributos EXTINF sin comillas (`tvg-id=x` en vez de `tvg-id="x"`). El
+# estándar de facto (seguido por iptv-org, Kodi, etc.) exige comillas dobles;
+# varios paneles y generadores rotos las omiten cuando el valor no tiene
+# espacios. El parser debe tolerarlo, no solo aceptar el caso con comillas.
+#EXTINF:-1 tvg-id=Channel1 tvg-logo=http://example.com/logo.png group-title=News,Channel One
+https://stream.example.com/channel1.m3u8

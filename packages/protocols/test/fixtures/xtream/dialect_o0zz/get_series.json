@@ -1,0 +1,24 @@
+[
+  {
+    "name": "Serie de Prueba",
+    "series_id": 115941465,
+    "cover": "https://example.com/serie1.jpg",
+    "plot": "Serie ficticia para fixtures, sin contenido real.",
+    "cast": "",
+    "director": "",
+    "genre": "Drama",
+    "releaseDate": "1970-1-1",
+    "last_modified": "0",
+    "rating": "0.0",
+    "rating_5based": "0",
+    "backdrop_path": [],
+    "youtube_trailer": null,
+    "tmdb": "0",
+    "episode_run_time": "60",
+    "category_id": "1041482305",
+    "category_ids": [
+      1041482305
+    ],
+    "num": 1
+  }
+]

@@ -4,6 +4,13 @@ publish_to: "none"
 environment:
   sdk: ^3.12.2
 
+# `crypto` es la única dependencia real del root: la usa
+# tool/fetch_fixtures.dart (T1.1) para verificar SHA-256 de los golden
+# files grandes que no se commitean. BSD-3 (permisiva, P8), del propio
+# equipo de Dart — sin conflicto de resolución con el resto del workspace.
+dependencies:
+  crypto: ^3.0.6
+
 # Dart native workspace (SDK >= 3.6): resolución compartida de dependencias
 # entre todos los paquetes del monorepo. Cada miembro declara
 # `resolution: workspace` en su propio pubspec.yaml.

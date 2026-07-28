@@ -1,0 +1,75 @@
+{
+  "seasons": [
+    {
+      "air_date": "1970-1-1",
+      "episode_count": 2,
+      "id": 1367922554,
+      "name": "Temporada 1",
+      "overview": null,
+      "season_number": 0,
+      "cover": null,
+      "cover_big": null
+    }
+  ],
+  "info": {
+    "name": "Serie de Prueba",
+    "series_id": 115941465,
+    "cover": "https://example.com/serie1.jpg",
+    "plot": "Serie ficticia para fixtures, sin contenido real.",
+    "cast": "",
+    "director": "",
+    "genre": "Drama",
+    "releaseDate": "1970-1-1",
+    "last_modified": "0",
+    "rating": "0.0",
+    "rating_5based": "0",
+    "backdrop_path": [],
+    "youtube_trailer": null,
+    "tmdb": "0",
+    "episode_run_time": "60",
+    "category_id": "1041482305",
+    "category_ids": [
+      1041482305
+    ]
+  },
+  "episodes": {
+    "1": [
+      {
+        "id": "1875868768",
+        "episode_num": 1,
+        "title": "Episodio 1",
+        "container_extension": "mp4",
+        "info": {
+          "duration_secs": 1800,
+          "duration": "00:30:00",
+          "video": {},
+          "audio": {},
+          "bitrate": 0,
+          "movie_image": null
+        },
+        "custom_sid": null,
+        "added": "0",
+        "season": 1,
+        "direct_source": ""
+      },
+      {
+        "id": "828790538",
+        "episode_num": 2,
+        "title": "Episodio 2",
+        "container_extension": "mp4",
+        "info": {
+          "duration_secs": 1800,
+          "duration": "00:30:00",
+          "video": {},
+          "audio": {},
+          "bitrate": 0,
+          "movie_image": null
+        },
+        "custom_sid": null,
+        "added": "0",
+        "season": 1,
+        "direct_source": ""
+      }
+    ]
+  }
+}

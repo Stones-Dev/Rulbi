@@ -1,0 +1,38 @@
+[
+  {
+    "num": 1,
+    "name": "Canal Uno HD",
+    "stream_type": "live",
+    "stream_id": 100984355,
+    "stream_icon": "https://example.com/canal1.png",
+    "added": "0",
+    "is_adult": "0",
+    "category_id": "1544024662",
+    "category_ids": [
+      1544024662
+    ],
+    "custom_sid": null,
+    "direct_source": "",
+    "epg_channel_id": "canal1.test",
+    "tv_archive": 0,
+    "tv_archive_duration": 0
+  },
+  {
+    "num": 2,
+    "name": "Canal Dos",
+    "stream_type": "live",
+    "stream_id": 1582285708,
+    "stream_icon": null,
+    "added": "0",
+    "is_adult": "0",
+    "category_id": "1544024662",
+    "category_ids": [
+      1544024662
+    ],
+    "custom_sid": null,
+    "direct_source": "",
+    "epg_channel_id": "canal2.test",
+    "tv_archive": 0,
+    "tv_archive_duration": 0
+  }
+]

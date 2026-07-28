@@ -1,0 +1,10 @@
+# Golden files: el contenido byte-a-byte de esta carpeta es el propio caso de
+# prueba (T1.1). El .gitattributes raíz del repo tiene `* text=auto`, que con
+# core.autocrlf normaliza finales de línea al hacer checkin/checkout — eso
+# destruiría en silencio los fixtures de encoding_crlf_lf_mixed.m3u (mezcla
+# deliberada CRLF/LF), encoding_latin1.m3u y encoding_utf8_bom.m3u (deben
+# quedarse en LF puro), y haría que el mismo fixture tuviera bytes distintos
+# entre el runner Windows y el runner Linux del CI (CLAUDE.md, matrix
+# Windows/Linux). Se marca todo el árbol como binario para que git no toque
+# ni un byte, en ningún checkout, en ninguna plataforma.
+* -text

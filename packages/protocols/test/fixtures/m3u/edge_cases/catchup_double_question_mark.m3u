@@ -1,0 +1,14 @@
+#EXTM3U
+# Fuente: 4gray/iptvnator issue #579 (https://github.com/4gray/iptvnator/issues/579)
+# "When m3u list url have a token in parameters, archive links are broken."
+# El bug real: la URL del stream ya trae `?token=secret`, y el atributo
+# catchup-source arranca también por `?...`; concatenados sin más dan una URL
+# con doble `?` (…/playback.m3u8?token=secret?utc=111111&lutc=1112222) en vez
+# de encadenar con `&`. Este fixture reproduce el escenario de entrada: el
+# parser debe extraer bien tvg-id/catchup/catchup-days/catchup-source Y dejar
+# la responsabilidad de construir la URL de archivo (con `&`, no `?`) a la
+# capa que consume estos datos — no es el propio parser quien debe adivinarlo
+# al vuelo, pero si el proyecto añade esa construcción, este es el caso de
+# regresión de referencia.
+#EXTINF:-1 tvg-id="channel1" catchup="append" catchup-days="7" catchup-source="?utc={utc}&lutc={lutc}",Channel With Catchup
+https://provider.xyz/222/playback.m3u8?token=secret

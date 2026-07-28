@@ -1,0 +1,19 @@
+{
+  "$comment": "Fixtures grandes/script-only de T1.1, no committeadas. dart run tool/fetch_fixtures.dart las descarga y verifica por SHA-256. Ver packages/protocols/test/fixtures/*/README.md para contexto de cada una.",
+  "fixtures": [
+    {
+      "id": "iptv_org_index",
+      "url": "https://iptv-org.github.io/iptv/index.m3u",
+      "dest": "packages/protocols/test/fixtures/m3u/large/iptv_org_index.m3u",
+      "sha256": "8c6eac984b7d07f22b80f8410971637b88ecd88ba09f1e8e0277ed3e8400afa8",
+      "note": "Catálogo completo de iptv-org (>50k canales). Fixture del benchmark T1.5b (RNF-01, 100k canales). No se commitea a propósito: crece con el catálogo upstream, se quiere fresco en cada benchmark real, no congelado en git."
+    },
+    {
+      "id": "epgshare01_all_sources",
+      "url": "https://epgshare01.online/epgshare01/epg_ripper_ALL_SOURCES1.xml.gz",
+      "dest": "packages/protocols/test/fixtures/m3u/large/epgshare01_all_sources.xml.gz",
+      "sha256": "da8d3485a53c9218d425af873542800a24c68e26e350f5961a622c27a8ed3265",
+      "note": "XMLTV de todas las fuentes de epgshare01 (~193 MB real, medido 2026-07-29; la estimación original de '~80 MB' era optimista). Prueba de estrés del parser XMLTV en streaming/gzip (T1.3), no un caso funcional distinto de epgshare01_es1.xml.gz."
+    }
+  ]
+}

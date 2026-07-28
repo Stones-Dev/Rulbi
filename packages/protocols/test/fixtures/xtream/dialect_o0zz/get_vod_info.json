@@ -1,0 +1,40 @@
+{
+  "info": {
+    "tmdb_id": 0,
+    "name": "Pelicula de Prueba",
+    "o_name": "Pelicula de Prueba",
+    "cover_big": "https://example.com/poster1.jpg",
+    "movie_image": "https://example.com/poster1.jpg",
+    "releasedate": "2020-1-1",
+    "youtube_trailer": null,
+    "director": "Director de Prueba",
+    "actors": "Actor Uno, Actor Dos",
+    "cast": "Actor Uno, Actor Dos",
+    "description": "Descripcion de prueba, sin contenido real.",
+    "plot": "Descripcion de prueba, sin contenido real.",
+    "age": "",
+    "country": "",
+    "genre": "Drama, Prueba",
+    "backdrop_path": [
+      null
+    ],
+    "duration_secs": "5400",
+    "duration": "01:30:00",
+    "video": {},
+    "audio": {},
+    "bitrate": 0,
+    "rating": "7.5"
+  },
+  "movie_data": {
+    "stream_id": "1908388221",
+    "name": "Pelicula de Prueba",
+    "added": "0",
+    "category_id": "2130693104",
+    "category_ids": [
+      2130693104
+    ],
+    "container_extension": "mkv",
+    "custom_sid": null,
+    "direct_source": ""
+  }
+}

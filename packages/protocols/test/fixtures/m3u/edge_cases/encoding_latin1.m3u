@@ -1,0 +1,7 @@
+#EXTM3U
+#EXTINF:-1 tvg-id="tve1.es" group-title="España",La 1 (TVE) - España
+https://example.com/tve1.m3u8
+#EXTINF:-1 tvg-id="antena3.es" group-title="España",Antena 3 - Noticias
+https://example.com/antena3.m3u8
+#EXTINF:-1 tvg-id="telecinco.es" group-title="España",Telecinco - Películas
+https://example.com/telecinco.m3u8
