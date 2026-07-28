@@ -55,6 +55,15 @@ melos:
       packageFilters:
         flutter: true
 
+    generate:
+      name: Generar
+      description: Codegen (drift, etc.) en los paquetes que lo necesitan.
+      exec:
+        command: dart run build_runner build --delete-conflicting-outputs
+        concurrency: 1
+      packageFilters:
+        dependsOn: build_runner
+
     format:
       name: Formatear
       description: dart format en todos los paquetes.

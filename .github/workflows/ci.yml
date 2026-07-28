@@ -41,6 +41,9 @@ jobs:
       - name: melos bootstrap
         run: melos bootstrap
 
+      - name: Codegen (build_runner)
+        run: melos run generate
+
       - name: flutter analyze (fatal-infos)
         run: melos run analyze
 
@@ -68,6 +71,9 @@ jobs:
 
       - name: melos bootstrap
         run: melos bootstrap
+
+      - name: Codegen (build_runner)
+        run: melos run generate
 
       - name: Build APK (debug)
         working-directory: apps/app
