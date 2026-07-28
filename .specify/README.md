@@ -8,7 +8,7 @@ Este directorio es un **espejo de solo lectura** de la carpeta del proyecto en e
 
 ## Regla de sincronización
 
-**El vault es la fuente de verdad.** Jerarquía de fuentes del proyecto: **vault (qué/por qué) > Notion (cuándo/estado) > Figma (cómo se ve) > repo+Graphify (código)**.
+**El vault es la fuente de verdad.** Jerarquía de fuentes del proyecto: **vault (qué/por qué) > Notion (cuándo/estado) > Figma (cómo se ve) > repo+codebase-memory-mcp (código)**.
 
 - Toda enmienda a constitution, spec, ui-spec, plan o tasks se escribe **primero en el vault**, y **después** se re-copia aquí.
 - **No edites los archivos de `.specify/` directamente** como si fueran la fuente — se sobrescribirán en la siguiente sincronización y la edición se perderá.
@@ -22,9 +22,9 @@ Este directorio es un **espejo de solo lectura** de la carpeta del proyecto en e
 | `spec.md` | `spec.md` (rev. 1.1) | 2026-07-28 (Sprint 0) |
 | `ui-spec.md` | `ui-spec.md` | 2026-07-28 (Sprint 0) |
 | `plan.md` | `plan.md` (rev. 1.2) | 2026-07-28 (Sprint 0) |
-| `tasks.md` | `tasks.md` | 2026-07-28 (Sprint 0) |
+| `tasks.md` | `tasks.md` | 2026-07-29 (cierre de migración ADR-005) |
 
-Los ADRs (`ADR-001`, `ADR-002`) **no se copian aquí**: viven solo en el vault (`02-Proyectos/Reproductor IPTV Multiplataforma/ADRs/`), que es su ubicación canónica según el protocolo 11/7 de `AGENTS.md`.
+Los ADRs (`ADR-001`–`ADR-005`) **no se copian aquí**: viven solo en el vault (`02-Proyectos/Reproductor IPTV Multiplataforma/ADRs/`), que es su ubicación canónica según el protocolo 11/7 de `AGENTS.md`.
 
 ## Cuándo re-sincronizar
 

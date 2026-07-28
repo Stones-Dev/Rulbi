@@ -42,4 +42,4 @@ El control por mando (D-pad, back, ok) y el foco visible se diseñan y prueban d
 
 ## P10 — Documentación viva
 
-Decisiones → ADRs (MADR). Estado entre sesiones → handoff (protocolo 12). Comprensión del código → grafo Graphify regenerado tras cambios relevantes y enlazado al vault. El repo mantiene sus artefactos SDD en `.specify/` sincronizados con esta carpeta.
+Decisiones → ADRs (MADR). Estado entre sesiones → handoff (protocolo 12). Comprensión del código → grafo de `codebase-memory-mcp`, reindexado automáticamente por su watcher y consultable por herramientas MCP (ADR-005). El repo mantiene sus artefactos SDD en `.specify/` sincronizados con esta carpeta.

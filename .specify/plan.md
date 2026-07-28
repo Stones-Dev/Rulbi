@@ -8,7 +8,7 @@
 
 Se propone construir el reproductor IPTV con **Flutter/Dart como base de código única** para Windows, Linux, Android, iOS, Android TV/Fire TV y LG webOS, con arquitectura limpia local-first sobre SQLite, reproducción delegada en motores nativos por plataforma tras una abstracción, y **sincronización sin servidores**: emparejamiento por QR/código de 6 dígitos y transferencia + sync automática por red local. La ventana de oportunidad es real: LG publicó oficialmente el SDK `flutter-webos` y Samsung mantiene `flutter-tizen`, lo que convierte a Flutter en el único stack que hoy alcanza *todas* las plataformas objetivo con un solo equipo — camino vetado para open-tv (Tauri + mpv externo).
 
-Ejecución por 7 fases (F0–F7) con un *gate* de decisión (licencia en F2), metodología SDD, Claude Code con **Graphify obligatorio** y memoria del proyecto en el vault. Coste de infraestructura: **cero**.
+Ejecución por 7 fases (F0–F7) con un *gate* de decisión (licencia en F2), metodología SDD, Claude Code con **codebase-memory-mcp obligatorio** (ADR-005) y memoria del proyecto en el vault. Coste de infraestructura: **cero**.
 
 ## 2. Estado del arte y oportunidad
 
@@ -37,7 +37,7 @@ Decisiones formales en ADR-001 (Elección de stack multiplataforma) y ADR-002 (S
 | Red local | mDNS/NSD (`bonsoir` o equivalente) + WebSocket local embebido | MIT | HU-08/09; validar por plataforma en spike S5 |
 | Monorepo | Melos (paquetes Dart) | MIT | `core`, `protocols`, `data`, `player`, `pairing` |
 | CI/CD | GitHub Actions (matrix por plataforma) | — | Builds firmadas + tests en cada push |
-| Tooling IA | Claude Code + Graphify + Spec Kit | — | §6 |
+| Tooling IA | Claude Code + codebase-memory-mcp + Spec Kit | — | §6, ADR-005 |
 
 **Nota sobre Dart**: no está hoy en el stack del usuario (TS/PHP-Laravel); la curva desde TypeScript es corta y Claude Code reduce el coste de adopción (riesgo R6).
 
@@ -48,7 +48,9 @@ Decisiones formales en ADR-001 (Elección de stack multiplataforma) y ADR-002 (S
 ```
 iptv-player/                   # repo real: IPTVapp (ver nota del Sprint 0 en el handoff)
 ├── .specify/                  # Artefactos SDD (espejo de esta carpeta del vault)
-├── CLAUDE.md                  # Instrucciones del repo para Claude Code (Graphify incluido)
+├── CLAUDE.md                  # Instrucciones del repo para Claude Code
+├── .codebase-memory/          # Artefacto de equipo del grafo de código (comiteado, ver ADR-005)
+├── .cbmignore                 # Exclusiones del indexado de codebase-memory-mcp
 ├── melos.yaml
 ├── packages/
 │   ├── core/                  # Dominio puro: entidades, casos de uso, puertos. Sin Flutter.
@@ -58,7 +60,6 @@ iptv-player/                   # repo real: IPTVapp (ver nota del Sprint 0 en el
 │   └── pairing/                # Emparejamiento QR/código, canal local cifrado, motor de sync LWW
 ├── apps/
 │   └── app/                   # App Flutter única; targets: windows, linux, android, ios, webos
-└── graphify-out/               # Grafo del código (junction → carpeta del proyecto en el vault)
 ```
 
 Regla de dependencias (arquitectura limpia): `app → player/data/pairing → protocols → core`. `core` no depende de nada; nada del dominio importa Flutter ni APIs de plataforma.
@@ -111,14 +112,12 @@ iOS (App Store) queda para **v1.1**: 99 USD/año diferidos; política estricta c
 ## 6. Metodología y tooling de IA
 
 - **SDD (protocolo 11 del vault)**: los artefactos de esta carpeta se espejan en `.specify/` del repo. Cada fase arranca actualizando spec/plan/tasks si hubo cambios.
-- **Claude Code con Graphify — obligatorio** (norma 2 del proyecto). Setup en Fase 0:
-  1. `uv tool install graphifyy`
-  2. `.gitignore`: `graphify-out/`, `.graphifyignore`, `.claude/skills/graphify/`
-  3. `.graphifyignore` (build/, *.g.dart, lockfiles, assets binarios)
-  4. `graphify install --project` · 5. `graphify claude install`
-  6. `graphify . --obsidian` → grafo + `GRAPH_REPORT.md`
-  7. Junction `graphify-out/` → carpeta del proyecto en el vault
-  8. Tras cambios: `graphify update .` (sin coste de API)
+- **Claude Code con codebase-memory-mcp — obligatorio** (norma 2 del proyecto; sustituye a Graphify por ADR-005). Setup en Fase 0:
+  1. Instalación manual verificada por checksum (SHA-256) del binario, no `curl | bash`
+  2. `.cbmignore` (equivalente al antiguo `.graphifyignore`: build/, *.g.dart, lockfiles, assets binarios)
+  3. `auto_index=true` / `auto_watch=true` — indexado inicial y reindexado en background tras cada cambio, sin ritual manual
+  4. Artefacto de equipo `.codebase-memory/graph.db.zst` comiteado (para que un compañero que clona el repo arranque desde ahí)
+  5. Herramientas MCP disponibles durante toda la sesión: `get_architecture`, `trace_path`, `search_graph`, `detect_changes`, `search_code`, `query_graph` (Cypher read-only), entre otras
 - **Memoria y handoff**: `handoff.md` al cerrar cada sesión (protocolo 12); bitácora en el diario.
 - **ADRs** en MADR para toda decisión arquitectónica; **conventional commits**; PRs pequeñas por tarea; CI verde como condición de merge.
 
@@ -126,7 +125,7 @@ iOS (App Store) queda para **v1.1**: 99 USD/año diferidos; política estricta c
 
 | Fase | Contenido | Salida verificable | Semanas |
 |---|---|---|---|
-| **F0 · Setup** | Repo, Melos, CI, Graphify, CLAUDE.md, `.specify/` | Pipeline verde con app esqueleto en Win/Linux/Android | 1 |
+| **F0 · Setup** | Repo, Melos, CI, codebase-memory-mcp, CLAUDE.md, `.specify/` | Pipeline verde con app esqueleto en Win/Linux/Android | 1 |
 | **F1 · Núcleo** | Parsers M3U/XMLTV (TDD, golden files), cliente Xtream, drift + FTS5, **spikes S1/S2/S4/S5** | `packages/` con cobertura alta; informe de spikes | 2–4 |
 | **F2 · Desktop MVP** | App Windows/Linux completa. **Gate D2 (licencia)** | Beta privada de escritorio usable a diario | 5–7 |
 | **F3 · Android + TV + emparejamiento** | Shells touch y TV, media3, rejilla EPG y **HU-08 completo** | APK móvil configura la Fire TV real en < 60 s | 8–12 |

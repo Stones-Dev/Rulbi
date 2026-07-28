@@ -20,18 +20,10 @@ Reparto de responsabilidades entre herramientas, coherente con la jerarquía de 
 
 - [ ] **T0.1** Crear repo `iptv-player` (privado hasta resolver D2) con estructura del monorepo (§4.1 del plan) y Melos configurado. *Repo real: `IPTVapp` — ver nota en el handoff.*
 - [ ] **T0.2** Copiar artefactos SDD a `.specify/` (constitution, spec, ui-spec, plan, tasks) y establecer la regla de sincronización con esta carpeta del vault.
-- [ ] **T0.3** Redactar `CLAUDE.md` del repo: reglas de arquitectura (dependencias entre paquetes), convenciones (conventional commits, TDD en `protocols/` y `pairing/`), uso de Graphify como fuente de contexto del codebase, y el **Protocolo de documentación** de arriba (Notion tarea a tarea; Obsidian solo decisiones/conocimiento/handoff).
+- [ ] **T0.3** Redactar `CLAUDE.md` del repo: reglas de arquitectura (dependencias entre paquetes), convenciones (conventional commits, TDD en `protocols/` y `pairing/`), uso de codebase-memory-mcp como fuente de contexto del codebase, y el **Protocolo de documentación** de arriba (Notion tarea a tarea; Obsidian solo decisiones/conocimiento/handoff).
 - [ ] **T0.4** Instalar toolchains: Flutter estable + targets desktop, Android SDK, `flutter-webos` (SDK de `lg-flutter-webos`; activar Dev Mode en la TV LG). *Depende de: T0.1.* **Dividida en Sprint 0**: T0.4a (Flutter + desktop + Android, entra en el DoD del sprint) / T0.4b (flutter-webos + Dev Mode LG, abierta hasta tener cuenta LG Developer y TV a mano — no bloquea, webOS no entra hasta F4).
 - [ ] **T0.5** CI GitHub Actions: matrix build (Windows, Linux, Android) + `flutter analyze` + tests. iOS/webOS se añaden en sus fases. *Depende de: T0.1.*
-- [ ] **T0.6** **Graphify (obligatorio)** — checklist completo:
-  - [ ] `uv tool install graphifyy`
-  - [ ] `.gitignore`: añadir `graphify-out/`, `.graphifyignore`, `.claude/skills/graphify/`
-  - [ ] Crear `.graphifyignore` (build/, *.g.dart, lockfiles, assets binarios)
-  - [ ] `graphify install --project`
-  - [ ] `graphify claude install`
-  - [ ] `graphify . --obsidian` → primer grafo
-  - [ ] Junction `graphify-out/` → `02-Proyectos/Reproductor IPTV Multiplataforma/Graphify/`
-  - [ ] Hook de commit para recordar `graphify update .`
+- [ ] **T0.6** **Grafo de código (obligatorio)** — `codebase-memory-mcp`, sustituye a Graphify (ADR-005): instalación manual verificada por checksum, `.cbmignore`, `auto_index`/`auto_watch` (reindexado en background, sin ritual manual), artefacto de equipo `.codebase-memory/graph.db.zst` comiteado.
 - [ ] **T0.7** App esqueleto con los tres shells vacíos (Tv/Mobile/Desktop) y detección de factor de forma; pipeline verde. *Depende de: T0.4, T0.5.*
 
 ## Fase 1 · Núcleo + spikes (3–4 semanas)
