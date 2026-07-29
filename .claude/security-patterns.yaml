@@ -1,0 +1,45 @@
+# Reglas de patrón propias — capa 1 de security-guidance (regex puro, sin modelo).
+# Aditivas: no desactivan ninguna regla interna del plugin.
+patterns:
+  - rule_name: xtream-credential-literal
+    reminder: >-
+      Credencial de panel Xtream literal en código. Las credenciales van al
+      almacén seguro (Keychain/Keystore) vía el puerto de packages/data, nunca
+      en fuente ni en constantes de test.
+    regex: '(?i)\b(password|passwd|pwd|xtream_key|api_key|apikey)\s*[:=]\s*["''][^"''\s]{4,}["'']'
+    paths: ["**/*.dart"]
+    exclude_paths: ["**/test/fixtures/**"]
+
+  - rule_name: url-embedded-credentials
+    reminder: >-
+      URL con credenciales embebidas (user:pass@host). Es el formato en que las
+      listas M3U filtran contraseñas de panel. Fuera de fuente y fuera de logs.
+    regex: '[a-zA-Z][a-zA-Z0-9+.-]*://[^/\s:@]+:[^/\s:@]+@'
+
+  - rule_name: xtream-query-credentials
+    reminder: >-
+      URL de panel Xtream con username/password en query string. Construye la
+      URL en el momento de la llamada leyendo del almacén seguro; no la
+      persistas, no la registres, no la commitees.
+    regex: '(get|player_api|panel_api)\.php\?[^"''\s]{0,200}(username|password)='
+
+  - rule_name: weak-random-crypto-context
+    reminder: >-
+      Random() no es criptográficamente seguro. Tokens de emparejamiento,
+      nonces y claves usan Random.secure().
+    regex: '\bRandom\s*\(\s*\)'
+    paths: ["packages/pairing/**", "packages/data/**"]
+
+  - rule_name: crypto-material-logged
+    reminder: >-
+      Material criptográfico o token de emparejamiento en un log/print. Claves,
+      tokens y códigos nunca salen por consola ni por mensaje de excepción.
+    regex: '(print|debugPrint|log|stderr\.write)\s*\([^)]{0,200}(sessionKey|sharedSecret|privateKey|secretKey|pairingToken|pairingCode)'
+
+  - rule_name: aes-gcm-static-nonce
+    reminder: >-
+      Nonce/IV de AES-GCM con valor fijo o rellenado a constante. GCM exige un
+      nonce único por mensaje; reutilizarlo rompe la confidencialidad y la
+      autenticación a la vez.
+    regex: '(?i)\b(nonce|iv)\b\s*=\s*(Uint8List\.fromList|List<int>\.filled|\[)'
+    paths: ["packages/pairing/**"]

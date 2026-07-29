@@ -44,6 +44,21 @@ Antes de tocar un paquete que no conoces bien, consulta el grafo de código (cod
 - **TDD estricto en `packages/protocols/` y `packages/pairing/`** (principio P7): los parsers y el cliente Xtream se desarrollan contra una batería de *golden files* reales (`packages/protocols/test/fixtures/`), incluidos casos rotos y dialectos no estándar. **Todo bug de importación reportado se convierte primero en un golden file, y solo después se arregla.** `pairing/` se testea sin red real (streams/sockets en memoria).
 - **Sin dependencias GPL** en el núcleo mientras la decisión de licencia (D2) esté abierta (principio P8): preferir Apache-2.0/MIT/LGPL. Si algún día se adopta un componente GPL (p. ej. libmpv en escritorio), se aísla en `packages/player` y se documenta en un ADR con plan de salida.
 
+## Plugins de sesión
+
+- **`security-guidance`** (oficial de Anthropic, `claude-plugins-official`) —
+  **activo**. Tres capas: regex por cada edit (coste cero), revisión LLM del
+  diff al cerrar turno, revisión agéntica en `git commit`/`git push`.
+  Personalización del proyecto en `.claude/claude-security-guidance.md`
+  (threat model, se envía al modelo — **sin secretos reales**) y
+  `.claude/security-patterns.yaml` (reglas regex propias).
+  Los hallazgos son **asistivos, no bloqueantes**: no sustituyen a SAST/DAST ni
+  a revisión humana. Kill switch: `SECURITY_GUIDANCE_DISABLE=1`.
+  Ver `03-Conocimiento/Security Guidance (plugin oficial de Anthropic).md`.
+- **`code-review`** — evaluado y aprobado, **no instalado todavía**: entra en el
+  Sprint 6, cuando el proyecto pase a beta privada y se deje de fusionar a
+  `main` sin PR. Ver su nota en `03-Conocimiento/`.
+
 ## codebase-memory-mcp — obligatorio (norma 2 del proyecto, ADR-005)
 
 `codebase-memory-mcp` sustituyó a Graphify (ADR-005, 2026-07-28: validado en spike, Graphify no encontraba nodos que codebase-memory-mcp sí resuelve). Mantiene un grafo de conocimiento del codebase consultable por herramientas MCP — no un archivo estático que haya que regenerar a mano: un watcher en segundo plano (`auto_watch`, activo) reindexa solo tras cada cambio, y `auto_index` está activado para repos nuevos.
