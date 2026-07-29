@@ -23,3 +23,5 @@ pubspec.lock
 *.zip
 *.gz
 packages/protocols/test/fixtures/
+.agents/skills/
+.claude/skills/
