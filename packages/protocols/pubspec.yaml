@@ -10,6 +10,12 @@ resolution: workspace
 dependencies:
   iptv_core:
     path: ../core
+  # T1.3: motor SAX en streaming para el parser XMLTV (chunked
+  # toXmlEvents()). MIT (P8 ok). Ya resuelto en el pubspec.lock del
+  # workspace como dependencia transitiva en 7.0.1 — declararlo aquí no
+  # mueve ninguna versión (a diferencia del conflicto melos/drift_dev de
+  # ADR-004).
+  xml: ^7.0.0
 
 dev_dependencies:
   lints: ^6.0.0
