@@ -1,4 +1,5 @@
 import 'package:iptv_core/iptv_core.dart';
+import 'package:xml/xml.dart' show XmlException;
 import 'package:xml/xml_events.dart';
 
 import 'xmltv_date.dart';
@@ -209,7 +210,7 @@ Stream<XmltvCoreEvent> parseXmltvCore({
       // esto es un elemento real): no hay dónde acumularla, se ignora sin
       // contarla como "unknown tag" — todavía no estamos en vocabulario
       // XMLTV.
-      return name == 'tv' ? _TvFrame() : _SkipFrame();
+      return name == 'tv' ? _TvFrame() : _SkipFrame(name);
     }
     if (parent is _TvFrame) {
       if (name == 'channel') {
@@ -224,49 +225,57 @@ Stream<XmltvCoreEvent> parseXmltvCore({
         );
       }
       unknownTags.update(name, (v) => v + 1, ifAbsent: () => 1);
-      return _SkipFrame();
+      return _SkipFrame(name);
     }
     if (parent is _ChannelFrame) {
       switch (name) {
         case 'display-name':
-          return _TextChildFrame(_ChildKind.displayName);
+          return _TextChildFrame(_ChildKind.displayName, name);
         case 'icon':
           final src = _attr(attrs, 'src');
           // Primer <icon> gana, misma convención que el primer <title>
           // duplicado de un <programme>.
           if (src != null) parent.icon ??= Uri.tryParse(src);
-          return _KnownLeafFrame();
+          return _KnownLeafFrame(name);
         case 'url':
-          return _TextChildFrame(_ChildKind.channelUrl);
+          return _TextChildFrame(_ChildKind.channelUrl, name);
         default:
           unknownTags.update(name, (v) => v + 1, ifAbsent: () => 1);
-          return _SkipFrame();
+          return _SkipFrame(name);
       }
     }
     if (parent is _ProgrammeFrame) {
       switch (name) {
         case 'title':
-          return _TextChildFrame(_ChildKind.title);
+          return _TextChildFrame(_ChildKind.title, name);
         case 'desc':
-          return _TextChildFrame(_ChildKind.desc);
+          return _TextChildFrame(_ChildKind.desc, name);
         case 'sub-title':
           // No lo modela EpgProgramme: se consume para no romper el
           // anidamiento, pero su contenido no se guarda.
-          return _KnownLeafFrame();
+          return _KnownLeafFrame(name);
         default:
           unknownTags.update(name, (v) => v + 1, ifAbsent: () => 1);
-          return _SkipFrame();
+          return _SkipFrame(name);
       }
     }
     // Dentro de un nodo de texto/hoja que no modela hijos, o ya dentro de
     // un subárbol descartado: cualquier anidamiento se ignora sin
     // contarlo aparte — evita que un <credits><actor/>×97 infle
     // unknownTags con entradas que no aportan nada al informe.
-    return _SkipFrame();
+    return _SkipFrame(name);
   }
 
   void onEnd(String name) {
     if (stack.length <= 1) return; // cierre huérfano: nada que popear.
+    if (stack.last.name != name) {
+      // Cierre huérfano o mal anidado (validateNesting:false lo permite
+      // en la entrada, P7 tolera un documento así): no coincide con lo
+      // que hay abierto — se ignora sin popear nada. Popear a ciegas
+      // aquí desincronizaría el resto del árbol frente a cualquier
+      // etiqueta de cierre suelta.
+      return;
+    }
     final frame = stack.removeLast();
     final parent = stack.isEmpty ? null : stack.last;
     switch (frame) {
@@ -309,29 +318,52 @@ Stream<XmltvCoreEvent> parseXmltvCore({
     if (event.isSelfClosing) onEnd(event.name);
   }
 
-  await for (final event in events) {
-    switch (event) {
-      case XmlStartElementEvent():
-        onStart(event);
-      case XmlEndElementEvent(:final name):
-        onEnd(name);
-      case XmlTextEvent(:final value):
-        onText(value);
-      case XmlCDATAEvent(:final value):
-        onText(value);
-      default:
-      // Declaración, doctype, comentario, processing instruction: sin
-      // significado para el modelo de datos, se ignoran.
-    }
+  try {
+    await for (final event in events) {
+      switch (event) {
+        case XmlStartElementEvent():
+          onStart(event);
+        case XmlEndElementEvent(:final name):
+          onEnd(name);
+        case XmlTextEvent(:final value):
+          onText(value);
+        case XmlCDATAEvent(:final value):
+          onText(value);
+        default:
+        // Declaración, doctype, comentario, processing instruction: sin
+        // significado para el modelo de datos, se ignoran.
+      }
 
-    if (discard != null) {
-      yield XmltvCoreDiscard(discard!);
-      discard = null;
+      if (discard != null) {
+        yield XmltvCoreDiscard(discard!);
+        discard = null;
+      }
+      if (batch.length >= batchSize) {
+        yield XmltvBatch(List.unmodifiable(batch));
+        batch = <XmltvEntry>[];
+      }
     }
-    if (batch.length >= batchSize) {
-      yield XmltvBatch(List.unmodifiable(batch));
-      batch = <XmltvEntry>[];
-    }
+  } on XmlException catch (error) {
+    // Riesgo conocido (T1.3): XmlEventDecoder.close() lanza si queda un
+    // "carry" sin parsear al final del stream — un documento truncado a
+    // media etiqueta (gunzip roto, descarga cortada) cae aquí. P7: no se
+    // relanza. Se reporta como un descarte final y se conserva todo lo ya
+    // emitido antes del corte.
+    yield XmltvCoreDiscard(
+      XmltvDiscard(
+        entryIndex: entryIndex,
+        reason: 'documento XML interrumpido o corrupto: $error',
+      ),
+    );
+  } on FormatException catch (error) {
+    // Mismo tratamiento para corrupción a nivel de bytes (gunzip roto a
+    // mitad de stream: dart:io lanza FormatException, no XmlException).
+    yield XmltvCoreDiscard(
+      XmltvDiscard(
+        entryIndex: entryIndex,
+        reason: 'documento interrumpido o corrupto (formato): $error',
+      ),
+    );
   }
 
   // Un <channel> declarado después de los <programme> que lo referencian
@@ -362,12 +394,27 @@ String? _attr(List<XmlEventAttribute> attrs, String name) {
   return null;
 }
 
-sealed class _Frame {}
+/// Cada frame recuerda el nombre del elemento que lo abrió (salvo
+/// [_RootFrame], que no corresponde a ningún elemento real). `onEnd`
+/// compara este nombre contra el de la etiqueta de cierre antes de
+/// popear — una etiqueta huérfana o mal anidada (posible: `validateNesting`
+/// va en `false`) no debe desincronizar el resto del árbol.
+sealed class _Frame {
+  String get name;
+}
 
-/// Antes de ver `<tv>`. Nunca se popea (es la base de la pila).
-final class _RootFrame extends _Frame {}
+/// Antes de ver `<tv>`. Nunca se popea (es la base de la pila) — su
+/// [name] no se usa en la práctica, `onEnd` corta antes por el guard de
+/// pila con un solo elemento.
+final class _RootFrame extends _Frame {
+  @override
+  String get name => '';
+}
 
-final class _TvFrame extends _Frame {}
+final class _TvFrame extends _Frame {
+  @override
+  String get name => 'tv';
+}
 
 final class _ChannelFrame extends _Frame {
   _ChannelFrame(this.id, {required this.charOffset});
@@ -376,6 +423,9 @@ final class _ChannelFrame extends _Frame {
   final List<String> displayNames = [];
   Uri? icon;
   final List<Uri> urls = [];
+
+  @override
+  String get name => 'channel';
 }
 
 final class _ProgrammeFrame extends _Frame {
@@ -391,22 +441,35 @@ final class _ProgrammeFrame extends _Frame {
   final int? charOffset;
   String? title;
   String? desc;
+
+  @override
+  String get name => 'programme';
 }
 
 enum _ChildKind { displayName, channelUrl, title, desc }
 
 final class _TextChildFrame extends _Frame {
-  _TextChildFrame(this.kind);
+  _TextChildFrame(this.kind, this.name);
   final _ChildKind kind;
+  @override
+  final String name;
   final StringBuffer buffer = StringBuffer();
 }
 
 /// Elemento conocido cuyo contenido no se modela (`<icon>`, `<sub-title>`
 /// de programa): se consume para no romper el anidamiento del stack, sin
 /// bufferizar texto.
-final class _KnownLeafFrame extends _Frame {}
+final class _KnownLeafFrame extends _Frame {
+  _KnownLeafFrame(this.name);
+  @override
+  final String name;
+}
 
 /// Subárbol ignorado: etiqueta desconocida, o anidamiento dentro de algo
 /// que ya no nos interesa. No bufferiza texto — es lo que mantiene la
 /// memoria acotada frente a un `<credits>` con decenas de hijos.
-final class _SkipFrame extends _Frame {}
+final class _SkipFrame extends _Frame {
+  _SkipFrame(this.name);
+  @override
+  final String name;
+}
