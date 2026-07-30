@@ -84,3 +84,45 @@ para fixtures de este repo, así que ambos se commitean.
 
 Si algún fixture fallara esta verificación, se documentaría aquí de forma
 visible en vez de incluirse silenciosamente.
+
+## T1.3 (parser XMLTV): sin `edge_cases/` — desviación deliberada respecto a M3U
+
+El plan original de T1.3 preveía un directorio `xmltv/edge_cases/` con un
+fichero `.xml` por dialecto, replicando la convención de
+`m3u/edge_cases/` (T1.2). Al implementar, se decidió **no** crear ese
+directorio — desviación real, documentada aquí en vez de dejarla
+implícita:
+
+- Los `edge_cases/*.m3u` de M3U documentan **dialectos rotos reales**,
+  casi todos con un issue de GitHub citado como fuente
+  (`4gray/iptvnator`). Para XMLTV no se investigó un repositorio
+  equivalente de bugs de importación reales — el trabajo de T1.3 se
+  centró en las 9 baterías de tests (`packages/protocols/test/xmltv/`),
+  cada una cubriendo un aspecto del parser (fechas, núcleo SAX, ventana
+  temporal, tolerancia, encoding/gunzip, documentos malformados, isolate,
+  fixtures reales, estrés de memoria) contra casos **sintéticos
+  minúsculos e inline** en el propio archivo de test — no representan un
+  bug reportado citable, son ejercicios dirigidos de una rama concreta
+  del estado del parser (p. ej. "`<icon/>` self-closing", "`<title>`
+  duplicado").
+- Extraer cada uno de esos fragmentos a un fichero `.xml` individual
+  habría producido decenas de ficheros de un puñado de líneas cada uno,
+  sin el valor documental que sí tienen los `edge_cases/` de M3U (un
+  issue real detrás de cada archivo). El coste de la extracción no
+  parecía justificar el beneficio frente a dejarlos donde se leen mejor:
+  junto a la aserción que verifican.
+- Las **2 fixtures reales** de T1.1 (`epg_pw_lite.xml.gz`,
+  `epgshare01_es1.xml.gz`, documentadas arriba) sí se usan como archivos,
+  en `xmltv_real_fixtures_test.dart` — ahí el patrón de M3U (fixture real
+  en disco) se mantiene sin cambios.
+- La prueba de estrés (`xmltv_benchmark_test.dart`) sí encontró un
+  **dialecto roto real** (no sintético) en producción: `stop` con
+  minuto `60` en la fuente `MUSIC.BOX.00s.musicbox` del agregado de
+  epgshare01 — ver `docs/bench/T1.3-xmltv-stress.md` para el detalle. Si
+  en el futuro se decide construir una batería `edge_cases/` real para
+  XMLTV, ese es un candidato con procedencia genuina, a diferencia de los
+  fragmentos sintéticos actuales.
+
+Si se retoma este directorio más adelante (p. ej. al escribir T1.9,
+"Informe de descartes"), este README es el sitio donde documentar la
+decisión de hacerlo o de seguir sin él.
