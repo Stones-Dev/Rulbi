@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
+import '../common/byte_decoding.dart';
+
 /// Decodifica un M3U de bytes crudos a líneas de texto completas,
 /// detectando el encoding **antes** de decodificar (nunca se asume UTF-8 a
 /// ciegas) y tolerando CRLF/LF mixto. Streaming de verdad: solo se
@@ -29,16 +31,11 @@ enum _DetectedEncoding { utf8, latin1, utf16le, utf16be }
 
 Stream<String> _decodeM3uBytes(Stream<List<int>> bytes) async* {
   final iterator = StreamIterator(bytes);
-  final buffer = <int>[];
-  while (buffer.length < _sniffWindowBytes) {
-    if (!await iterator.moveNext()) break;
-    buffer.addAll(iterator.current);
-  }
+  final buffer = await bufferSniffWindow(iterator, _sniffWindowBytes);
 
   final encoding = _detectEncoding(buffer);
   final prefix = _stripBom(buffer, encoding);
-  final rest = _restOf(iterator);
-  final combined = _prepend(prefix, rest);
+  final combined = prependBytes(prefix, restOf(iterator));
 
   switch (encoding) {
     case _DetectedEncoding.utf8:
@@ -46,9 +43,9 @@ Stream<String> _decodeM3uBytes(Stream<List<int>> bytes) async* {
     case _DetectedEncoding.latin1:
       yield* latin1.decoder.bind(combined);
     case _DetectedEncoding.utf16le:
-      yield* _Utf16Decoder(endian: Endian.little).bind(combined);
+      yield* Utf16Decoder(endian: Endian.little).bind(combined);
     case _DetectedEncoding.utf16be:
-      yield* _Utf16Decoder(endian: Endian.big).bind(combined);
+      yield* Utf16Decoder(endian: Endian.big).bind(combined);
   }
 }
 
@@ -81,45 +78,3 @@ List<int> _stripBom(List<int> prefix, _DetectedEncoding encoding) =>
       _DetectedEncoding.utf16be when prefix.length >= 2 => prefix.sublist(2),
       _ => prefix,
     };
-
-Stream<List<int>> _restOf(StreamIterator<List<int>> iterator) async* {
-  while (await iterator.moveNext()) {
-    yield iterator.current;
-  }
-}
-
-Stream<List<int>> _prepend(List<int> prefix, Stream<List<int>> rest) async* {
-  if (prefix.isNotEmpty) yield prefix;
-  yield* rest;
-}
-
-/// `dart:convert` no trae un decoder UTF-16 — se implementa a mano. Cuida
-/// el caso de que un chunk corte un code unit (2 bytes) por la mitad,
-/// guardando el byte suelto para el siguiente chunk.
-class _Utf16Decoder {
-  _Utf16Decoder({required this.endian});
-
-  final Endian endian;
-
-  Stream<String> bind(Stream<List<int>> stream) async* {
-    final pending = <int>[];
-    await for (final chunk in stream) {
-      pending.addAll(chunk);
-      final usable = pending.length - (pending.length % 2);
-      if (usable == 0) continue;
-      final codeUnits = <int>[];
-      for (var i = 0; i < usable; i += 2) {
-        final b0 = pending[i];
-        final b1 = pending[i + 1];
-        codeUnits.add(
-          endian == Endian.little ? (b1 << 8) | b0 : (b0 << 8) | b1,
-        );
-      }
-      yield String.fromCharCodes(codeUnits);
-      pending.removeRange(0, usable);
-    }
-    // Un byte suelto final (archivo truncado a medio code unit) no tiene
-    // nada más con que emparejarse — se descarta silenciosamente, no hay
-    // línea de M3U que pueda depender de él.
-  }
-}
