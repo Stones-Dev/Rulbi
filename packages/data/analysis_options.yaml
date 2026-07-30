@@ -1,1 +1,10 @@
 include: ../../analysis_options.yaml
+
+analyzer:
+  exclude:
+    # Generado por `drift_dev schema generate` (T1.6b, arnés de migración
+    # v1 -> v2): código de verificación de esquema, no de producción — no
+    # se toca a mano ("DO NOT MODIFY" en su cabecera) y no vale la pena
+    # limpiar sus warnings de `strict-raw-types` (TableInfo sin argumentos
+    # de tipo explícitos, propio de cómo drift_dev genera este código).
+    - "test/generated_migrations/**"

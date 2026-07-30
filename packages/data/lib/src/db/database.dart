@@ -12,9 +12,18 @@ import 'tables/watch_state.dart';
 part 'database.g.dart';
 
 /// Esquema local (T1.5, plan §4.2): idéntico en todas las plataformas.
-/// `schemaVersion` empieza en 1 — el arnés de tests de migración
-/// (`drift_dev schema dump/generate`) se monta desde ya para que las
-/// migraciones de S2 en adelante sean baratas.
+/// `schemaVersion` empezó en 1 (T1.5a); v2 (T1.6b) añade `deletedAt`/
+/// `contentHash` a `channels` para el upsert diferencial. El snapshot de
+/// v1 vive en `drift_schemas/drift_schema_v1.json` (volcado con
+/// `drift_dev schema dump` **antes** de tocar la tabla — ver
+/// `test/import_differential_test.dart`, test de migración), con su
+/// helper generado en `test/generated_migrations/`. `drift_dev schema
+/// dump` sobre el `.dart` fuente falla con el trigger `channels_fts_au`
+/// (el analizador estático no resuelve `old`/`new` en su cuerpo — no es
+/// un bug en la app: `database_test.dart` ya ejercita ese trigger vía
+/// `db.update()` real y funciona); el snapshot de v1 se generó a partir
+/// de un archivo `.sqlite` materializado con `IptvDatabase`, no del
+/// código fuente.
 @DriftDatabase(
   tables: [
     Sources,
@@ -36,7 +45,7 @@ class IptvDatabase extends _$IptvDatabase {
   factory IptvDatabase.open() => IptvDatabase(driftDatabase(name: 'iptv'));
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -61,6 +70,16 @@ class IptvDatabase extends _$IptvDatabase {
       }
       for (final entity in entities.whereType<Trigger>()) {
         await m.createTrigger(entity);
+      }
+    },
+    // v1 -> v2 (T1.6b): tombstone local + hash de detección de cambios en
+    // `channels`, para el upsert diferencial de `ManageSources`. Filas
+    // existentes quedan con `deletedAt`/`contentHash` NULL — correcto:
+    // ver el docstring de `ChannelsTable.contentHash`.
+    onUpgrade: (m, from, to) async {
+      if (from < 2) {
+        await m.addColumn(channels, channels.deletedAt);
+        await m.addColumn(channels, channels.contentHash);
       }
     },
     beforeOpen: (details) async {

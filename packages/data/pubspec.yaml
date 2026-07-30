@@ -36,4 +36,12 @@ dev_dependencies:
   drift_dev: ^2.34.5
   build_runner: ^2.10.1
 
+  # T1.5b (Benchmark 100k, RNF-01): el test end-to-end de
+  # test/import_100k_benchmark_test.dart necesita el parser M3U real, no
+  # solo canales sintéticos (eso ya lo cubre benchmark_test.dart). Dev-only
+  # — no acopla producción; `data -> protocols` es una dependencia legal
+  # (CLAUDE.md, regla de capas).
+  iptv_protocols:
+    path: ../protocols
+
 flutter:

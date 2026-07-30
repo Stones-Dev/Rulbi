@@ -26,7 +26,7 @@ void main() {
       final channels = DriftChannelRepository(db);
 
       final insertStopwatch = Stopwatch()..start();
-      await channels.replaceSourceContent(
+      await channels.importSourceContent(
         's1',
         Stream.fromIterable(
           Iterable.generate(
@@ -42,6 +42,7 @@ void main() {
             ),
           ),
         ),
+        now: DateTime.now(),
       );
       insertStopwatch.stop();
 

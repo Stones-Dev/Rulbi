@@ -14,10 +14,10 @@ void main() {
     await db.close();
   });
 
-  test('el esquema abre en schemaVersion 1', () async {
+  test('el esquema abre en schemaVersion 2', () async {
     // Fuerza la apertura real (createAll) leyendo algo de la BD.
     await db.select(db.sources).get();
-    expect(db.schemaVersion, 1);
+    expect(db.schemaVersion, 2);
   });
 
   group('tombstones (ADR-003)', () {

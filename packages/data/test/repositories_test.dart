@@ -121,14 +121,15 @@ void main() {
         );
 
     test(
-      'replaceSourceContent inserta y search los encuentra (acentos incluidos)',
+      'importSourceContent inserta y search los encuentra (acentos incluidos)',
       () async {
-        await repository.replaceSourceContent(
+        await repository.importSourceContent(
           's1',
           Stream.fromIterable([
             sampleChannel(refKey: 'a', name: 'España TV'),
             sampleChannel(refKey: 'b', name: 'Otro canal'),
           ]),
+          now: DateTime(2026, 1, 1),
         );
 
         final results = await repository.search('espana');
@@ -138,19 +139,23 @@ void main() {
     );
 
     test(
-      'replaceSourceContent reemplaza el contenido anterior de la misma fuente',
+      'importSourceContent no vuelve a mostrar un canal que desapareció de '
+      'la fuente (tombstone, T1.6b — ver import_differential_test.dart '
+      'para la batería completa del diff)',
       () async {
-        await repository.replaceSourceContent(
+        await repository.importSourceContent(
           's1',
           Stream.fromIterable([
             sampleChannel(refKey: 'a', name: 'Canal viejo'),
           ]),
+          now: DateTime(2026, 1, 1),
         );
-        await repository.replaceSourceContent(
+        await repository.importSourceContent(
           's1',
           Stream.fromIterable([
             sampleChannel(refKey: 'b', name: 'Canal nuevo'),
           ]),
+          now: DateTime(2026, 1, 2),
         );
 
         final results = await repository.search('canal');
@@ -159,12 +164,13 @@ void main() {
     );
 
     test('search respeta el límite', () async {
-      await repository.replaceSourceContent(
+      await repository.importSourceContent(
         's1',
         Stream.fromIterable([
           for (var i = 0; i < 5; i++)
             sampleChannel(refKey: 'c$i', name: 'Canal $i'),
         ]),
+        now: DateTime(2026, 1, 1),
       );
 
       final results = await repository.search('canal', limit: 2);
