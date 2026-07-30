@@ -69,6 +69,59 @@ final class XmltvImportReport {
       'discarded: $discardedCount)';
 }
 
+/// Agrega los eventos de `parseXmltvCore` (descartes uno a uno, resumen
+/// final) en un [XmltvImportReport], aplicando el cap de
+/// [XmltvImportReport.discardedCap]. Reutilizado por el wrapper público
+/// con isolate (`xmltv_parser.dart`) y por los tests del núcleo — la
+/// política de cap vive en un solo sitio, no se duplica.
+final class XmltvReportBuilder {
+  final List<XmltvDiscard> _discarded = [];
+  int _discardedCount = 0;
+  int _parsedChannels = 0;
+  int _parsedProgrammes = 0;
+  int _outOfWindowProgrammes = 0;
+  int _assumedUtcDates = 0;
+  Map<String, int> _unknownChannelRefs = const {};
+  Map<String, int> _unknownTags = const {};
+
+  void addDiscard(XmltvDiscard discard) {
+    _discardedCount++;
+    if (_discarded.length < XmltvImportReport.discardedCap) {
+      _discarded.add(discard);
+    }
+  }
+
+  /// Se espera exactamente una vez, al final del stream (ver
+  /// `XmltvSummary` en `xmltv_core_parser.dart`).
+  void applySummary({
+    required int parsedChannels,
+    required int parsedProgrammes,
+    required int outOfWindowProgrammes,
+    required int assumedUtcDates,
+    required Map<String, int> unknownChannelRefs,
+    required Map<String, int> unknownTags,
+  }) {
+    _parsedChannels = parsedChannels;
+    _parsedProgrammes = parsedProgrammes;
+    _outOfWindowProgrammes = outOfWindowProgrammes;
+    _assumedUtcDates = assumedUtcDates;
+    _unknownChannelRefs = unknownChannelRefs;
+    _unknownTags = unknownTags;
+  }
+
+  XmltvImportReport build() => XmltvImportReport(
+    parsedChannels: _parsedChannels,
+    parsedProgrammes: _parsedProgrammes,
+    outOfWindowProgrammes: _outOfWindowProgrammes,
+    assumedUtcDates: _assumedUtcDates,
+    unknownChannelRefs: _unknownChannelRefs,
+    unknownTags: _unknownTags,
+    discardedCount: _discardedCount,
+    discarded: List.unmodifiable(_discarded),
+    discardedTruncated: _discardedCount > _discarded.length,
+  );
+}
+
 /// Una entrada (`<channel>` o `<programme>`) que no se pudo emitir.
 final class XmltvDiscard {
   const XmltvDiscard({
