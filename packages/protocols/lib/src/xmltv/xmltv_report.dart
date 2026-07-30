@@ -62,6 +62,44 @@ final class XmltvImportReport {
 
   static const int discardedCap = 1000;
 
+  /// Serialización estable (T1.9) — mismo criterio que `ImportReport` de
+  /// M3U: claves en orden fijo, `kind: 'xmltv'` como discriminador dentro
+  /// del sobre compuesto (`docs/import-report-schema.md`). Los mapas
+  /// (`unknownChannelRefs`/`unknownTags`) viajan tal cual — son JSON
+  /// válido de por sí (claves string, valores int).
+  Map<String, Object?> toJson() => {
+    'kind': 'xmltv',
+    'parsedChannels': parsedChannels,
+    'parsedProgrammes': parsedProgrammes,
+    'outOfWindowProgrammes': outOfWindowProgrammes,
+    'assumedUtcDates': assumedUtcDates,
+    'unknownChannelRefs': unknownChannelRefs,
+    'unknownTags': unknownTags,
+    'discardedCount': discardedCount,
+    'discardedTruncated': discardedTruncated,
+    'discarded': [for (final d in discarded) d.toJson()],
+  };
+
+  factory XmltvImportReport.fromJson(Map<String, Object?> json) =>
+      XmltvImportReport(
+        parsedChannels: json['parsedChannels'] as int,
+        parsedProgrammes: json['parsedProgrammes'] as int,
+        outOfWindowProgrammes: json['outOfWindowProgrammes'] as int,
+        assumedUtcDates: json['assumedUtcDates'] as int,
+        unknownChannelRefs: (json['unknownChannelRefs'] as Map).map(
+          (key, value) => MapEntry(key as String, value as int),
+        ),
+        unknownTags: (json['unknownTags'] as Map).map(
+          (key, value) => MapEntry(key as String, value as int),
+        ),
+        discardedCount: json['discardedCount'] as int,
+        discarded: [
+          for (final entry in json['discarded'] as List)
+            XmltvDiscard.fromJson(entry as Map<String, Object?>),
+        ],
+        discardedTruncated: json['discardedTruncated'] as bool,
+      );
+
   @override
   String toString() =>
       'XmltvImportReport(channels: $parsedChannels, '
@@ -147,6 +185,22 @@ final class XmltvDiscard {
   final String rawSnippet;
 
   final String reason;
+
+  Map<String, Object?> toJson() => {
+    'entryIndex': entryIndex,
+    'charOffset': charOffset,
+    'channelId': channelId,
+    'rawSnippet': rawSnippet,
+    'reason': reason,
+  };
+
+  factory XmltvDiscard.fromJson(Map<String, Object?> json) => XmltvDiscard(
+    entryIndex: json['entryIndex'] as int,
+    charOffset: json['charOffset'] as int?,
+    channelId: json['channelId'] as String?,
+    rawSnippet: json['rawSnippet'] as String? ?? '',
+    reason: json['reason'] as String,
+  );
 
   @override
   String toString() => 'XmltvDiscard(#$entryIndex: $reason)';

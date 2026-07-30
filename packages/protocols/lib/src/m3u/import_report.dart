@@ -11,6 +11,27 @@ final class ImportReport {
   /// Líneas descartadas, en el orden en que aparecieron en el origen.
   final List<DiscardedLine> discarded;
 
+  /// Serialización estable (T1.9): claves en orden fijo — no depende de
+  /// `Map`/`hashCode` de ningún objeto Dart, así que el mismo informe
+  /// produce siempre el mismo JSON entre corridas y versiones del SDK.
+  /// `kind: 'm3u'` es el discriminador que la UI de Fase 2 usa para
+  /// distinguir esta mitad del informe de la de `XmltvImportReport`
+  /// dentro del sobre compuesto (`docs/import-report-schema.md`).
+  Map<String, Object?> toJson() => {
+    'kind': 'm3u',
+    'parsed': parsed,
+    'discardedCount': discarded.length,
+    'discarded': [for (final line in discarded) line.toJson()],
+  };
+
+  factory ImportReport.fromJson(Map<String, Object?> json) => ImportReport(
+    parsed: json['parsed'] as int,
+    discarded: [
+      for (final entry in json['discarded'] as List)
+        DiscardedLine.fromJson(entry as Map<String, Object?>),
+    ],
+  );
+
   @override
   String toString() =>
       'ImportReport(parsed: $parsed, discarded: ${discarded.length})';
@@ -28,6 +49,18 @@ final class DiscardedLine {
   final int lineNumber;
   final String rawLine;
   final String reason;
+
+  Map<String, Object?> toJson() => {
+    'lineNumber': lineNumber,
+    'rawLine': rawLine,
+    'reason': reason,
+  };
+
+  factory DiscardedLine.fromJson(Map<String, Object?> json) => DiscardedLine(
+    lineNumber: json['lineNumber'] as int,
+    rawLine: json['rawLine'] as String,
+    reason: json['reason'] as String,
+  );
 
   @override
   bool operator ==(Object other) =>
