@@ -3,10 +3,25 @@ targets:
     builders:
       drift_dev:
         options:
-          sqlite:
-            # Sin esto, drift_dev no reconoce la sintaxis del módulo fts5
-            # en fts.drift y descarta la tabla virtual en silencio (deja
-            # solo los triggers, que sí entiende) — bug reproducido con
-            # drift_dev 2.31.0/2.34.5 al declarar FTS5 sin este flag.
-            modules:
-              - fts5
+          # Anidado bajo `sql.options.sqlite`, no `sqlite` de nivel
+          # superior: el `sqlite` de nivel superior es la forma antigua,
+          # y choca con el `sql`/`dialect` que `drift_dev schema dump`
+          # inyecta internamente (drift_dev 2.34.5,
+          # `DriftOptions.fromJson`: "The sqlite field cannot be used
+          # together the `sql` option. Try moving it to `sql.options`.").
+          # `build_runner build` normal no lo necesitaba porque no
+          # inyecta ese `sql` interno, pero esta forma es válida en
+          # ambos casos (T1.6b).
+          sql:
+            options:
+              # `sql.options` ES el propio bloque de opciones de sqlite
+              # (`SqliteAnalysisOptions`, campo `modules` directo) — no
+              # lleva otra clave `sqlite` anidada dentro.
+              #
+              # Sin esto, drift_dev no reconoce la sintaxis del módulo
+              # fts5 en fts.drift y descarta la tabla virtual en
+              # silencio (deja solo los triggers, que sí entiende) —
+              # bug reproducido con drift_dev 2.31.0/2.34.5 al declarar
+              # FTS5 sin este flag.
+              modules:
+                - fts5
