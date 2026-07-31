@@ -88,7 +88,113 @@ vía `integration_test` en CI en este sprint.
 
 ## C2 — Licencia
 
-*(bloque 2, ver más abajo tras el bloque de andamiaje)*
+**Corrección explícita del vault**: `constitution.md` (P8) cita *"libmpv"* como ejemplo de
+componente GPL, y `plan.md` §4.3 lo tabula como *"GPL / LGPL"*. Ninguna de las dos
+afirmaciones es precisa para el artefacto que realmente usaría esta app. mpv es
+dual-licenciado y **el binario concreto que `media_kit` empaqueta y distribuye ya está
+compilado en modo LGPL**, verificado contra el script de build real (no de memoria ni de
+README). Se detalla abajo, con corrección de rev. propuesta para `plan.md`.
+
+### mpv / libmpv
+
+Fuente primaria: [`mpv-player/mpv` — `Copyright`](https://github.com/mpv-player/mpv/blob/master/Copyright).
+Cita literal:
+
+> "mpv as a whole is licensed under the GNU General Public License GPL version 2 or
+> later (...) by default. The mpv program is licensed the GNU Lesser General Public
+> License LGPL version 2 or later (LGPLv2.1+...) if built without using any GPL only
+> files. The `-Dgpl=false` configure switch is provided as a convenience for excluding
+> the GPL only files listed below from the build process."
+
+Es decir: **mpv es GPLv2+ por defecto, pero se puede compilar como LGPLv2.1+** con
+`-Dgpl=false`, perdiendo únicamente: salida de vídeo X11 en Linux, salida de audio OSS,
+descodificación hardware vdpau en NVIDIA/Linux (nvdec normalmente sigue funcionando), y
+funciones menores (jack, DVD, CDDA, DVB, CACA, D3D legacy). **Ninguna de estas es
+relevante para este proyecto** (v1 no soporta DVD/CDDA/DVB físico, y el pipeline de vídeo
+de Flutter no depende de X11 VO ni de OSS).
+
+**El build real que empaqueta `media_kit_libs_windows_video` usa exactamente ese modo**,
+verificado en su `CMakeLists.txt`
+([`media_kit_libs_windows_video-1.0.11/windows/CMakeLists.txt`](https://github.com/media-kit/media-kit),
+inspeccionado en `.pub-cache` — el paquete descarga el binario prebuilt de
+[`media-kit/libmpv-win32-video-build`](https://github.com/media-kit/libmpv-win32-video-build)):
+el propio repo de build de media-kit fija, en
+[`packages/mpv.cmake`](https://github.com/media-kit/libmpv-win32-video-build/blob/master/packages/mpv.cmake),
+la línea de configuración meson con **`-Dgpl=false`** literal. El FFmpeg que se enlaza
+(dependencia de mpv) se configura en
+[`packages/ffmpeg.cmake`](https://github.com/media-kit/libmpv-win32-video-build/blob/master/packages/ffmpeg.cmake)
+con **`--disable-gpl --disable-nonfree --enable-version3`** — exactamente la
+configuración que la propia [página legal de FFmpeg](https://www.ffmpeg.org/legal.html)
+recomienda para mantenerse en LGPL: *"Compile FFmpeg without '--enable-gpl' and without
+'--enable-nonfree'"* (LGPL 2.1+ por defecto; `--enable-version3` sube a LGPLv3).
+
+**Veredicto libmpv/media_kit (Windows)**: el `.dll` que efectivamente se distribuye
+(`libmpv-2.dll`) es **LGPLv2.1+/LGPLv3, no GPL**. La wrapper Dart
+(`media_kit_libs_windows_video`) es MIT (`LICENSE` del paquete, Hitesh Kumar Saini).
+
+En **Linux**, `media_kit_libs_linux` (verificado en
+`media_kit_libs_linux-1.2.1/linux/CMakeLists.txt`) **no empaqueta ningún binario**
+(`media_kit_libs_linux_bundled_libraries` se fija vacío, `""`) — depende de que el
+sistema tenga `libmpv` instalado (paquete de distro, p. ej. `libmpv2`/`libmpv-dev` en
+Debian/Ubuntu). Esto es enlazado dinámico contra una librería del sistema — el patrón
+más limpio posible respecto a LGPL, pero **la licencia efectiva del `.so` del sistema no
+la controla el proyecto**, la controla cómo empaquete `libmpv` cada distro. Riesgo menor
+y ya cubierto por P8 (enlace dinámico), documentado como riesgo residual.
+
+### libVLC
+
+Fuente primaria: [`videolan/vlc` — `README.md`](https://github.com/videolan/vlc/blob/master/README.md)
+(rama `master`, contenido verificado 2026-07-31). Cita literal:
+
+> "VLC is released under the GPLv2 (or later) license. On some platforms, it is de facto
+> GPLv3, because of the licenses of dependencies. libVLC, the engine is released under
+> the LGPLv2 (or later) license. This allows embedding the engine in 3rd party
+> applications..."
+
+En teoría, pues, libVLC (el motor embebible) es LGPLv2+. **Pero el matiz importa**: el
+propio script de build oficial de Windows de VideoLAN,
+[`extras/package/win32/build.sh`](https://github.com/videolan/vlc/blob/master/extras/package/win32/build.sh),
+documenta la licencia de los *contribs* (las dependencias de terceros que se enlazan —
+codecs, demuxers) como seleccionable con la flag `-g`:
+
+> "`-g <g|l|a>` Select the license of contribs: **g: GPLv3 (default)**, l: LGPLv3 +
+> ad-clauses, a: LGPLv2 + ad-clauses"
+
+**El binario oficial que se descarga de videolan.org (o que instalaría
+`choco install vlc`) se compila con el modo por defecto, `-g` (GPLv3)** — es el mismo
+motivo que el propio README cita como "de facto GPLv3 por las dependencias". Un build
+LGPL de libVLC **existe y está soportado oficialmente**, pero no es el binario
+redistribuido por defecto: hay que compilarlo uno mismo con `-g l` o `-g a`, lo cual es
+un coste de ingeniería y de mantenimiento continuo (recompilar en cada actualización de
+seguridad de VLC) que **ningún binding Dart actual asume** — ni `media_kit`
+(que no lo necesita) ni el `dart_vlc` descontinuado (que enlazaba contra la instalación
+del sistema, típicamente la build GPLv3 por defecto).
+
+**Veredicto libVLC**: LGPLv2+ es alcanzable en teoría, pero el artefacto real,
+descargable y mantenido que cualquier integración razonable usaría hoy es **GPLv3 de
+facto**. Bajo la regla de veto de C2, **libVLC en su forma distribuida estándar queda
+vetado** para este proyecto mientras D2 esté abierta — no por ser LGPL "peor" que
+libmpv, sino porque el binario que de verdad se instalaría no lo es.
+
+### Traducción a obligaciones de distribución (para la opción que sobrevive, libmpv/media_kit)
+
+Con `libmpv-2.dll` LGPLv2.1+/LGPLv3 enlazado **dinámicamente** (nunca estático — es como
+`media_kit` lo hace, un `.dll`/`.so` separado del ejecutable de la app):
+
+- Aviso de copyright y de licencia LGPL accesible desde la app (p. ej. pantalla de
+  licencias de terceros).
+- Ofrecer el código fuente de `libmpv` (o un enlace a los repos oficiales usados) —
+  cumplido trivialmente al ser proyectos públicos sin fork privado.
+- Permitir al usuario sustituir la `.dll`/`.so` por una versión modificada propia
+  (relinkability) — se cumple por construcción al ser un binario separado cargado en
+  tiempo de ejecución, no enlazado estáticamente dentro del ejecutable de la app.
+- **No** obliga a liberar el código fuente de `iptv_player` (la app) — es precisamente lo
+  que P8 y el gate D2 necesitan preservar para un modelo comercial futuro.
+
+**No se requiere ADR-009 sobre licencia como "adopción de componente GPL"** — el
+componente elegido (libmpv vía `media_kit`) es LGPL en el build real, no GPL; P8 no se
+está excepcionando, se está cumpliendo. Si acaso, ADR-009 documentará la corrección del
+error del vault y el compromiso de mantener el enlace dinámico (ver bloque 7).
 
 ---
 
