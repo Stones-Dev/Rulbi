@@ -40,6 +40,37 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
+  # ADR-007 (verificación de migraciones drift en Android runtime): sólo
+  # las `dependencies` de un path-dependency entran en la resolución
+  # compartida del workspace, nunca sus `dev_dependencies` — así que
+  # esto arrastra `drift`/`drift_flutter` (+ sqlite3_flutter_libs/
+  # path_provider), pero NO `drift_dev`/`build_runner`, que es lo que
+  # ADR-004 sacó del workspace por conflicto real con `melos`
+  # (`analyzer`/`cli_util`). Verificado empíricamente (T-Android-drift):
+  # `flutter pub get` aquí no cambia ninguna versión ya comiteada de
+  # otra dependencia del workspace. Dev-only porque hoy solo lo consume
+  # `integration_test/` — la app todavía no persiste nada en producción
+  # (eso llega con "Formulario Xtream").
+  iptv_data:
+    path: ../../packages/data
+
+  # Import directo de `package:drift/drift.dart` en el test de migración
+  # (operadores de `Expression<bool>`, `NativeDatabase`) — declarada
+  # explícita para no depender en silencio de una transitiva de
+  # `iptv_data`/`drift_flutter` (`depend_on_referenced_packages`). Misma
+  # versión que resuelve `packages/data` (2.34.3).
+  drift: ^2.34.3
+
+  # `iptv_core` ya es miembro del workspace compartido (`packages/core`
+  # en el `workspace:` del pubspec raíz) — se referencia igual que
+  # `iptv_tokens` arriba, sin `path:` explícito. Dev-only: el test de
+  # migración construye entidades (`Channel`, `Favorite`, `WatchState`)
+  # directamente contra `iptv_core`.
+  iptv_core: any
+
+  integration_test:
+    sdk: flutter
+
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
   # activated in the `analysis_options.yaml` file located at the root of your
