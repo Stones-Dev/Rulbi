@@ -11,6 +11,7 @@ final class XtreamLiveStream {
     this.epgChannelId,
     this.streamIcon,
     this.hasTvArchive = false,
+    this.directSourceHost,
   });
 
   /// `stream_id` — estable dentro de un panel (no global, ver
@@ -29,6 +30,11 @@ final class XtreamLiveStream {
 
   final bool hasTvArchive;
 
+  /// `direct_source` saneado a solo su host (ADR-006/P5) — ver
+  /// `sanitizedDirectSourceHost`. `null` si estaba vacío o no era una URL
+  /// reconocible (fixture real de T1.1: siempre `""`).
+  final String? directSourceHost;
+
   static XtreamLiveStream fromJson(Map<String, Object?> json) => XtreamLiveStream(
     streamId: asFlexibleInt(json['stream_id']),
     name: asFlexibleString(json['name']) ?? '',
@@ -36,6 +42,7 @@ final class XtreamLiveStream {
     epgChannelId: nonEmptyOrNull(asFlexibleString(json['epg_channel_id'])),
     streamIcon: nonEmptyOrNull(asFlexibleString(json['stream_icon'])),
     hasTvArchive: asFlexibleBool(json['tv_archive']),
+    directSourceHost: sanitizedDirectSourceHost(asFlexibleString(json['direct_source'])),
   );
 
   @override

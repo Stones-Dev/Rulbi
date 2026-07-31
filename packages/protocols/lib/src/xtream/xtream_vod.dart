@@ -11,6 +11,7 @@ final class XtreamVodStream {
     this.streamIcon,
     this.containerExtension,
     this.rating,
+    this.directSourceHost,
   });
 
   final int streamId;
@@ -28,6 +29,10 @@ final class XtreamVodStream {
   /// [asFlexibleDouble].
   final double? rating;
 
+  /// `direct_source` saneado a solo su host (ADR-006/P5) — nunca la URL
+  /// completa, donde viajarían credenciales propias del CDN.
+  final String? directSourceHost;
+
   static XtreamVodStream fromJson(Map<String, Object?> json) => XtreamVodStream(
     streamId: asFlexibleInt(json['stream_id']),
     name: asFlexibleString(json['name']) ?? '',
@@ -35,6 +40,7 @@ final class XtreamVodStream {
     streamIcon: nonEmptyOrNull(asFlexibleString(json['stream_icon'])),
     containerExtension: nonEmptyOrNull(asFlexibleString(json['container_extension'])),
     rating: asFlexibleDouble(json['rating']),
+    directSourceHost: sanitizedDirectSourceHost(asFlexibleString(json['direct_source'])),
   );
 
   @override

@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'xtream_account.dart';
 import 'xtream_category.dart';
+import 'xtream_epg.dart';
 import 'xtream_failure.dart';
 import 'xtream_json.dart';
 import 'xtream_series.dart';
@@ -225,6 +226,40 @@ final class XtreamClient {
       );
     }
     return XtreamOk(XtreamSeriesInfo.fromJson(json));
+  }
+
+  /// `get_short_epg&stream_id=...&limit=...` — próximos programas de un
+  /// canal live (ui-spec: "programa actual y siguiente"). No estaba entre
+  /// las 9 actions capturadas en T1.1; cubierta con fixtures sintéticos
+  /// documentados (ver `test/fixtures/xtream/synthetic/README.md`).
+  Future<XtreamResult<List<XtreamEpgListing>>> shortEpg(String streamId, {int limit = 4}) => _getEpgListings(
+    'get_short_epg',
+    {'stream_id': streamId, 'limit': limit.toString()},
+  );
+
+  /// `get_simple_data_table&stream_id=...` — guía completa de un canal
+  /// (equivalente a `get_short_epg` sin límite de entradas).
+  Future<XtreamResult<List<XtreamEpgListing>>> simpleDataTable(String streamId) =>
+      _getEpgListings('get_simple_data_table', {'stream_id': streamId});
+
+  Future<XtreamResult<List<XtreamEpgListing>>> _getEpgListings(
+    String action,
+    Map<String, String> extra,
+  ) async {
+    final objResult = await _getJsonObject(_playerApiUrl(action: action, extra: extra));
+    if (objResult is XtreamErr<Map<String, Object?>>) {
+      return XtreamErr(objResult.failure);
+    }
+    final json = (objResult as XtreamOk<Map<String, Object?>>).value;
+    // Un canal sin programación en el momento de la consulta puede volver
+    // sin `epg_listings` en absoluto (dialecto observado en la
+    // documentación pública) — se trata como "sin entradas", no como
+    // fallo: no hay nada de malformado en que un canal no tenga guía.
+    final listings = asFlexibleList(json['epg_listings']);
+    return XtreamOk([
+      for (final item in listings)
+        if (item is Map) XtreamEpgListing.fromJson(asFlexibleMap(item)),
+    ]);
   }
 
   Future<XtreamResult<List<XtreamCategory>>> _getCategories(String action) async {

@@ -75,3 +75,17 @@ List<Object?> asFlexibleList(Object? value) => switch (value) {
   List l => l,
   _ => const [],
 };
+
+/// `direct_source` (campo real de `get_live_streams`/`get_vod_streams`,
+/// vacío en los fixtures de T1.1 pero no siempre en paneles reales) es una
+/// URL alternativa que puede llevar sus propias credenciales embebidas —
+/// nunca entra en `ChannelRef` ni en `Channel.url` (ADR-006). Se conserva
+/// solo su `host`, nunca su ruta/query (donde viajaría cualquier secreto),
+/// como dato informativo de metadata. `null` si está vacío o no es una
+/// URL reconocible.
+String? sanitizedDirectSourceHost(String? directSource) {
+  if (directSource == null || directSource.trim().isEmpty) return null;
+  final uri = Uri.tryParse(directSource.trim());
+  if (uri == null || uri.host.isEmpty) return null;
+  return uri.host;
+}

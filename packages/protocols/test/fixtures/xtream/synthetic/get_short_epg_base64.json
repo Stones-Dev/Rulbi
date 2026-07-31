@@ -1,0 +1,17 @@
+{
+  "epg_listings": [
+    {
+      "id": "1",
+      "epg_id": "1",
+      "title": "VGVsZWRpYXJpbyAyMWg=",
+      "lang": "",
+      "start": "2026-07-31 21:00:00",
+      "end": "2026-07-31 22:00:00",
+      "description": "UmVzdW1lbiBkZSBsYSBhY3R1YWxpZGFkIG5hY2lvbmFsIGUgaW50ZXJuYWNpb25hbC4=",
+      "channel_id": "canal1.test",
+      "start_timestamp": "1785358800",
+      "stop_timestamp": "1785362400",
+      "stream_id": "100984355"
+    }
+  ]
+}

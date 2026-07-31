@@ -75,6 +75,7 @@ final class XtreamMapper {
       metadata: {
         'x-xtream-stream-id': stream.streamId.toString(),
         if (stream.hasTvArchive) 'x-xtream-tv-archive': '1',
+        if (stream.directSourceHost != null) 'x-xtream-direct-source-host': stream.directSourceHost!,
       },
     );
   }
@@ -117,6 +118,7 @@ final class XtreamMapper {
         'x-xtream-stream-id': stream.streamId.toString(),
         if (stream.containerExtension != null) 'x-xtream-container': stream.containerExtension!,
         if (stream.rating != null) 'x-xtream-rating': stream.rating!.toString(),
+        if (stream.directSourceHost != null) 'x-xtream-direct-source-host': stream.directSourceHost!,
       },
     );
   }
