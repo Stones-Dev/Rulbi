@@ -1,4 +1,4 @@
-# Informe de descartes — formato JSON (T1.9)
+# Informe de descartes — formato JSON (T1.9, extendido a Xtream en T1.4)
 
 **Tarea**: "Informe de descartes" (*Tareas — IPTV*, Sprint 1). **Hecho
 cuando** (Notion, enmendado en T1.9 — ver `handoff.md`): "cada entrada
@@ -7,29 +7,31 @@ ordinal + offset de carácter en XMLTV, que no puede dar un número de línea
 honesto)".
 
 `ImportReport` (M3U) y `XmltvImportReport` (XMLTV) ya existían desde T1.2/
-T1.3 — el parser los produce internamente y nunca lanza una excepción por
-una entrada rota (P7). T1.9 es (1) que `ManageSources`/`ChannelRepository`
-devuelvan también el recuento del upsert (`SourceImportStats`, T1.6b), y
-(2) un formato de serialización JSON estable para que la UI de Fase 2 lo
-consuma sin tener que enlazar contra `packages/protocols`/`packages/core`
+T1.3; `XtreamImportReport` (Xtream) se añadió en T1.4 — cada parser lo
+produce internamente y nunca lanza una excepción por una entrada rota
+(P7). T1.9 es (1) que `ManageSources`/`ChannelRepository` devuelvan
+también el recuento del upsert (`SourceImportStats`, T1.6b), y (2) un
+formato de serialización JSON estable para que la UI de Fase 2 lo consuma
+sin tener que enlazar contra `packages/protocols`/`packages/core`
 directamente (útil, por ejemplo, si el informe se persiste o se manda a
 través de `pairing`).
 
-## Por qué tres piezas, no un solo tipo
+## Por qué piezas separadas, no un solo tipo
 
 Regla de capas del proyecto (P6, CLAUDE.md): el dominio (`core`) no conoce
-vocabulario de M3U/XMLTV, y `protocols` no sabe qué es un upsert diferencial
-contra SQLite. Cada capa serializa su propia mitad:
+vocabulario de M3U/XMLTV/Xtream, y `protocols` no sabe qué es un upsert
+diferencial contra SQLite. Cada capa serializa su propia mitad:
 
-- `ImportReport.toJson()` / `XmltvImportReport.toJson()` — viven en
-  `packages/protocols`, un discriminador `kind` distingue cuál es cuál.
+- `ImportReport.toJson()` / `XmltvImportReport.toJson()` /
+  `XtreamImportReport.toJson()` — viven en `packages/protocols`, un
+  discriminador `kind` (`"m3u"` | `"xmltv"` | `"xtream"`) distingue cuál es
+  cuál.
 - `SourceImportStats.toJson()` — vive en `packages/core`
   (`packages/core/lib/src/ports/channel_repository.dart`), es el recuento
   del diff (`ChannelRepository.importSourceContent`).
 
-Quien compone el sobre completo (la app, Fase 2) simplemente junta las tres
-piezas — ninguna capa necesita conocer a las otras dos para producir la
-suya.
+Quien compone el sobre completo (la app, Fase 2) simplemente junta las dos
+piezas — ninguna capa necesita conocer a la otra para producir la suya.
 
 ## El sobre (envelope)
 
@@ -38,21 +40,23 @@ suya.
   "schemaVersion": 1,
   "sourceId": "s1",
   "importedAt": "2026-07-30T18:04:11.000Z",
-  "parser": { "kind": "m3u" | "xmltv", "...": "..." },
+  "parser": { "kind": "m3u" | "xmltv" | "xtream", "...": "..." },
   "upsert": { "...": "..." }
 }
 ```
 
-- `schemaVersion` — de este sobre compuesto, no de ninguna de las tres
-  piezas por separado (cada una ya lleva sus propios campos; si alguna
-  cambia de forma incompatible, se sube este número).
+- `schemaVersion` — de este sobre compuesto, no de ninguna de las piezas
+  por separado (cada una ya lleva sus propios campos; si alguna cambia de
+  forma incompatible, se sube este número).
 - `sourceId`/`importedAt` — los añade quien compone el sobre (la app), no
-  ninguna de las tres piezas — ellas no conocen la fuente que las produjo.
-- `parser` — el resultado de `ImportReport.toJson()` o
-  `XmltvImportReport.toJson()`, tal cual.
-- `upsert` — el resultado de `SourceImportStats.toJson()`, tal cual. Falta
-  para XMLTV hasta que exista la tarea de escritura EPG a `data` (S2,
-  "Ventana y purga EPG") — un XMLTV no pasa por `ManageSources` (ver
+  ninguna de las piezas — ellas no conocen la fuente que las produjo.
+- `parser` — el resultado de `ImportReport.toJson()`,
+  `XmltvImportReport.toJson()` o `XtreamImportReport.toJson()`, tal cual.
+- `upsert` — el resultado de `SourceImportStats.toJson()`, tal cual.
+  Aplica a M3U y a Xtream (ambos producen un `Stream<Channel>` que pasa
+  por `ManageSources`). Falta para XMLTV hasta que exista la tarea de
+  escritura EPG a `data` (S2, "Ventana y purga EPG") — un XMLTV no pasa
+  por `ManageSources` (ver
   `packages/core/lib/src/use_cases/manage_sources.dart`).
 
 ## `parser.kind = "m3u"`
@@ -176,6 +180,70 @@ mayores, propios de su posición dentro de ese archivo — lo estable y
 verificado es la *forma* del JSON y el `reason`, no un offset absoluto que
 depende del tamaño del documento.)
 
+## `parser.kind = "xtream"`
+
+Campos de `XtreamImportReport.toJson()`
+(`packages/protocols/lib/src/xtream/xtream_import_report.dart`) — producido
+por `XtreamClient.importChannels()` (T1.4). No reutiliza la forma de M3U ni
+la de XMLTV: `discarded` aquí no son entradas individuales dentro de una
+lista bien formada (esas ya se toleran campo a campo dentro de cada
+`fromJson`, sin dejar rastro — ver batería de dialectos de T1.4), sino
+**acciones completas de `player_api.php` que fallaron** (p. ej. un 500 en
+`get_vod_streams` a mitad de import) — el import de live/VOD sigue
+adelante con lo que sí respondió (P7).
+
+| Campo | Tipo | Significado |
+|---|---|---|
+| `kind` | `"xtream"` | Discriminador. |
+| `parsedLive` | `int` | `Channel(type: live)` emitidos con éxito. |
+| `parsedVod` | `int` | `Channel(type: vod)` emitidos con éxito. |
+| `discardedCount` | `int` | Total real de acciones fallidas, incluso si supera el cap (1000, mismo criterio que XMLTV). |
+| `discarded` | `XtreamDiscard[]` | En el orden en que ocurrieron. |
+
+`XtreamDiscard.toJson()`:
+
+| Campo | Tipo | Significado |
+|---|---|---|
+| `action` | `string` | Action de `player_api.php` que falló (`get_live_categories`, `get_vod_streams`, ...). |
+| `reason` | `string` | `toString()` del `XtreamFailure` correspondiente (p. ej. `"XtreamHttpFailure(500)"`) — nunca contiene la contraseña del panel (ADR-006/P5, ningún `XtreamFailure` la lleva). |
+
+Series/temporadas/episodios **no** entran en este informe: `get_series` no
+trae episodios (un import completo no puede pedir `get_series_info` por
+cada serie de un panel grande), así que se piden bajo demanda al abrir la
+ficha y no forman parte de `importChannels()`.
+
+### Ejemplo real
+
+Contra los 9 fixtures de T1.1 (`o0Zz/xtreamcodeserver`, ver
+`packages/protocols/test/fixtures/xtream/dialect_o0zz/`): 2 canales live +
+1 película, sin descartes (`packages/protocols/test/xtream/xtream_report_json_test.dart`,
+`xtream_import_test.dart`):
+
+```json
+{
+  "kind": "xtream",
+  "parsedLive": 2,
+  "parsedVod": 1,
+  "discardedCount": 0,
+  "discarded": []
+}
+```
+
+Con un fallo simulado en `get_vod_streams` (500), el import de live sigue
+adelante:
+
+```json
+{
+  "kind": "xtream",
+  "parsedLive": 2,
+  "parsedVod": 0,
+  "discardedCount": 1,
+  "discarded": [
+    { "action": "get_vod_streams", "reason": "XtreamHttpFailure(500)" }
+  ]
+}
+```
+
 ## `upsert` — `SourceImportStats.toJson()`
 
 Campos (`packages/core/lib/src/ports/channel_repository.dart`) — vocabulario
@@ -205,9 +273,10 @@ de dominio, no de M3U/XMLTV, por eso vive en `core`:
 
 ## Estabilidad
 
-Las tres piezas serializan sus claves en un orden fijo (no dependen de
+Las cuatro piezas (`ImportReport`, `XmltvImportReport`, `XtreamImportReport`,
+`SourceImportStats`) serializan sus claves en un orden fijo (no dependen de
 `hashCode`/orden de iteración de ningún `Map` interno de Dart) y no
 incluyen ningún `DateTime.now()` propio — el mismo informe produce siempre
 el mismo JSON entre corridas y entre versiones del SDK de Dart. Verificado
 con tests de round-trip (`toJson` → `fromJson` → `toJson` idéntico) en las
-tres baterías citadas arriba.
+baterías citadas arriba.

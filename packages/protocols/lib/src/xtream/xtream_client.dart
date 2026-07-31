@@ -1,10 +1,15 @@
+import 'dart:async';
 import 'dart:convert';
+
+import 'package:iptv_core/iptv_core.dart' show Channel;
 
 import 'xtream_account.dart';
 import 'xtream_category.dart';
 import 'xtream_epg.dart';
 import 'xtream_failure.dart';
+import 'xtream_import_report.dart';
 import 'xtream_json.dart';
+import 'xtream_mapper.dart';
 import 'xtream_series.dart';
 import 'xtream_stream.dart';
 import 'xtream_transport.dart';
@@ -22,6 +27,19 @@ import 'xtream_vod.dart';
 /// aparece en ningún [XtreamFailure], en ningún log ni en `toString()`.
 /// El llamador la obtiene de `SecureCredentialStore` justo antes de
 /// construir este cliente (P5) — `XtreamClient` no sabe de dónde vino.
+/// Resultado de [XtreamClient.importChannels]: el stream de canales
+/// (pásalo tal cual a `ManageSources.addSource`/`refreshSource`, igual
+/// que `M3uParseOutcome.channels`) y, una vez que termina de emitir, el
+/// informe de tolerancia.
+final class XtreamImportOutcome {
+  const XtreamImportOutcome({required this.channels, required this.report});
+
+  final Stream<Channel> channels;
+
+  /// Completa cuando [channels] agota su emisión (con éxito o con error).
+  final Future<XtreamImportReport> report;
+}
+
 final class XtreamClient {
   XtreamClient({
     required this.host,
@@ -260,6 +278,140 @@ final class XtreamClient {
       for (final item in listings)
         if (item is Map) XtreamEpgListing.fromJson(asFlexibleMap(item)),
     ]);
+  }
+
+  /// Import completo de live + VOD (categorías + streams), en la misma
+  /// forma que `parseM3u`/`M3uParseOutcome`: entra tal cual en
+  /// `ManageSources.addSource`/`refreshSource` (T1.6b). Series **no**
+  /// entra aquí — `get_series` no trae episodios, así que expandirlas
+  /// exigiría un `get_series_info` por serie (N+1 de red inviable con un
+  /// panel de miles de series); se piden bajo demanda al abrir la ficha
+  /// (`seriesInfo()` + `XtreamMapper.episodeToChannel`).
+  ///
+  /// El parseo (fetch + mapeo) empieza solo cuando alguien escucha
+  /// [XtreamImportOutcome.channels] (`onListen` diferido, mismo patrón que
+  /// `parseM3u`): si nadie escucha, no se hace ninguna petición HTTP.
+  ///
+  /// Ninguna action fallida aborta el import completo (P7): un 500 en
+  /// `get_vod_streams` no debe impedir importar los canales live que sí
+  /// respondieron — se registra como [XtreamDiscard] y se sigue.
+  ///
+  /// **RNF-01**: el bucle de mapeo cede el event loop cada
+  /// [cessionInterval] canales (`await Future<void>.delayed(Duration.zero)`,
+  /// misma técnica que corrigió el jank real de T1.6b) — no se decodifica
+  /// el JSON completo del panel en un isolate aparte todavía; el
+  /// benchmark de sanity (T1.4, 50k streams sintéticos) mide si esta
+  /// cesión basta o si hace falta escalar a un isolate, mismo criterio de
+  /// "medir antes de complicar" que ya siguió T1.6b.
+  XtreamImportOutcome importChannels({required String sourceId, int cessionInterval = 500}) {
+    final controller = StreamController<Channel>();
+    final reportCompleter = Completer<XtreamImportReport>();
+
+    controller.onListen = () {
+      unawaited(
+        _runImport(sourceId: sourceId, cessionInterval: cessionInterval, controller: controller)
+            .then(reportCompleter.complete)
+            .catchError((Object error, StackTrace stack) {
+              controller.addError(error, stack);
+              if (!reportCompleter.isCompleted) {
+                reportCompleter.completeError(error, stack);
+              }
+            })
+            .whenComplete(controller.close),
+      );
+    };
+
+    return XtreamImportOutcome(channels: controller.stream, report: reportCompleter.future);
+  }
+
+  Future<XtreamImportReport> _runImport({
+    required String sourceId,
+    required int cessionInterval,
+    required StreamController<Channel> controller,
+  }) async {
+    final discarded = <XtreamDiscard>[];
+    var discardedCount = 0;
+    void discard(String action, String reason) {
+      discardedCount++;
+      if (discarded.length < XtreamImportReport.discardedCap) {
+        discarded.add(XtreamDiscard(action: action, reason: reason));
+      }
+    }
+
+    final liveCategoryNames = await _categoryNameMap(
+      action: 'get_live_categories',
+      fetch: liveCategories,
+      onFailure: discard,
+    );
+    final vodCategoryNames = await _categoryNameMap(
+      action: 'get_vod_categories',
+      fetch: vodCategories,
+      onFailure: discard,
+    );
+
+    var parsedLive = 0;
+    final liveResult = await liveStreams();
+    if (liveResult is XtreamErr<List<XtreamLiveStream>>) {
+      discard('get_live_streams', liveResult.failure.toString());
+    } else {
+      final streams = (liveResult as XtreamOk<List<XtreamLiveStream>>).value;
+      for (var i = 0; i < streams.length; i++) {
+        controller.add(
+          XtreamMapper.liveStreamToChannel(
+            sourceId: sourceId,
+            stream: streams[i],
+            categoryNames: liveCategoryNames,
+          ),
+        );
+        parsedLive++;
+        if ((i + 1) % cessionInterval == 0) await Future<void>.delayed(Duration.zero);
+      }
+    }
+
+    var parsedVod = 0;
+    final vodResult = await vodStreams();
+    if (vodResult is XtreamErr<List<XtreamVodStream>>) {
+      discard('get_vod_streams', vodResult.failure.toString());
+    } else {
+      final streams = (vodResult as XtreamOk<List<XtreamVodStream>>).value;
+      for (var i = 0; i < streams.length; i++) {
+        controller.add(
+          XtreamMapper.vodStreamToChannel(
+            sourceId: sourceId,
+            stream: streams[i],
+            categoryNames: vodCategoryNames,
+          ),
+        );
+        parsedVod++;
+        if ((i + 1) % cessionInterval == 0) await Future<void>.delayed(Duration.zero);
+      }
+    }
+
+    return XtreamImportReport(
+      parsedLive: parsedLive,
+      parsedVod: parsedVod,
+      discardedCount: discardedCount,
+      discarded: List.unmodifiable(discarded),
+    );
+  }
+
+  /// `category_id` crudo → nombre, para las categorías de un solo tipo de
+  /// contenido (live o vod) — ver `XtreamMapper.liveStreamToChannel`/
+  /// `vodStreamToChannel`. Si la propia llamada de categorías falla, se
+  /// registra el fallo y se sigue con un mapa vacío (los streams se
+  /// mapean igual, degradados al `category_id` crudo como nombre).
+  Future<Map<String, String>> _categoryNameMap({
+    required String action,
+    required Future<XtreamResult<List<XtreamCategory>>> Function() fetch,
+    required void Function(String action, String reason) onFailure,
+  }) async {
+    final result = await fetch();
+    if (result is XtreamErr<List<XtreamCategory>>) {
+      onFailure(action, result.failure.toString());
+      return const {};
+    }
+    final categories = (result as XtreamOk<List<XtreamCategory>>).value;
+    return {for (final c in categories) c.id: c.name};
   }
 
   Future<XtreamResult<List<XtreamCategory>>> _getCategories(String action) async {
