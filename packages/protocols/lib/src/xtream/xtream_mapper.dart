@@ -3,6 +3,7 @@ import 'package:iptv_core/iptv_core.dart';
 import 'xtream_category.dart';
 import 'xtream_stream.dart';
 import 'xtream_url_resolver.dart';
+import 'xtream_vod.dart';
 
 /// Conversión de DTOs de protocolo Xtream a entidades de `core` — el único
 /// sitio del cliente que conoce `sourceId` y las reglas de derivación
@@ -73,6 +74,48 @@ final class XtreamMapper {
       metadata: {
         'x-xtream-stream-id': stream.streamId.toString(),
         if (stream.hasTvArchive) 'x-xtream-tv-archive': '1',
+      },
+    );
+  }
+
+  /// Película cruda (`get_vod_streams`) → `core.Channel(type: vod)`. Xtream
+  /// no tiene equivalente de `tvg-id` para VOD, así que `ChannelRef`
+  /// siempre cae a la forma canónica **sin extensión**
+  /// (`XtreamUrlResolver.movieRefCanonical`) — nunca a la reproducible, y
+  /// nunca a una que incluya `container_extension` (ADR-006: un panel que
+  /// reetiqueta `mkv`→`mp4` no debe romper el favorito).
+  static Channel vodStreamToChannel({
+    required String sourceId,
+    required XtreamVodStream stream,
+    Map<String, String> categoryNames = const {},
+  }) {
+    final playbackUrl = XtreamUrlResolver.movieCanonical(
+      sourceId: sourceId,
+      streamId: stream.streamId.toString(),
+      containerExtension: stream.containerExtension,
+    );
+    final refUrl = XtreamUrlResolver.movieRefCanonical(
+      sourceId: sourceId,
+      streamId: stream.streamId.toString(),
+    );
+    final categoryName = stream.categoryId == null
+        ? null
+        : (categoryNames[stream.categoryId] ?? stream.categoryId);
+
+    return Channel(
+      ref: ChannelRef.derive(sourceId: sourceId, url: refUrl.toString(), name: stream.name),
+      sourceId: sourceId,
+      categoryId: categoryName == null
+          ? null
+          : Category.derive(sourceId: sourceId, type: ContentType.vod, name: categoryName).id,
+      type: ContentType.vod,
+      name: stream.name,
+      url: playbackUrl,
+      logo: stream.streamIcon == null ? null : Uri.tryParse(stream.streamIcon!),
+      metadata: {
+        'x-xtream-stream-id': stream.streamId.toString(),
+        if (stream.containerExtension != null) 'x-xtream-container': stream.containerExtension!,
+        if (stream.rating != null) 'x-xtream-rating': stream.rating!.toString(),
       },
     );
   }

@@ -6,6 +6,7 @@ import 'xtream_failure.dart';
 import 'xtream_json.dart';
 import 'xtream_stream.dart';
 import 'xtream_transport.dart';
+import 'xtream_vod.dart';
 
 /// Cliente de la API Xtream Codes (`player_api.php`), T1.4. Dart puro, sin
 /// Flutter (P6): la red entra por [XtreamTransport], no por una
@@ -145,6 +146,45 @@ final class XtreamClient {
     ]);
   }
 
+  /// `get_vod_streams`, opcionalmente filtrado por `category_id`.
+  Future<XtreamResult<List<XtreamVodStream>>> vodStreams({String? categoryId}) async {
+    final listResult = await _getJsonList(
+      _playerApiUrl(
+        action: 'get_vod_streams',
+        extra: categoryId == null ? null : {'category_id': categoryId},
+      ),
+    );
+    if (listResult is XtreamErr<List<Object?>>) {
+      return XtreamErr(listResult.failure);
+    }
+    final items = (listResult as XtreamOk<List<Object?>>).value;
+    return XtreamOk([
+      for (final item in items)
+        if (item is Map) XtreamVodStream.fromJson(asFlexibleMap(item)),
+    ]);
+  }
+
+  /// `get_vod_info&vod_id=...` — ficha completa de una película. Un
+  /// `vod_id` inválido suele volver como `[]` o `{}` en vez de un error
+  /// HTTP (dialecto real de paneles Xtream) — se trata como
+  /// [XtreamMalformed], nunca como un `XtreamVodInfo` con campos vacíos
+  /// inventados.
+  Future<XtreamResult<XtreamVodInfo>> vodInfo(String vodId) async {
+    final objResult = await _getJsonObject(
+      _playerApiUrl(action: 'get_vod_info', extra: {'vod_id': vodId}),
+    );
+    if (objResult is XtreamErr<Map<String, Object?>>) {
+      return XtreamErr(objResult.failure);
+    }
+    final json = (objResult as XtreamOk<Map<String, Object?>>).value;
+    if (asFlexibleMap(json['movie_data']).isEmpty && asFlexibleMap(json['info']).isEmpty) {
+      return const XtreamErr(
+        XtreamMalformed(reason: 'get_vod_info sin "info" ni "movie_data" (vod_id probablemente inválido)'),
+      );
+    }
+    return XtreamOk(XtreamVodInfo.fromJson(json));
+  }
+
   Future<XtreamResult<List<XtreamCategory>>> _getCategories(String action) async {
     final listResult = await _getJsonList(_playerApiUrl(action: action));
     if (listResult is XtreamErr<List<Object?>>) {
@@ -178,6 +218,26 @@ final class XtreamClient {
     return const XtreamErr(
       XtreamMalformed(reason: 'se esperaba un array JSON en la respuesta'),
     );
+  }
+
+  /// Como [_getJsonList] pero para acciones que devuelven un único
+  /// objeto (`get_vod_info`, `get_series_info`). Un `[]`/`{}` vacío —
+  /// dialecto real cuando el id pedido no existe — se trata como
+  /// malformado en vez de construir una entidad con campos inventados a
+  /// partir de `{}`.
+  Future<XtreamResult<Map<String, Object?>>> _getJsonObject(Uri url) async {
+    final bodyResult = await _getJsonBody(url);
+    if (bodyResult is XtreamErr<Object?>) {
+      return XtreamErr(bodyResult.failure);
+    }
+    final decoded = (bodyResult as XtreamOk<Object?>).value;
+    if (decoded is Map) return XtreamOk(asFlexibleMap(decoded));
+    if (decoded is List && decoded.isEmpty) {
+      return const XtreamErr(
+        XtreamMalformed(reason: 'el panel devolvió un array vacío en vez de un objeto (id probablemente inválido)'),
+      );
+    }
+    return const XtreamErr(XtreamMalformed(reason: 'se esperaba un objeto JSON'));
   }
 
   /// Petición GET + decodificación JSON común a todas las acciones:
