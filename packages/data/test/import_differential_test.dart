@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:iptv_core/iptv_core.dart';
 import 'package:iptv_data/iptv_data.dart';
 
-import 'generated_migrations/schema_v1.dart' as v1;
+import 'package:iptv_data/testing.dart' as v1;
 
 /// T1.6b: batería del upsert diferencial de `DriftChannelRepository
 /// .importSourceContent` contra SQLite real (`NativeDatabase.memory()` —

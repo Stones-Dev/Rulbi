@@ -17,8 +17,11 @@ part 'database.g.dart';
 /// v1 vive en `drift_schemas/drift_schema_v1.json` (volcado con
 /// `drift_dev schema dump` **antes** de tocar la tabla — ver
 /// `test/import_differential_test.dart`, test de migración), con su
-/// helper generado en `test/generated_migrations/`. `drift_dev schema
-/// dump` sobre el `.dart` fuente falla con el trigger `channels_fts_au`
+/// helper generado expuesto vía `package:iptv_data/testing.dart`
+/// (ADR-007: movido de `test/generated_migrations/` a
+/// `lib/src/testing/` para que `apps/app/integration_test/` pueda
+/// reutilizarlo). `drift_dev schema dump` sobre el `.dart` fuente falla
+/// con el trigger `channels_fts_au`
 /// (el analizador estático no resuelve `old`/`new` en su cuerpo — no es
 /// un bug en la app: `database_test.dart` ya ejercita ese trigger vía
 /// `db.update()` real y funciona); el snapshot de v1 se generó a partir

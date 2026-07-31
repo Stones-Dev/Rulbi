@@ -7,4 +7,7 @@ analyzer:
     # se toca a mano ("DO NOT MODIFY" en su cabecera) y no vale la pena
     # limpiar sus warnings de `strict-raw-types` (TableInfo sin argumentos
     # de tipo explícitos, propio de cómo drift_dev genera este código).
-    - "test/generated_migrations/**"
+    # Movido de `test/generated_migrations/` a `lib/src/testing/` en
+    # ADR-007 para que `apps/app/integration_test/` pueda reutilizarlo
+    # vía `package:iptv_data/testing.dart` — ver ese barrel.
+    - "lib/src/testing/generated_migrations/**"
