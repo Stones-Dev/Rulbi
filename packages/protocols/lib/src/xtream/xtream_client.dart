@@ -4,6 +4,7 @@ import 'xtream_account.dart';
 import 'xtream_category.dart';
 import 'xtream_failure.dart';
 import 'xtream_json.dart';
+import 'xtream_series.dart';
 import 'xtream_stream.dart';
 import 'xtream_transport.dart';
 import 'xtream_vod.dart';
@@ -183,6 +184,47 @@ final class XtreamClient {
       );
     }
     return XtreamOk(XtreamVodInfo.fromJson(json));
+  }
+
+  /// `get_series`, opcionalmente filtrado por `category_id`. **No**
+  /// trae temporadas/episodios — eso es [seriesInfo], una llamada por
+  /// serie (ver `xtream_series.dart`).
+  Future<XtreamResult<List<XtreamSeries>>> series({String? categoryId}) async {
+    final listResult = await _getJsonList(
+      _playerApiUrl(action: 'get_series', extra: categoryId == null ? null : {'category_id': categoryId}),
+    );
+    if (listResult is XtreamErr<List<Object?>>) {
+      return XtreamErr(listResult.failure);
+    }
+    final items = (listResult as XtreamOk<List<Object?>>).value;
+    return XtreamOk([
+      for (final item in items)
+        if (item is Map) XtreamSeries.fromJson(asFlexibleMap(item)),
+    ]);
+  }
+
+  /// `get_series_info&series_id=...` — ficha completa con temporadas y
+  /// episodios anidados. Mismo criterio que [vodInfo]: un `series_id`
+  /// inválido que vuelva como `[]`/`{}` sin `info` ni `episodes` se trata
+  /// como [XtreamMalformed], nunca como una ficha vacía inventada.
+  Future<XtreamResult<XtreamSeriesInfo>> seriesInfo(String seriesId) async {
+    final objResult = await _getJsonObject(
+      _playerApiUrl(action: 'get_series_info', extra: {'series_id': seriesId}),
+    );
+    if (objResult is XtreamErr<Map<String, Object?>>) {
+      return XtreamErr(objResult.failure);
+    }
+    final json = (objResult as XtreamOk<Map<String, Object?>>).value;
+    final hasInfo = asFlexibleMap(json['info']).isNotEmpty;
+    final hasEpisodes = json['episodes'] is Map
+        ? asFlexibleMap(json['episodes']).isNotEmpty
+        : asFlexibleList(json['episodes']).isNotEmpty;
+    if (!hasInfo && !hasEpisodes) {
+      return const XtreamErr(
+        XtreamMalformed(reason: 'get_series_info sin "info" ni "episodes" (series_id probablemente inválido)'),
+      );
+    }
+    return XtreamOk(XtreamSeriesInfo.fromJson(json));
   }
 
   Future<XtreamResult<List<XtreamCategory>>> _getCategories(String action) async {

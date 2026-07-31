@@ -1,6 +1,7 @@
 import 'package:iptv_core/iptv_core.dart';
 
 import 'xtream_category.dart';
+import 'xtream_series.dart';
 import 'xtream_stream.dart';
 import 'xtream_url_resolver.dart';
 import 'xtream_vod.dart';
@@ -116,6 +117,47 @@ final class XtreamMapper {
         'x-xtream-stream-id': stream.streamId.toString(),
         if (stream.containerExtension != null) 'x-xtream-container': stream.containerExtension!,
         if (stream.rating != null) 'x-xtream-rating': stream.rating!.toString(),
+      },
+    );
+  }
+
+  /// Un episodio → `core.Channel(type: series)`, **bajo demanda** (al
+  /// abrir la ficha de una serie ya consultada con `seriesInfo()`), no
+  /// invocado durante `importChannels()` — un import completo no puede
+  /// pedir `get_series_info` de cada serie del panel (N+1 de red, ver
+  /// diseño de T1.4). `seasonNumber` es la clave del mapa
+  /// `episodesBySeason` (la fuente de verdad real, ver
+  /// `XtreamSeriesInfo`), no `episode.season` ni `XtreamSeason.seasonNumber`.
+  static Channel episodeToChannel({
+    required String sourceId,
+    required int seriesId,
+    required int seasonNumber,
+    required XtreamEpisode episode,
+    Map<String, String> categoryNames = const {},
+    String? categoryId,
+  }) {
+    final playbackUrl = XtreamUrlResolver.seriesCanonical(
+      sourceId: sourceId,
+      episodeId: episode.id,
+      containerExtension: episode.containerExtension,
+    );
+    final refUrl = XtreamUrlResolver.seriesRefCanonical(sourceId: sourceId, episodeId: episode.id);
+    final categoryName = categoryId == null ? null : (categoryNames[categoryId] ?? categoryId);
+
+    return Channel(
+      ref: ChannelRef.derive(sourceId: sourceId, url: refUrl.toString(), name: episode.title),
+      sourceId: sourceId,
+      categoryId: categoryName == null
+          ? null
+          : Category.derive(sourceId: sourceId, type: ContentType.series, name: categoryName).id,
+      type: ContentType.series,
+      name: episode.title,
+      url: playbackUrl,
+      metadata: {
+        'x-xtream-series-id': seriesId.toString(),
+        'x-xtream-season': seasonNumber.toString(),
+        'x-xtream-episode': episode.episodeNum.toString(),
+        if (episode.containerExtension != null) 'x-xtream-container': episode.containerExtension!,
       },
     );
   }
