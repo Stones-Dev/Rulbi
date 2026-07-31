@@ -30,5 +30,6 @@ export 'src/text/normalize.dart';
 
 export 'src/use_cases/manage_favorites.dart';
 export 'src/use_cases/manage_sources.dart';
+export 'src/use_cases/run_purge.dart';
 export 'src/use_cases/search_channels.dart';
 export 'src/use_cases/track_watch_progress.dart';
