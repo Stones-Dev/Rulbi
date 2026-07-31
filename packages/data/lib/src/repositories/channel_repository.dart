@@ -197,6 +197,19 @@ final class DriftChannelRepository
     }
   }
 
+  // TODO(purge-tombstones): implementación real en el siguiente bloque TDD
+  // ("Tombstones huérfanos (purga)", S2) — ver epg_purge_test.dart/
+  // tombstone_purge_test.dart. Placeholder solo para que el paquete
+  // compile mientras ambos repositorios se desarrollan en bloques TDD
+  // separados.
+  @override
+  Future<int> purgeOrphanTombstones({required DateTime deletedBefore}) {
+    throw UnimplementedError(
+      'purgeOrphanTombstones: pendiente del bloque TDD de '
+      '"Tombstones huérfanos (purga)"',
+    );
+  }
+
   @override
   Future<List<Category>> categoriesFor(String sourceId) async {
     final rows = await (_db.select(
