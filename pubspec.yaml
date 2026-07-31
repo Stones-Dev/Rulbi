@@ -22,6 +22,14 @@ dependencies:
 # Dart SDK actual). `packages/data` tiene su propio pubspec.lock
 # independiente y su propio paso en CI (ver ci.yml) — no pasa por
 # `melos bootstrap`/`run analyze`/`run test`.
+#
+# `packages/player_spike` queda FUERA también, pero por un motivo distinto:
+# es el spike descartable de S3 · Spike de escritorio (libmpv vs libVLC,
+# ver docs/bench/S3-desktop-spike.md), sin garantías de calidad ni de
+# vida más allá del sprint. Aislarlo evita que un experimento de un solo
+# sprint entre en `melos bootstrap`/`run analyze`/`run test` o en
+# `ci.yml`. Se archiva en docs/spikes/ al cerrar S3, nunca se promueve
+# a este array.
 workspace:
   - packages/core
   - packages/protocols
