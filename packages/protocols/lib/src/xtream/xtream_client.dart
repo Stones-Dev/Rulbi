@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:isolate';
 
 import 'package:iptv_core/iptv_core.dart' show Channel;
 
@@ -474,6 +475,17 @@ final class XtreamClient {
   /// `jsonDecode`, y detecta HTML-en-vez-de-JSON (paneles caídos, portales
   /// cautivos, Cloudflare) *antes* de pasárselo al parser — nunca deja que
   /// `FormatException` se escape sin envolver.
+  ///
+  /// **RNF-01**: el sniff de HTML/cuerpo vacío opera sobre los primeros
+  /// bytes crudos (nunca decodifica el cuerpo completo a texto solo para
+  /// mirarlo), y el propio `utf8.decode`+`jsonDecode` corre dentro de un
+  /// `Isolate.run` — un panel grande (`get_live_streams`/`get_vod_streams`
+  /// de miles de canales) no debe bloquear el event loop del isolate
+  /// llamador con una decodificación síncrona de decenas de MB. Medido:
+  /// el benchmark de sanity de T1.4 (50k streams sintéticos) mostró un
+  /// pico de jank real de ~150 ms cuando esta decodificación corría en el
+  /// isolate llamador — con `Isolate.run` desaparece del presupuesto de
+  /// frame (ver `docs/bench/T1.4-xtream-50k.md`).
   Future<XtreamResult<Object?>> _getJsonBody(Uri url) async {
     final XtreamHttpResponse response;
     try {
@@ -489,34 +501,31 @@ final class XtreamClient {
       return XtreamErr(XtreamHttpFailure(response.statusCode));
     }
 
-    final text = response.bodyAsText;
-    final trimmed = text.trimLeft();
-    if (trimmed.isEmpty) {
+    final bytes = response.bodyBytes;
+    if (bytes.isEmpty) {
       return const XtreamErr(XtreamMalformed(reason: 'cuerpo de respuesta vacío'));
     }
 
     final looksHtml =
-        (response.contentType?.toLowerCase().contains('html') ?? false) ||
-        trimmed.startsWith('<');
+        (response.contentType?.toLowerCase().contains('html') ?? false) || _looksLikeHtmlBytes(bytes);
     if (looksHtml) {
       return XtreamErr(
         XtreamMalformed(
           reason: 'el panel devolvió HTML en vez de JSON',
-          snippet: _snippet(trimmed),
+          snippet: _bytesSnippetText(bytes),
         ),
       );
     }
 
     try {
-      return XtreamOk(jsonDecode(text));
+      final decoded = await Isolate.run(() => _decodeJsonBytes(bytes));
+      return XtreamOk(decoded);
     } on FormatException catch (error) {
       return XtreamErr(
-        XtreamMalformed(reason: 'JSON inválido: ${error.message}', snippet: _snippet(trimmed)),
+        XtreamMalformed(reason: 'JSON inválido: ${error.message}', snippet: _bytesSnippetText(bytes)),
       );
     }
   }
-
-  static String _snippet(String text) => text.length <= 200 ? text : '${text.substring(0, 200)}…';
 
   /// Redacta `password=...` de cualquier mensaje de excepción antes de
   /// envolverlo en un [XtreamFailure] — `package:http` incluye la URL
@@ -525,4 +534,48 @@ final class XtreamClient {
   /// credenciales).
   static String _redactSecrets(String message) =>
       message.replaceAll(RegExp('password=[^&\\s]*', caseSensitive: false), 'password=***');
+}
+
+/// Decodifica bytes crudos a JSON, tolerante a encoding (UTF-8 estricto,
+/// con caída a Latin-1 — mismo criterio que
+/// `XtreamHttpResponse.bodyAsText`, reimplementado aquí porque debe
+/// ejecutarse dentro de `Isolate.run` con solo `bytes` capturado, sin
+/// depender de una instancia de `XtreamHttpResponse` que no es sendable).
+/// Función de nivel superior a propósito: un método de instancia
+/// capturaría implícitamente `this` (el propio `XtreamClient`, tampoco
+/// sendable) en el cierre que recibe `Isolate.run`.
+Object? _decodeJsonBytes(List<int> bytes) {
+  String text;
+  try {
+    text = utf8.decode(bytes);
+  } on FormatException {
+    text = latin1.decode(bytes);
+  }
+  return jsonDecode(text);
+}
+
+/// Sniff barato de "esto es HTML, no JSON": mira solo los primeros bytes
+/// (acotado, nunca decodifica el cuerpo completo) buscando el primer
+/// carácter no-espacio-en-blanco y comprobando si es `<` (0x3C, el mismo
+/// byte en UTF-8/Latin-1/ASCII para ese carácter).
+bool _looksLikeHtmlBytes(List<int> bytes) {
+  final limit = bytes.length < 64 ? bytes.length : 64;
+  for (var i = 0; i < limit; i++) {
+    final b = bytes[i];
+    if (b == 0x20 || b == 0x09 || b == 0x0D || b == 0x0A) continue; // espacio/tab/CR/LF
+    return b == 0x3C; // '<'
+  }
+  return false;
+}
+
+/// Recorte legible para un [XtreamMalformed], acotado a los primeros
+/// bytes del cuerpo — nunca decodifica ni recorta sobre el cuerpo
+/// completo, para que un panel que devuelve un HTML/JSON enorme no pague
+/// el coste de decodificarlo entero solo para producir un mensaje de
+/// error corto. `allowMalformed` evita que un corte a mitad de una
+/// secuencia UTF-8 multibyte lance.
+String _bytesSnippetText(List<int> bytes, {int maxBytes = 256}) {
+  final slice = bytes.length <= maxBytes ? bytes : bytes.sublist(0, maxBytes);
+  final text = utf8.decode(slice, allowMalformed: true);
+  return text.length <= 200 ? text : '${text.substring(0, 200)}…';
 }

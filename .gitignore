@@ -111,3 +111,10 @@ coverage/
 # tool/fixtures_manifest.json. Ver packages/protocols/test/fixtures/*/README.md.
 packages/protocols/test/fixtures/m3u/large/*
 !packages/protocols/test/fixtures/m3u/large/.gitkeep
+
+# Fixture sintético de 50k live streams (T1.4, benchmark de sanity de
+# packages/protocols/test/xtream/xtream_benchmark_test.dart) — generado por
+# tool/generate_bench_xtream.dart, no descargado; no se commitea por el
+# mismo motivo que bench_100k.m3u (tamaño, y reproducible bajo demanda).
+packages/protocols/test/fixtures/xtream/large/*
+!packages/protocols/test/fixtures/xtream/large/.gitkeep
