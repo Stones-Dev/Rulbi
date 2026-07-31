@@ -1,3 +1,8 @@
 tags:
   benchmark:
-    description: Micro-benchmarks sintéticos (más lentos; no bloquean CI por defecto).
+    description: >-
+      Micro-benchmarks sintéticos (más lentos). Declarar el tag aquí NO los
+      excluye de CI: `ci.yml` corre `flutter test` sin `--exclude-tags`, así
+      que SÍ son gate de CI en cada push (windows-latest incluido). Para
+      excluirlos habría que añadir `--exclude-tags=benchmark` en `ci.yml` o
+      un `skip:` explícito en el test. Ver CLAUDE.md § Testing y CI.

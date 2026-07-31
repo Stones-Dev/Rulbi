@@ -42,9 +42,13 @@ import 'package:iptv_protocols/iptv_protocols.dart';
 /// `docs/bench/T1.5b-import-100k.md` § Nota metodológica para el detalle.
 ///
 /// Metodología, cifras publicadas y cómo reproducir:
-/// `docs/bench/T1.5b-import-100k.md`. Etiquetado `benchmark`: NO es gate de
-/// CI, y se salta limpiamente si el fixture no está generado localmente
-/// (mismo patrón que el benchmark de sanity de `packages/protocols`).
+/// `docs/bench/T1.5b-import-100k.md`. El tag `benchmark` NO excluye este
+/// test de CI (`packages/data/dart_test.yaml` solo lo declara; `ci.yml`
+/// no pasa `--exclude-tags`) — se salta en CI únicamente porque
+/// `markTestSkipped` detecta que el fixture no está comiteado en el repo.
+/// Si el fixture se comitea, este test pasa a ser gate sin que nadie lo
+/// decida explícitamente. Contraste: `purge_benchmark_test.dart` sí es
+/// gate real hoy — ver su cabecera.
 void main() {
   const fixturePath = '../protocols/test/fixtures/m3u/large/bench_100k.m3u';
   const warmupFixturePath =

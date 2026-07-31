@@ -12,9 +12,14 @@ import 'package:iptv_data/iptv_data.dart';
 
 /// Benchmark de sanity de las dos purgas de S2 (lección de T1.4: medir
 /// antes de suponer — el jsonDecode síncrono de Xtream escondía 149 ms de
-/// jank hasta que se midió). No es gate de CI (`@Tags(['benchmark'])`,
-/// mismo criterio que `import_100k_benchmark_test.dart`), pero SÍ corre
-/// en esta sesión antes de cerrar las tareas.
+/// jank hasta que se midió). **Sí es gate de CI**: `@Tags(['benchmark'])`
+/// solo documenta que es lento — `packages/data/dart_test.yaml` declara el
+/// tag pero no lo excluye, y `ci.yml` corre `flutter test` sin
+/// `--exclude-tags`. Precedente real: el run `30620725087` reventó el job
+/// `windows-latest` por este mismo test (10k round-trips secuenciales al
+/// isolate de sqlite3 en la siembra sintética, arreglado con `db.batch()`
+/// en chunks). `import_100k_benchmark_test.dart` sí se salta en CI, pero
+/// no por el tag — ver su cabecera.
 ///
 /// Escenario: 50k canales (40k tumbados — 5k con favorito vivo, 5k con
 /// watch-state vivo, 30k huérfanos purgables) + 100k programas EPG (90k

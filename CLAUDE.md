@@ -95,6 +95,29 @@ v1 = **Windows, Linux, Android, Android TV/Fire TV, LG webOS** (5 plataformas). 
 - `melos run analyze` — `flutter analyze` en todos los paquetes.
 - `melos run test` — tests de todos los paquetes.
 - CI (GitHub Actions, matrix Windows/Linux/Android) debe estar verde en cada push a `main`. iOS y webOS entran en CI cuando sus fases (F4, v1.1) lo requieran.
+- **Los tests con `@Tags(['benchmark'])` SÍ son gate de CI.** `packages/data/dart_test.yaml` solo *declara* el tag `benchmark`, no lo excluye — el CI corre `flutter test` sin `--exclude-tags`, así que corren y bloquean el merge igual que cualquier otro test. `import_100k_benchmark_test.dart` es la única excepción, y no por el tag: se salta vía `markTestSkipped` porque su fixture no está comiteada en el repo. Si algún día ese fixture se comitea, deja de saltarse. No confíes en un comentario que diga "no es gate de CI" sin comprobar `dart_test.yaml` y si el runner pasa `--exclude-tags`.
+
+### Verificación de CI
+
+`gh run watch` devuelve exit 0 aunque el run termine en rojo, salvo que se use `--exit-status`. No declares un run verde solo porque el comando de espera terminó sin error de shell.
+
+Patrón robusto para confirmar un run:
+
+```bash
+gh run watch <run-id> --exit-status
+gh run view <run-id> --json conclusion -q .conclusion   # debe imprimir literal: success
+```
+
+Un run solo está verde si esa segunda línea imprime `success`. `failure`, `cancelled`, `timed_out`, o vacío (aún en curso) no cuentan.
+
+Para triajar un run rojo sin leer el log completo:
+
+```bash
+gh run view <run-id> --json jobs -q '.jobs[] | .name as $j | .steps[] | select(.conclusion=="failure") | "\($j) :: \(.name)"'
+gh run view --job <job-id> --log-failed
+```
+
+Al anotar el resultado en `handoff.md` o Notion, cita el `<run-id>` junto a la conclusión verificada — nunca "CI verde" a secas. Si la sesión se cierra antes de que el run termine, anótalo como pendiente ("debe confirmarse verde"), no como confirmado.
 
 ## Para el usuario (viene de TypeScript / PHP-Laravel)
 
