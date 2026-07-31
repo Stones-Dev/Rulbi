@@ -4,6 +4,7 @@ import 'xtream_account.dart';
 import 'xtream_category.dart';
 import 'xtream_failure.dart';
 import 'xtream_json.dart';
+import 'xtream_stream.dart';
 import 'xtream_transport.dart';
 
 /// Cliente de la API Xtream Codes (`player_api.php`), T1.4. Dart puro, sin
@@ -121,6 +122,28 @@ final class XtreamClient {
 
   Future<XtreamResult<List<XtreamCategory>>> seriesCategories() =>
       _getCategories('get_series_categories');
+
+  /// `get_live_streams`, opcionalmente filtrado por `category_id` (mismo
+  /// parámetro que acepta el panel real). Entradas que no son un objeto
+  /// JSON dentro del array se descartan silenciosamente a este nivel —
+  /// la tolerancia de campo a campo dentro de cada objeto la hace
+  /// [XtreamLiveStream.fromJson] vía `xtream_json.dart`.
+  Future<XtreamResult<List<XtreamLiveStream>>> liveStreams({String? categoryId}) async {
+    final listResult = await _getJsonList(
+      _playerApiUrl(
+        action: 'get_live_streams',
+        extra: categoryId == null ? null : {'category_id': categoryId},
+      ),
+    );
+    if (listResult is XtreamErr<List<Object?>>) {
+      return XtreamErr(listResult.failure);
+    }
+    final items = (listResult as XtreamOk<List<Object?>>).value;
+    return XtreamOk([
+      for (final item in items)
+        if (item is Map) XtreamLiveStream.fromJson(asFlexibleMap(item)),
+    ]);
+  }
 
   Future<XtreamResult<List<XtreamCategory>>> _getCategories(String action) async {
     final listResult = await _getJsonList(_playerApiUrl(action: action));
