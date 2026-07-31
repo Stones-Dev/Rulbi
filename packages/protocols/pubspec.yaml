@@ -16,6 +16,13 @@ dependencies:
   # mueve ninguna versión (a diferencia del conflicto melos/drift_dev de
   # ADR-004).
   xml: ^7.0.0
+  # T1.4: transporte HTTP del cliente Xtream. BSD-3 (P8 ok), del propio
+  # equipo de Dart, Dart puro (sin dependencia de plataforma) — se prefiere
+  # a `dio` (fijado en el plan §3 para la capa de app) porque estos 9 GETs
+  # no necesitan interceptores ni cancelación; ver enmienda en el plan de
+  # T1.4. `XtreamTransport` (puerto propio) aísla la elección: cambiarla no
+  # tocaría ningún test.
+  http: ^1.2.0
 
 dev_dependencies:
   lints: ^6.0.0
