@@ -197,17 +197,69 @@ final class DriftChannelRepository
     }
   }
 
-  // TODO(purge-tombstones): implementación real en el siguiente bloque TDD
-  // ("Tombstones huérfanos (purga)", S2) — ver epg_purge_test.dart/
-  // tombstone_purge_test.dart. Placeholder solo para que el paquete
-  // compile mientras ambos repositorios se desarrollan en bloques TDD
-  // separados.
+  /// Purga de tombstones huérfanos ("Tombstones huérfanos (purga)", S2):
+  /// borra de verdad los canales tumbados (T1.6b, `deletedAt` no nulo)
+  /// que ya no protegen ningún favorito ni watch-state vivo, más
+  /// antiguos que [deletedBefore] (ventana de gracia configurable — un
+  /// canal que reaparece antes lo resucita `importSourceContent`, no
+  /// esta purga). "Vivo" = fila existente con `deletedAt IS NULL`; un
+  /// favorito ya tumbado por el merge LWW no protege.
+  ///
+  /// Mismo patrón de lotes + transacción por lote + cesión real que
+  /// `_flushTombstones` (arriba) y `DriftEpgRepository.purgeOutsideWindow`:
+  /// un `DELETE` sobre cientos de miles de filas no puede mantener el
+  /// lock de escritura mientras un import está corriendo. Idempotente y
+  /// reanudable.
+  ///
+  /// No hay `FOREIGN KEY` entre `channels` y `favorites`/`watch_state`
+  /// (se indexan por `(sourceId, refKey)`, no por `channels.id` — ADR-003),
+  /// así que el borrado no cascadea nada; el trigger `channels_fts_ad`
+  /// (`fts.drift`) mantiene el índice FTS5 sincronizado.
   @override
-  Future<int> purgeOrphanTombstones({required DateTime deletedBefore}) {
-    throw UnimplementedError(
-      'purgeOrphanTombstones: pendiente del bloque TDD de '
-      '"Tombstones huérfanos (purga)"',
-    );
+  Future<int> purgeOrphanTombstones({required DateTime deletedBefore}) async {
+    var totalDeleted = 0;
+    while (true) {
+      final query = _db.selectOnly(_db.channels)
+        ..addColumns([_db.channels.id])
+        ..where(
+          _db.channels.deletedAt.isNotNull() &
+              _db.channels.deletedAt.isSmallerThanValue(deletedBefore) &
+              notExistsQuery(
+                _db.selectOnly(_db.favorites)
+                  ..addColumns([_db.favorites.sourceId])
+                  ..where(
+                    _db.favorites.sourceId.equalsExp(_db.channels.sourceId) &
+                        _db.favorites.refKey.equalsExp(_db.channels.refKey) &
+                        _db.favorites.deletedAt.isNull(),
+                  ),
+              ) &
+              notExistsQuery(
+                _db.selectOnly(_db.watchState)
+                  ..addColumns([_db.watchState.sourceId])
+                  ..where(
+                    _db.watchState.sourceId.equalsExp(_db.channels.sourceId) &
+                        _db.watchState.refKey.equalsExp(_db.channels.refKey) &
+                        _db.watchState.deletedAt.isNull(),
+                  ),
+              ),
+        )
+        ..limit(_batchSize);
+
+      final ids = (await query.get())
+          .map((row) => row.read(_db.channels.id)!)
+          .toList();
+      if (ids.isEmpty) break;
+
+      await _db.transaction(() async {
+        await _db.batch((b) {
+          b.deleteWhere(_db.channels, (c) => c.id.isIn(ids));
+        });
+      });
+      totalDeleted += ids.length;
+
+      await Future<void>.delayed(Duration.zero);
+    }
+    return totalDeleted;
   }
 
   @override
