@@ -4,6 +4,7 @@ library;
 import 'dart:async';
 import 'dart:io';
 
+import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:iptv_core/iptv_core.dart';
@@ -39,8 +40,6 @@ void main() {
       addTearDown(db.close);
 
       final channels = DriftChannelRepository(db);
-      final favorites = DriftFavoritesRepository(db);
-      final watchState = DriftWatchStateRepository(db);
       final epg = DriftEpgRepository(db);
 
       final now = DateTime.utc(2026, 3, 10);
@@ -82,26 +81,58 @@ void main() {
         now: tombstonedAt,
       );
 
+      // Toda la siembra sintética (favoritos/watch-state/EPG) pasa por
+      // este mismo helper de lotes vía `db.batch()` — nunca un upsert por
+      // fila a través del repositorio uno a uno: 10k round-trips
+      // secuenciales al isolate de fondo de sqlite3 resultaron viables en
+      // local pero muy por encima del presupuesto en el runner Windows de
+      // CI, mucho más lento de I/O (hallazgo real: la 1ª corrida de este
+      // benchmark hizo justo eso para favoritos/watch-state y agotó el
+      // timeout de 5 min en CI sin que localmente se notara).
+      const seedBatch = 2000;
+      Future<void> seedInChunks(
+        int start,
+        int end,
+        void Function(Batch b, int i) insertOne,
+      ) async {
+        for (var offset = start; offset < end; offset += seedBatch) {
+          final chunkEnd = (offset + seedBatch).clamp(start, end);
+          await db.batch((b) {
+            for (var i = offset; i < chunkEnd; i++) {
+              insertOne(b, i);
+            }
+          });
+        }
+      }
+
       // Protege 5k con favorito vivo y 5k con watch-state vivo, entre los
       // 40k tumbados (i en [0, 40000)).
-      for (var i = 0; i < favoriteProtected; i++) {
-        await favorites.upsert(
-          Favorite(
-            channel: ChannelRef(sourceId: 'bench', key: 'canal-$i'),
-            updatedAt: tombstonedAt,
+      await seedInChunks(0, favoriteProtected, (b, i) {
+        b.insert(
+          db.favorites,
+          FavoritesCompanion.insert(
+            sourceId: 'bench',
+            refKey: 'canal-$i',
+            updatedAt: Value(tombstonedAt),
           ),
         );
-      }
-      for (var i = favoriteProtected; i < favoriteProtected + watchStateProtected; i++) {
-        await watchState.upsert(
-          WatchState(
-            channel: ChannelRef(sourceId: 'bench', key: 'canal-$i'),
-            position: const Duration(minutes: 5),
-            duration: const Duration(minutes: 50),
-            updatedAt: tombstonedAt,
-          ),
-        );
-      }
+      });
+      await seedInChunks(
+        favoriteProtected,
+        favoriteProtected + watchStateProtected,
+        (b, i) {
+          b.insert(
+            db.watchState,
+            WatchStateCompanion.insert(
+              sourceId: 'bench',
+              refKey: 'canal-$i',
+              positionMs: const Value(5 * 60 * 1000),
+              durationMs: const Value(50 * 60 * 1000),
+              updatedAt: Value(tombstonedAt),
+            ),
+          );
+        },
+      );
 
       // 100k programas EPG sembrados a mano (no hay escritor XMLTV->drift
       // todavía, ver epg_purge_test.dart): 45k en el pasado lejano, 45k en
@@ -109,32 +140,23 @@ void main() {
       // 10k dentro.
       const totalProgrammes = 100000;
       const outOfWindowEach = 45000;
-      const seedBatch = 2000;
 
       Future<void> seedProgrammes(
         int count,
         DateTime Function(int i) startFor,
         String prefix,
-      ) async {
-        for (var offset = 0; offset < count; offset += seedBatch) {
-          final chunkSize = (count - offset).clamp(0, seedBatch);
-          await db.batch((b) {
-            for (var j = 0; j < chunkSize; j++) {
-              final i = offset + j;
-              final start = startFor(i);
-              b.insert(
-                db.epgProgrammes,
-                EpgProgrammesCompanion.insert(
-                  tvgId: '$prefix-$i',
-                  start: start,
-                  stop: start.add(const Duration(minutes: 30)),
-                  title: 'Programa $prefix $i',
-                ),
-              );
-            }
-          });
-        }
-      }
+      ) => seedInChunks(0, count, (b, i) {
+        final start = startFor(i);
+        b.insert(
+          db.epgProgrammes,
+          EpgProgrammesCompanion.insert(
+            tvgId: '$prefix-$i',
+            start: start,
+            stop: start.add(const Duration(minutes: 30)),
+            title: 'Programa $prefix $i',
+          ),
+        );
+      });
 
       await seedProgrammes(
         outOfWindowEach,
