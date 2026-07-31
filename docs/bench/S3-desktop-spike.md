@@ -200,7 +200,39 @@ error del vault y el compromiso de mantener el enlace dinámico (ver bloque 7).
 
 ## C3 — Estado de los bindings
 
-*(pendiente — bloque 3)*
+Datos verificados directamente en la API de GitHub (no en el ranking de "likes" de
+pub.dev), el 2026-07-31.
+
+| Binding | Repo | Último push | Archivado | Issues abiertas | Plataformas desktop | Contribuidores |
+|---|---|---|---|---|---|---|
+| **`media_kit`** | [`media-kit/media-kit`](https://github.com/media-kit/media-kit) | **2026-07-02** (hace ~4 semanas) | No | 339 | Windows ✅, Linux ✅, macOS ✅ | 30 |
+| **`dart_vlc`** | [`alexmercerind/dart_vlc`](https://github.com/alexmercerind/dart_vlc) | 2024-06-14 (hace >2 años) | **Sí** | 53 (congeladas) | Windows/Linux (histórico) | — |
+| **`flutter_vlc_player`** | [`solid-software/flutter_vlc_player`](https://github.com/solid-software/flutter_vlc_player) | 2025-09-25 (hace ~10 meses) | No | 366 | **Ninguna** — su `pubspec.yaml` solo declara `android` e `ios` | — |
+
+**`dart_vlc`**: pub.dev lo marca literalmente *"Discontinued (replaced by: media_kit)"*
+en su página del paquete. El repo de GitHub está **archivado** (solo lectura desde
+2024-06-14) — no puede recibir ni un parche de seguridad. Confirma el hallazgo de la
+fase de preparación: no existe camino viable de adoptarlo hoy.
+
+**`flutter_vlc_player`**: mantenido y con actividad reciente, pero su
+`pubspec.yaml` (`flutter_vlc_player/pubspec.yaml`, verificado en el repo) solo declara
+`plugin.platforms: {android, ios}` — **no existe implementación de escritorio**, ni
+Windows ni Linux. Es la confirmación definitiva: hoy no hay ningún binding Flutter de
+libVLC utilizable en escritorio, mantenido o no. Encaja con el hallazgo de C2 (el binario
+libVLC oficial de Windows es GPLv3 por defecto) — nadie ha tenido motivo de mantener un
+wrapper de escritorio para un motor que, tal y como se distribuye, ya estaría vetado por
+P8.
+
+**`media_kit`**: actividad real hace 4 semanas, 30 contribuidores distintos en su
+historial de commits reciente, cobertura de las 3 plataformas de escritorio relevantes al
+proyecto (Windows/Linux; macOS de más, útil si v1.1 lo necesitara). 339 issues abiertas es
+una cifra alta en términos absolutos, pero coherente con un proyecto de este tamaño y
+alcance (múltiples plataformas, múltiples backends de renderizado); no se detectó, en la
+consulta, ningún issue marcado como *"showstopper"* generalizado para Windows/Linux vía
+la propia API (revisar con más detalle en release notes si D2 lo exige antes de S4).
+
+**Veredicto C3**: `media_kit` es la única opción viable. No hay comparación real que
+hacer — el resto de bindings están descontinuados, archivados, o no cubren escritorio.
 
 ---
 
