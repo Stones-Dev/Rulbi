@@ -25,6 +25,18 @@ abstract interface class ChannelRepository {
   Future<List<Category>> categoriesFor(String sourceId);
 
   Stream<List<Channel>> watchChannels({required String categoryId});
+
+  /// Purga de tombstones huérfanos ("Tombstones huérfanos (purga)", S2):
+  /// borra de verdad las filas `deletedAt` no nulo (tombstone local de
+  /// T1.6b) que ya no protegen ningún favorito ni watch-state vivo, y
+  /// cuyo tombstone es más antiguo que [deletedBefore] (ventana de gracia
+  /// configurable — si el canal reaparece antes, `importSourceContent` lo
+  /// resucita en su lugar sin tocar esta purga).
+  ///
+  /// "Vivo" = fila de favorito/watch-state existente con `deletedAt IS
+  /// NULL`; un favorito ya tumbado por el merge LWW no protege al canal.
+  /// Devuelve el número de filas borradas.
+  Future<int> purgeOrphanTombstones({required DateTime deletedBefore});
 }
 
 /// Recuento de lo que hizo un [ChannelRepository.importSourceContent] — la

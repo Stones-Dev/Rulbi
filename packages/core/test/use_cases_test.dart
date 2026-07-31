@@ -101,6 +101,10 @@ final class _FakeChannelRepository implements ChannelRepository {
   @override
   Stream<List<Channel>> watchChannels({required String categoryId}) =>
       const Stream.empty();
+
+  @override
+  Future<int> purgeOrphanTombstones({required DateTime deletedBefore}) async =>
+      0;
 }
 
 /// Variante que registra el orden de entrada/salida de
@@ -142,6 +146,10 @@ final class _SequencedChannelRepository implements ChannelRepository {
   @override
   Stream<List<Channel>> watchChannels({required String categoryId}) =>
       const Stream.empty();
+
+  @override
+  Future<int> purgeOrphanTombstones({required DateTime deletedBefore}) async =>
+      0;
 }
 
 final class _FakeChannelSearchPort implements ChannelSearchPort {
