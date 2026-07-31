@@ -116,6 +116,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # La primera corrida real (2026-07-31, run 30634198005) tumbó el
+      # emulador con "FATAL | Not enough space to create userdata
+      # partition. Available: 2819.48 MB, need 7372.80 MB" -- el runner
+      # `ubuntu-latest` trae preinstalados varios SDKs grandes que no usa
+      # este job (dotnet, GHC, CodeQL) y dejan muy poco margen libre para
+      # el AVD. Liberar esto (no es un problema de KVM/aceleración, el
+      # log lo confirma: el proceso del emulador muere antes de arrancar).
+      - name: Liberar espacio en disco (el AVD necesita ~7 GB de partición userdata)
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/lib/android/sdk/ndk
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          df -h /
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
