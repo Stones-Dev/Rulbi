@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'xtream_account.dart';
+import 'xtream_category.dart';
 import 'xtream_failure.dart';
 import 'xtream_json.dart';
 import 'xtream_transport.dart';
@@ -109,6 +110,50 @@ final class XtreamClient {
         expiresAt: expiresAt,
         allowedOutputFormats: formats,
       ),
+    );
+  }
+
+  Future<XtreamResult<List<XtreamCategory>>> liveCategories() =>
+      _getCategories('get_live_categories');
+
+  Future<XtreamResult<List<XtreamCategory>>> vodCategories() =>
+      _getCategories('get_vod_categories');
+
+  Future<XtreamResult<List<XtreamCategory>>> seriesCategories() =>
+      _getCategories('get_series_categories');
+
+  Future<XtreamResult<List<XtreamCategory>>> _getCategories(String action) async {
+    final listResult = await _getJsonList(_playerApiUrl(action: action));
+    if (listResult is XtreamErr<List<Object?>>) {
+      return XtreamErr(listResult.failure);
+    }
+    final items = (listResult as XtreamOk<List<Object?>>).value;
+    return XtreamOk([
+      for (final item in items)
+        if (item is Map) XtreamCategory.fromJson(asFlexibleMap(item)),
+    ]);
+  }
+
+  /// Como [_getJsonBody] pero exige que el nivel superior decodifique a
+  /// una `List` (todas las actions de listado de Xtream — categorías,
+  /// streams, series — devuelven un array JSON) — un objeto donde se
+  /// espera una lista (p. ej. un panel devolviendo `{}` en vez de `[]`
+  /// cuando la cuenta no tiene contenido de ese tipo) se trata como
+  /// malformado en vez de reventar con un `TypeError` en el llamador.
+  Future<XtreamResult<List<Object?>>> _getJsonList(Uri url) async {
+    final bodyResult = await _getJsonBody(url);
+    if (bodyResult is XtreamErr<Object?>) {
+      return XtreamErr(bodyResult.failure);
+    }
+    final decoded = (bodyResult as XtreamOk<Object?>).value;
+    if (decoded is List) return XtreamOk(decoded);
+    // Un panel sin contenido de un tipo a veces manda `{}`/`false` en vez
+    // de `[]` — se trata como "lista vacía", no como error: no hay nada
+    // de malformado en que una cuenta no tenga VOD, por ejemplo.
+    if (decoded is Map && decoded.isEmpty) return const XtreamOk([]);
+    if (decoded == false) return const XtreamOk([]);
+    return const XtreamErr(
+      XtreamMalformed(reason: 'se esperaba un array JSON en la respuesta'),
     );
   }
 
