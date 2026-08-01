@@ -23,13 +23,12 @@ dependencies:
 # independiente y su propio paso en CI (ver ci.yml) — no pasa por
 # `melos bootstrap`/`run analyze`/`run test`.
 #
-# `packages/player_spike` queda FUERA también, pero por un motivo distinto:
-# es el spike descartable de S3 · Spike de escritorio (libmpv vs libVLC,
-# ver docs/bench/S3-desktop-spike.md), sin garantías de calidad ni de
-# vida más allá del sprint. Aislarlo evita que un experimento de un solo
-# sprint entre en `melos bootstrap`/`run analyze`/`run test` o en
-# `ci.yml`. Se archiva en docs/spikes/ al cerrar S3, nunca se promueve
-# a este array.
+# El spike descartable de S3 · Spike de escritorio (libmpv vs libVLC, ver
+# docs/bench/S3-desktop-spike.md) nunca estuvo en este array — se aisló desde
+# su creación por el mismo motivo que packages/data, sin garantías de calidad
+# ni de vida más allá del sprint. Al cerrar S3 (2026-08-01) se archivó en
+# docs/spikes/player_spike-archive/ (ver su README.md); no se promueve nunca
+# a este array, ni siquiera archivado.
 workspace:
   - packages/core
   - packages/protocols

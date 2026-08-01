@@ -24,6 +24,10 @@ analyzer:
     - "**/*.freezed.dart"
     - "**/*.mocks.dart"
     - "build/**"
+    # Spikes archivados (docs/spikes/): instrumentación descartable, sin
+    # garantías de calidad, fuera del workspace de melos por diseño (ver
+    # comentario de `workspace:` en el pubspec.yaml raíz).
+    - "docs/spikes/**"
 
 linter:
   rules:

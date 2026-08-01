@@ -25,3 +25,5 @@ pubspec.lock
 packages/protocols/test/fixtures/
 .agents/skills/
 .claude/skills/
+# Spikes archivados (evidencia histórica, no producción; ver su propio README).
+docs/spikes/
