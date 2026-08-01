@@ -238,7 +238,44 @@ hacer — el resto de bindings están descontinuados, archivados, o no cubren es
 
 ## C1 / C5 / C6 — Formatos, control programático y estabilidad
 
-*(pendiente — bloques 4 y 5)*
+### Corpus de prueba
+
+**Live (9 entradas)**, seleccionadas de forma reproducible por
+`tool/select_spike_corpus.dart` de los golden files reales de T1.1
+(`packages/protocols/test/fixtures/m3u/real/`) — cada entrada verificada por el propio
+script contra la línea literal del fixture, salida en `docs/bench/data/live_corpus.json`:
+HLS h264 HD (ARD, ZDF — dos CDN distintos), HLS h265/HEVC explícito, HLS con path SMIL
+no estándar, HLS geo-bloqueado, audio-only (icecast), URL con path atípico sobre IP
+directa sin DNS/TLS, HLS por IP directa, y un DASH `.mpd` con URL firmada casi con
+certeza caducada (buen caso de "muerte por expiración de firma", distinto de los 404
+sintéticos).
+
+**VOD (4 entradas)**, del [Matroska Test Suite](https://github.com/ietf-wg-cellar/matroska-test-files)
+(IETF CELLAR WG), contenido derivado de los proyectos abiertos de Blender Foundation —
+*Big Buck Bunny* (CC BY 3.0) y *Elephant Dreams* (CC BY 2.5) — vía
+`tool/fixtures_manifest.json` + `tool/fetch_fixtures.dart` (mismo mecanismo que los
+fixtures grandes de T1.1, SHA-256 verificado, no comiteados):
+
+| Fixture | Contenido | Categoría |
+|---|---|---|
+| `test1_baseline.mkv` | MPEG4.2/DivX + MP3 | VOD baseline — "debería funcionar siempre" |
+| `test5_multi_audio_subs.mkv` | H264 + 2 pistas de audio (AAC/AAC+) + subtítulos en 7 idiomas | Audio multipista + selección de subtítulo |
+| `test7_damaged.mkv` | Elementos EBML basura/no estándar + un elemento inválido intercalado | Formato rompedor (parseo dañado) |
+| `test8_audio_gap.mkv` | Frames de audio ausentes entre 6.019s–6.360s | Estabilidad (gap sin detener playback) |
+
+**Gap de corpus reconocido explícitamente** (no se rellena por invención): no se
+encontró, dentro del presupuesto de esta sesión, una fuente de audio **AC3/EAC3** ni de
+subtítulos **ASS/SSA** con licencia libre clara y descargable de forma automatizada — el
+listado oficial de Blender Foundation (`download.blender.org`) solo expone archivos
+`.zip` de cientos de MB sin variantes AC3/MKV dedicadas, y no hay `ffmpeg` disponible en
+este entorno para remuxar una variante propia a partir de Big Buck Bunny. `test5.mkv`
+cubre **audio multipista** y **subtítulos multi-idioma**, pero sus subtítulos son
+`S_TEXT/UTF8` (texto plano), no ASS (verificado inspeccionando los CodecID Matroska del
+binario) — no exactamente lo previsto en la sesión de planificación. Se documenta como
+**riesgo residual de cobertura de C1** para S4/S5, no como hallazgo de compatibilidad de
+ningún motor.
+
+*(Mediciones con los arneses A/B sobre este corpus: bloque 5, pendiente)*
 
 ---
 

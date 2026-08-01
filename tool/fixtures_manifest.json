@@ -14,6 +14,34 @@
       "dest": "packages/protocols/test/fixtures/m3u/large/epgshare01_all_sources.xml.gz",
       "sha256": "da8d3485a53c9218d425af873542800a24c68e26e350f5961a622c27a8ed3265",
       "note": "XMLTV de todas las fuentes de epgshare01 (~193 MB real, medido 2026-07-29; la estimación original de '~80 MB' era optimista). Prueba de estrés del parser XMLTV en streaming/gzip (T1.3), no un caso funcional distinto de epgshare01_es1.xml.gz."
+    },
+    {
+      "id": "spike_vod_baseline",
+      "url": "https://raw.githubusercontent.com/ietf-wg-cellar/matroska-test-files/master/test_files/test1.mkv",
+      "dest": "docs/bench/data/fixtures/test1_baseline.mkv",
+      "sha256": "0996a309ff2095910b9d30d5253b044d637154297ddf7d0bda7f3adedf5addc1",
+      "note": "S3 · Spike de escritorio (C1, VOD baseline). Matroska Test Suite, test1: MPEG4.2/DivX + MP3, contenido de Big Buck Bunny (CC BY 3.0, Blender Foundation). Caso 'debería funcionar siempre'."
+    },
+    {
+      "id": "spike_vod_multi_audio_subs",
+      "url": "https://raw.githubusercontent.com/ietf-wg-cellar/matroska-test-files/master/test_files/test5.mkv",
+      "dest": "docs/bench/data/fixtures/test5_multi_audio_subs.mkv",
+      "sha256": "92acdc33bb0b5d7a4d9b0d6ca792230a78c786a30179dc9999cee41c28642842",
+      "note": "S3 · Spike de escritorio (C1, audio multipista + subtítulos). Matroska Test Suite, test5: H264 + 2 pistas de audio (AAC estéreo + comentario AAC+) + subtítulos en 7 idiomas. Contenido de Elephant Dreams (CC BY 2.5, Blender Foundation)."
+    },
+    {
+      "id": "spike_vod_damaged",
+      "url": "https://raw.githubusercontent.com/ietf-wg-cellar/matroska-test-files/master/test_files/test7.mkv",
+      "dest": "docs/bench/data/fixtures/test7_damaged.mkv",
+      "sha256": "95b21c92ad5a4fe00914ff5009e2a64f12fd4c5fb9cb1c3c888ab50bf0ffe483",
+      "note": "S3 · Spike de escritorio (C1/C6, formato rompedor). Matroska Test Suite, test7: elementos EBML no estándar/basura intercalados y un elemento inválido que debe saltarse. Contenido de Elephant Dreams (CC BY 2.5)."
+    },
+    {
+      "id": "spike_vod_audio_gap",
+      "url": "https://raw.githubusercontent.com/ietf-wg-cellar/matroska-test-files/master/test_files/test8.mkv",
+      "dest": "docs/bench/data/fixtures/test8_audio_gap.mkv",
+      "sha256": "9dddcd1550b814dae44d62e2b9f27c0eca31d5e190df2220cbf7492e3d6c63da",
+      "note": "S3 · Spike de escritorio (C6, estabilidad). Matroska Test Suite, test8: faltan frames de audio entre 6.019s y 6.360s; el playback no debe detenerse. Contenido de Elephant Dreams (CC BY 2.5)."
     }
   ]
 }

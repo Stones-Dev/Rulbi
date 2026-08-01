@@ -1,0 +1,78 @@
+{
+  "generated_by": "tool/select_spike_corpus.dart",
+  "repo_root": "C:\\Users\\Usuario\\Documents\\GitHub\\IPTVapp",
+  "entries": [
+    {
+      "id": "de_ard_hls_h264_hd",
+      "name": "Das Erste HD",
+      "url": "https://daserste-live.ard-mcdn.de/daserste/live/hls/de/master.m3u8",
+      "category": "HLS h264 HD (broadcaster público, alta disponibilidad esperada)",
+      "source_fixture": "kodinerds_clean_tv.m3u",
+      "note": "Caso \"debería funcionar siempre\": ARD es broadcaster público alemán."
+    },
+    {
+      "id": "de_zdf_hls_h264_hd",
+      "name": "ZDF HD",
+      "url": "https://zdf-hls-15.akamaized.net/hls/live/2016498/de/veryhigh/master.m3u8",
+      "category": "HLS h264 HD, CDN Akamai",
+      "source_fixture": "kodinerds_clean_tv.m3u",
+      "note": "Segundo broadcaster público, CDN distinto (Akamai vs ard-mcdn)."
+    },
+    {
+      "id": "sk_rtvs_hevc",
+      "name": ":Šport (1080p)",
+      "url": "http://88.212.15.27/live/test_rtvs_sport_hevc/playlist.m3u8",
+      "category": "HLS h265/HEVC explícito (nombre del stream lo declara)",
+      "source_fixture": "iptv_org_sports.m3u",
+      "note": "Único candidato h265 detectado por nombre en los fixtures reales."
+    },
+    {
+      "id": "us_pluto_smil",
+      "name": "3ABN English",
+      "url": "https://3abn.bozztv.com/3abn2/3abn_live/smil:3abn_live.smil/playlist.m3u8",
+      "category": "HLS con URL de tipo SMIL en el path (dialecto no estándar)",
+      "source_fixture": "iptv_org_us.m3u",
+      "note": "El segmento \"smil:...smil\" en la URL no es un patrón HLS habitual."
+    },
+    {
+      "id": "fr_geo_blocked",
+      "name": "Trace Sport Stars (1080p) [Geo-blocked]",
+      "url": "http://tracesportstars-samsunges.amagi.tv/hls/amagi_hls_data_samsunguk-tracesport-samsungspain/CDN/playlist.m3u8",
+      "category": "HLS geo-bloqueado (marcado explícitamente en el propio EXTINF)",
+      "source_fixture": "iptv_org_es_samsung.m3u",
+      "note": "Caso de error esperado: geo-block, no debería confundirse con fallo del motor."
+    },
+    {
+      "id": "es_radio_icecast",
+      "name": "Flaix 93.8",
+      "url": "https://streaming.giraweb.com/8020/stream",
+      "category": "Audio-only (icecast/shoutcast), sin contenedor HLS",
+      "source_fixture": "iprd_all_stations.m3u",
+      "note": "Radio pura: valida el camino de audio-only de ambos motores."
+    },
+    {
+      "id": "ad_radio_raw_ts_port",
+      "name": "Pròxima 94.6",
+      "url": "http://91.187.93.115:8000/;stream/1",
+      "category": "URL con path atípico (\";stream/1\") sobre HTTP plano, IP directa",
+      "source_fixture": "iprd_all_stations.m3u",
+      "note": "IP directa sin DNS, sin TLS, path con punto y coma — dialecto raro."
+    },
+    {
+      "id": "fr_direct_ip_hls",
+      "name": "6ter (1080p)",
+      "url": "http://145.239.5.177/314/index.m3u8",
+      "category": "HLS servido por IP directa (sin DNS), sin TLS",
+      "source_fixture": "iptv_org_fr.m3u",
+      "note": "Contraste con el patrón \"hostname+CDN\" del resto del corpus."
+    },
+    {
+      "id": "orange_dash_expired",
+      "name": "Classic FM (Orange DASH)",
+      "url": "https://vo-live-media.cdb.cdn.orange.com/Content/Channel/classic_fm/DASH/master.mpd?expires=1734441066&md5=5yiYwF9LCSpOygMQKBr-IQ",
+      "category": "DASH (.mpd) con URL firmada — casi seguro caducada (expires=...)",
+      "source_fixture": "iprd_all_stations.m3u",
+      "note": "Caso de \"muerte por caducidad de firma\", distinto de 404/timeout sintéticos de C6: valida cómo reacciona cada motor a un enlace que devuelve error de autenticación/expiración real, no inventado."
+    }
+  ]
+}

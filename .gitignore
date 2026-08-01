@@ -118,3 +118,10 @@ packages/protocols/test/fixtures/m3u/large/*
 # mismo motivo que bench_100k.m3u (tamaño, y reproducible bajo demanda).
 packages/protocols/test/fixtures/xtream/large/*
 !packages/protocols/test/fixtures/xtream/large/.gitkeep
+
+# Ficheros VOD del spike de escritorio (S3 · Spike de escritorio):
+# descargados bajo demanda por tool/fetch_fixtures.dart, verificados por
+# SHA-256 contra tool/fixtures_manifest.json. No se commitean por tamaño
+# (20-30 MB c/u) — ver docs/bench/S3-desktop-spike.md.
+docs/bench/data/fixtures/*
+!docs/bench/data/fixtures/.gitkeep
