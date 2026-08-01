@@ -21,10 +21,10 @@ Este directorio es un **espejo de solo lectura** de la carpeta del proyecto en e
 | `constitution.md` | `constitution.md` | 2026-07-28 (Sprint 0) |
 | `spec.md` | `spec.md` (rev. 1.1) | 2026-07-28 (Sprint 0) |
 | `ui-spec.md` | `ui-spec.md` | 2026-07-28 (Sprint 0) |
-| `plan.md` | `plan.md` (rev. 1.2) | 2026-07-28 (Sprint 0) |
+| `plan.md` | `plan.md` (rev. 1.5) | 2026-08-01 (S3 · Spike de escritorio, ADR-009) |
 | `tasks.md` | `tasks.md` | 2026-07-29 (cierre de migración ADR-005) |
 
-Los ADRs (`ADR-001`–`ADR-005`) **no se copian aquí**: viven solo en el vault (`02-Proyectos/Reproductor IPTV Multiplataforma/ADRs/`), que es su ubicación canónica según el protocolo 11/7 de `AGENTS.md`.
+Los ADRs (`ADR-001`–`ADR-009`) **no se copian aquí**: viven solo en el vault (`02-Proyectos/Reproductor IPTV Multiplataforma/ADRs/`), que es su ubicación canónica según el protocolo 11/7 de `AGENTS.md`.
 
 ## Cuándo re-sincronizar
 
