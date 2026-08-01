@@ -354,7 +354,44 @@ ningún crash de proceso en ninguna combinación motor×entrada de las 13×2 eje
 
 ## C4 — Footprint
 
-*(pendiente — bloque 6)*
+### Windows
+
+Medido con `flutter build windows --release` de `packages/player_spike`
+(`build/windows/x64/runner/Release/`), desglosado fichero a fichero (`du -sb`):
+
+| Componente | Tamaño | Atribuible a |
+|---|---:|---|
+| `libmpv-2.dll` | 29.764.622 B (28,4 MB) | media_kit — el motor mpv en sí |
+| Stack ANGLE/GL/Vulkan (`d3dcompiler_47.dll`, `libEGL.dll`, `libGLESv2.dll`, `vk_swiftshader.dll`, `vulkan-1.dll`) | 18.458.856 B (17,6 MB) | media_kit — renderizado de vídeo en Windows |
+| `zlib.dll` + plugins Dart de media_kit | 356.864 B (0,35 MB) | media_kit — glue |
+| **Subtotal media_kit** | **48.580.342 B (46,3 MB)** | |
+| `flutter_windows.dll` + `player_spike.exe` | 21.366.784 B (20,4 MB) | Runtime Flutter base, no media_kit |
+| `data/` (assets, ICU) | 7.499.420 B (7,2 MB) | Flutter base |
+| **Total del bundle** | **77.446.546 B (73,9 MB)** | |
+
+**Coste neto de añadir media_kit al bundle de Windows: ~46,3 MB**, de los cuales el
+propio `libmpv-2.dll` es 28,4 MB y el resto es el stack de renderizado ANGLE que
+media_kit necesita para pintar vídeo vía OpenGL ES/ANGLE sobre Direct3D en Windows.
+
+Para contraste, el runtime redistribuible de libVLC (extraído del zip oficial
+`vlc-3.0.23-win64.zip`, ver C2): `libvlc.dll` + `libvlccore.dll` + `plugins/` (mínimo
+necesario para reproducir, sin skins/lua/locale) = **142,2 MB** — el paquete portable
+completo son 191,6 MB. **libVLC es ~3,1x más grande que media_kit** en el mínimo
+necesario (~4,1x contando el portable completo) — confirma cuantitativamente la
+expectativa cualitativa del prompt de sprint ("libmpv suele ser 3-5x más pequeño").
+
+### Linux
+
+Job de CI dedicado, `workflow_dispatch` (`.github/workflows/spike-desktop-footprint.yml`,
+**no** añadido a `push`/`pull_request` — no toca el gate de `main`), que compila
+`packages/player_spike` en `ubuntu-latest` y mide el bundle con `du -sb`. **Pendiente de
+ejecutar manualmente** (requiere disparo explícito vía `gh workflow run` o la UI de
+Actions) — el número de Linux no se ha capturado todavía en esta sesión; ver riesgos
+residuales. Nota importante ya establecida en C2: `media_kit_libs_linux` **no empaqueta
+ningún binario** — depende de `libmpv` del sistema, así que el footprint de la app en sí
+en Linux será sustancialmente menor que en Windows (no hay que embarcar mpv ni ANGLE);
+el coste real recae en la instalación de sistema (`apt install libmpv2` o equivalente),
+fuera del bundle de la app.
 
 ---
 

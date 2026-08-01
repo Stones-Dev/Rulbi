@@ -1,0 +1,53 @@
+name: Spike desktop footprint (Linux)
+
+# S3 · Spike de escritorio (docs/bench/S3-desktop-spike.md, criterio C4).
+# Solo workflow_dispatch a propósito: NO se añade a `push`/`pull_request`
+# para no tocar el gate de main (ci.yml). Construye packages/player_spike
+# en Linux con media_kit y mide el tamaño del bundle resultante — no
+# reproduce vídeo real (eso queda como riesgo residual documentado en el
+# spike, ver bloque de riesgos). Se borra junto al resto del spike al
+# archivarlo en docs/spikes/ al cierre de S3.
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  footprint-linux:
+    name: Build + footprint (ubuntu-latest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar dependencias del sistema (Linux desktop)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build libgtk-3-dev clang cmake pkg-config
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: pub get (player_spike, fuera del workspace melos)
+        working-directory: packages/player_spike
+        run: flutter pub get
+
+      - name: Build Linux release
+        working-directory: packages/player_spike
+        run: flutter build linux --release
+
+      - name: Footprint del bundle
+        working-directory: packages/player_spike/build/linux/x64/release/bundle
+        run: |
+          echo "## Footprint total"
+          du -sb . | tee /tmp/total.txt
+          echo "## Desglose por fichero (bytes)"
+          find . -maxdepth 2 -type f -exec du -b {} \; | sort -rn | tee /tmp/breakdown.txt
+
+      - name: Subir resultado como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-footprint
+          path: |
+            /tmp/total.txt
+            /tmp/breakdown.txt
