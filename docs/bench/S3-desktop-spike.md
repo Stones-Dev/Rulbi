@@ -275,7 +275,80 @@ binario) — no exactamente lo previsto en la sesión de planificación. Se docu
 **riesgo residual de cobertura de C1** para S4/S5, no como hallazgo de compatibilidad de
 ningún motor.
 
-*(Mediciones con los arneses A/B sobre este corpus: bloque 5, pendiente)*
+### Mediciones — arnés A (media_kit 1.2.6) vs arnés B (VLC 3.0.23 oficial, CLI)
+
+Ejecutado el 2026-08-01 en Windows (`packages/player_spike`, release build, y
+`tool/vlc_probe.dart` contra el VLC portable oficial descargado y verificado en C2).
+Datos brutos en `docs/bench/data/media_kit_results.json` y
+`docs/bench/data/vlc_results.json` (no comiteados — ver `.gitignore`); logs verbosos de
+VLC por entrada en `docs/bench/data/vlc_logs/`.
+
+| Entrada | media_kit: ¿reproduce? | VLC: ¿reproduce? | Nota |
+|---|---|---|---|
+| ARD HLS h264 HD | ✅ | ✅ (14,7 s hasta señal de arranque) | Ambos motores lo consiguen; VLC bastante más lento en esta entrada concreta. |
+| ZDF HLS h264 HD (Akamai) | ❌ `Failed to open` | ❌ (log: **HTTP 403**) | **Fallo idéntico en ambos motores** — confirmado por el log de VLC como rechazo del CDN (403), no un defecto de compatibilidad de ningún motor. |
+| RTVS HEVC (h265) | ✅ 14 ms, seek OK, 49,5 s reproducidos | ❌ **timeout a los 40 s** | **Diferenciador real**: el log de VLC (`vlc_logs/sk_rtvs_hevc.log`) muestra la petición HTTP enviada y ninguna respuesta — la conexión se queda colgada. media_kit/libmpv sí completa la conexión y reproduce con normalidad. No se puede descartar que el origen filtre por `User-Agent` (VLC envía `VLC/3.0.23 LibVLC/3.0.23` literal), pero el resultado observado es real y reproducible dos veces. |
+| Pluto SMIL (dialecto no estándar) | ✅ | ✅ (1,7 s) | Ambos toleran el path `smil:...` no estándar. |
+| Trace Sport Stars ["Geo-blocked"] | ✅ (con ~4 pistas de audio reales, ver nota) | ✅ (0,4 s) | **El geo-bloqueo anunciado en el nombre del canal no se reprodujo** contra la IP de salida de esta sesión — ninguno de los dos motores lo bloqueó. Dato del fixture probablemente desactualizado, no invalida la medición. |
+| Icecast radio (audio-only) | ✅ | ✅ (0,5 s) | Camino de audio puro sin contenedor, limpio en ambos. |
+| IP directa + path atípico (`;stream/1`) | ✅ | ✅ (0,6 s) | Dialecto raro tolerado por ambos. |
+| 6ter HLS por IP directa, sin TLS | ✅ | ✅ (0,4 s) | Sin incidencias. |
+| Orange DASH con firma caducada | ❌ `Failed to open` | ❌ (sin reproducir) | **Fallo idéntico en ambos** — confirma la hipótesis de la fase de selección de corpus (URL firmada, `expires=1734441066`, caducada desde hace más de un año en la línea temporal de este proyecto). |
+| VOD baseline (`test1.mkv`) | ✅ 87,3 s, seek OK | ✅ (0,2 s) | Caso trivial, sin sorpresas. |
+| VOD multi-audio + subs (`test5.mkv`) | ✅ **2 pistas de audio reales, 8 subtítulos reales** (descontados los pseudo-tracks `auto`/`no` que media_kit añade siempre, ver nota metodológica), seek OK | ✅ reproduce (el parseo de pistas del log de VLC no se pudo automatizar, ver nota) | media_kit reporta correctamente 2 pistas de audio (coincide con el README oficial del fixture: "main + comentario") y 8 entradas de subtítulo (7 idiomas documentados + 1 adicional no explicado en el README — diferencia menor, no relevante para la decisión). |
+| VOD dañado (`test7.mkv`, EBML junk) | ✅ 37 s, seek OK — **se recupera del elemento inválido intercalado** | ✅ reproduce | Ambos motores tragan el fixture deliberadamente dañado sin caerse. |
+| VOD audio gap (`test8.mkv`) | ✅ 47,3 s, **no se detiene en el hueco de audio** (6,0–6,4 s) | ✅ reproduce | Comportamiento esperado por el propio diseño del fixture: el video no debe pararse por la falta puntual de audio. |
+
+**Resumen C1**: de 13 entradas, media_kit reproduce **11/13** (falla solo en los dos casos
+de fallo genuino de origen: HTTP 403 y URL caducada). VLC reproduce **10/13** — los mismos
+dos fallos genuinos **más** el timeout de la fuente HEVC. **En ningún caso VLC tiene éxito
+donde media_kit falla**; sí hay un caso (HEVC) en sentido contrario.
+
+**Limitación metodológica reconocida** (documentada de antemano en el método, confirmada
+al medir): el recuento de pistas de audio/subtítulo de media_kit incluye 2 pseudo-tracks
+fijas (`AudioTrack.auto()`/`AudioTrack.no()`, ídem subtítulo — confirmado leyendo
+`media_kit-1.2.6/lib/src/player/native/player/real.dart:1712-1713`), así que el número
+crudo de cada entrada es "reales + 2"; se ha corregido a mano en la tabla de arriba donde
+importaba. El arnés B, al depender de *parsear el log humano de VLC* en vez de una API
+estructurada, **no consiguió extraer recuentos de pistas fiables** (0 en todas las
+entradas) — es una limitación del arnés, no evidencia de que VLC no exponga pistas.
+Esta asimetría es inherente a la decisión ya acordada ("se mide el motor, no se construye
+un binding") y se señala aquí para que no se confunda con un hallazgo de compatibilidad.
+También se observó que el indicador `player.stream.playing` de media_kit se activa casi
+instantáneamente (10-30 ms) tras `open()`, **antes** de que haya datos reales
+decodificados — no es una métrica fiable de "tiempo hasta el primer frame"; el corpus
+usa señales secundarias (`buffering_events`, `duration_seconds` poblada, `seek_succeeded`)
+como indicador real de éxito, documentado aquí para que futuras sesiones no reutilicen
+`ms_to_first_playing` de media_kit como cifra de rendimiento sin este matiz.
+
+### C5 — Control programático (RNF-08/RNF-09)
+
+Verificado contra el código fuente público de cada API (no documentación de terceros):
+
+| Capacidad (RNF-08/09) | media_kit (`Player`, `media_kit-1.2.6/lib/src/player/player.dart`) | libVLC (`libvlc_media_player.h`, `videolan/vlc`) |
+|---|---|---|
+| Selección de pista de audio | `setAudioTrack(AudioTrack)` (línea 287) | `libvlc_audio_set_track()` |
+| Selección/carga de subtítulo externo | `setSubtitleTrack(SubtitleTrack)` + `SubtitleTrack.uri(...)`/`.data(...)` para SRT/WebVTT externos (líneas 262-271) | `libvlc_video_set_spu()` + `libvlc_media_slaves_add()` para pistas externas |
+| Gamma/brillo/contraste | Sin wrapper Dart de alto nivel, pero `setProperty(String, ...)` (línea 1223) da acceso directo a las propiedades nativas de mpv (`gamma`, `brightness`, `contrast`, `saturation`, `hue`) | Primera clase: `libvlc_video_set_adjust_int/float()` (líneas 3011-3047 del header) |
+| Prebuffer / gapless para zapping | Configurable vía mpv (`cache`, `demuxer-max-bytes` vía `setProperty`) | Configurable vía libVLC (`network-caching` y opciones de demux) |
+
+**Veredicto C5**: ambos motores cubren las historias de usuario de RNF-08/RNF-09. libVLC
+tiene una API de más alto nivel para ajuste de vídeo (funciones dedicadas vs. bolsa de
+propiedades genérica de mpv), una ventaja real pero menor frente al peso de C1/C2/C3 —
+no cambia la decisión.
+
+### C6 — Estabilidad en runtime
+
+Cubierto de facto por las tres entradas de "muerte real" del propio corpus C1 (más
+representativas que sintéticas puras, según lo acordado): **ZDF (HTTP 403)** y **Orange
+DASH (firma caducada)** — ambos motores fallan de forma controlada: el proceso no
+crashea, media_kit propaga un mensaje de error legible por el stream `player.stream.error`
+("Failed to open ..."), y el arnés continúa con la siguiente entrada sin reiniciar la
+app. VLC termina el proceso con `exit_code=0` y sin reproducir (equivalente a un error
+manejado, visible en su log). El caso **RTVS HEVC** añade una tercera categoría no
+prevista en el diseño original (timeout de conexión, no 404/corte a mitad): media_kit lo
+resuelve con normalidad: no hubo timeout en absoluto (contra la misma URL). No se observó
+ningún crash de proceso en ninguna combinación motor×entrada de las 13×2 ejecutadas.
 
 ---
 

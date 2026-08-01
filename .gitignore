@@ -125,3 +125,15 @@ packages/protocols/test/fixtures/xtream/large/*
 # (20-30 MB c/u) — ver docs/bench/S3-desktop-spike.md.
 docs/bench/data/fixtures/*
 !docs/bench/data/fixtures/.gitkeep
+
+# VLC portable (arnés B del spike de escritorio, tool/vlc_probe.dart):
+# descargado bajo demanda de get.videolan.org, ~80 MB, no se commitea.
+docs/bench/data/tools/*
+!docs/bench/data/tools/.gitkeep
+
+# Resultados y logs del spike de escritorio (JSON generado por los
+# arneses A/B) — datos brutos de una máquina concreta, no artefacto
+# reproducible del repo. El resumen curado vive en
+# docs/bench/S3-desktop-spike.md.
+docs/bench/data/*_results.json
+docs/bench/data/vlc_logs/
