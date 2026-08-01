@@ -404,12 +404,25 @@ teórico**: el `ci.yml` de producción tendrá que añadir `libmpv-dev` al job L
 `analyze-and-test` en cuanto `packages/player` empiece a depender de media_kit — anotado
 en riesgos residuales.
 
-Segunda ejecución (tras el fix): *(ver Referencia de sesión para el run y la cifra final,
-si se completó dentro de esta sesión)*. Nota ya establecida en C2 sigue siendo válida:
-`media_kit_libs_linux` no empaqueta el binario en el *bundle final* (enlace dinámico
-contra el `.so` del sistema en runtime) — el footprint de la app en Linux debería ser
-notablemente menor que en Windows, aunque el *build* necesite las cabeceras de
-desarrollo.
+Segunda ejecución, tras el fix (run
+[30694145494](https://github.com/Stones-Dev/IPTVapp/actions/runs/30694145494), verde):
+
+| Fichero | Tamaño | Atribuible a |
+|---|---:|---|
+| `lib/libflutter_linux_gtk.so` | 16.988.288 B (16,2 MB) | Runtime Flutter base |
+| `lib/libapp.so` | 4.440.976 B (4,2 MB) | Código Dart compilado (AOT), no media_kit |
+| `data/icudtl.dat` | 862.304 B (0,8 MB) | Flutter base (ICU) |
+| `lib/libmedia_kit_video_plugin.so` | 47.120 B | media_kit |
+| `player_spike` (ejecutable) | 24.104 B | — |
+| `lib/libmedia_kit_libs_linux_plugin.so` | 15.744 B | media_kit |
+| **Total del bundle** | **24.820.425 B (23,7 MB)** | |
+
+**Confirma exactamente la hipótesis de C2**: el coste de media_kit en el bundle de Linux
+es **~62,9 KB** (dos `.so` de glue, nada de `libmpv` embarcado) — tres órdenes de
+magnitud menos que en Windows (46,3 MB), porque en Linux el motor se resuelve por enlace
+dinámico contra el `libmpv.so` que ya provee la distribución, no se empaqueta con la app.
+El bundle total de Linux (23,7 MB) es además más pequeño que el de Windows (73,9 MB)
+casi en su totalidad por esta razón, no por diferencias del runtime Flutter en sí.
 
 ---
 
@@ -501,5 +514,29 @@ media_kit media_kit_video media_kit_libs_windows_video media_kit_libs_linux` y
 ---
 
 ## Referencia de sesión
+
+Spike ejecutado en Claude Code el 2026-08-01 (S3 · Spike de escritorio, Semana 4).
+Sesión de plan mode previa el 2026-07-31 con criterios/pesos aprobados por el usuario
+antes de medir.
+
+**Commits** (`Stones-Dev/IPTVapp`, rama `main`, un commit por bloque coherente):
+
+| Commit | Bloque |
+|---|---|
+| `57a92fd` | Andamiaje: `packages/player_spike/` fuera del workspace + skeleton del reporte |
+| `a6ca0ba` | Dossier de licencias (C2) |
+| `ce93342` | Estado de mantenimiento de bindings (C3) |
+| `2a3326a` | Corpus live reproducible + fixtures VOD (C1) |
+| `ac103f2` | Arneses A/B + mediciones C1/C5/C6 |
+| `2924bc8` | Footprint Windows + workflow de footprint Linux (C4) |
+| `bee45b8` | Fix: `libmpv-dev` en el job de footprint Linux (hallazgo real de build) |
+
+**Runs de CI verificados** (patrón `gh run watch --exit-status` +
+`gh run view --json conclusion -q .conclusion` → `success` literal, sin excepción):
+30653078696, 30654006242, 30654030754, 30693343505, 30694005886, 30694027967 y
+30694136566 (este último requirió un `gh run rerun --failed` por el flake ya documentado
+de `purge_benchmark_test.dart` en runner compartido — sin tocar código). Footprint de
+Linux (`workflow_dispatch`): 30694031427 (fallido, `libmpv-dev` ausente) →
+30694145494 (verde, tras el fix).
 
 *(pendiente — commits y run de CI verificado se citan en el bloque 7 de cierre)*
