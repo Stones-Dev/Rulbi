@@ -25,6 +25,11 @@ resolution: workspace
 dependencies:
   flutter:
     sdk: flutter
+  # D4 (idiomas v1: es + en, plan.md rev. 1.4). flutter_localizations es
+  # parte del SDK (Apache-2.0); intl es BSD-3 — ninguna compromete P8.
+  flutter_localizations:
+    sdk: flutter
+  intl: any
 
   cupertino_icons: ^1.0.8
   flutter_riverpod: ^2.6.1
@@ -88,6 +93,11 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  # D4 (i18n base, S4). Config completa en l10n.yaml (arb-dir, clase de
+  # salida AppLocalizations). El código generado no se commitea — ver
+  # regla en .gitignore raíz y el paso `flutter gen-l10n` en ci.yml.
+  generate: true
 
   # To add assets to your application, add an assets section, like this:
   # assets:

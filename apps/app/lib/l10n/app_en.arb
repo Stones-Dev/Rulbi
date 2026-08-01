@@ -1,0 +1,70 @@
+{
+  "@@locale": "en",
+  "appTitle": "IPTV Player",
+  "@appTitle": {
+    "description": "App title shown in the window/task title and used as the default MaterialApp title. Placeholder name — D1 (commercial name) is still an open decision; this is the only key to change once it closes."
+  },
+  "navHome": "Home",
+  "@navHome": {
+    "description": "DesktopShell navigation rail destination: Home · Library (ui-spec §2.2)."
+  },
+  "navLiveTv": "Live TV",
+  "@navLiveTv": {
+    "description": "DesktopShell navigation rail destination: Live channels (ui-spec §2.3)."
+  },
+  "navMovies": "Movies",
+  "@navMovies": {
+    "description": "DesktopShell navigation rail destination: VOD detail section (ui-spec §2.6)."
+  },
+  "navSeries": "Series",
+  "@navSeries": {
+    "description": "DesktopShell navigation rail destination: Series detail section (ui-spec §2.7)."
+  },
+  "navSearch": "Search",
+  "@navSearch": {
+    "description": "DesktopShell navigation rail destination: instant search (ui-spec §2.11)."
+  },
+  "navGuide": "Guide",
+  "@navGuide": {
+    "description": "DesktopShell navigation rail destination: EPG grid (ui-spec §2.4)."
+  },
+  "navFavorites": "Favorites",
+  "@navFavorites": {
+    "description": "DesktopShell navigation rail destination: favorites."
+  },
+  "navSources": "Sources",
+  "@navSources": {
+    "description": "DesktopShell navigation rail destination: source management (ui-spec §2.10)."
+  },
+  "navSettings": "Settings",
+  "@navSettings": {
+    "description": "DesktopShell navigation rail destination: settings (ui-spec §2.15)."
+  },
+  "commonSave": "Save",
+  "@commonSave": {
+    "description": "Generic confirm/save action, reused across forms."
+  },
+  "commonCancel": "Cancel",
+  "@commonCancel": {
+    "description": "Generic dismiss/cancel action, reused across forms."
+  },
+  "channelCount": "{count, plural, =0{No channels} =1{1 channel} other{{count} channels}}",
+  "@channelCount": {
+    "description": "Channel count for a source or category (ui-spec §2.10). Exercises intl plural formatting per D4 requirement 6.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "lastUpdated": "Last updated {date}",
+  "@lastUpdated": {
+    "description": "Last refresh timestamp for a source (ui-spec §2.10). Exercises intl date formatting per D4 requirement 6.",
+    "placeholders": {
+      "date": {
+        "type": "DateTime",
+        "format": "yMMMd"
+      }
+    }
+  }
+}

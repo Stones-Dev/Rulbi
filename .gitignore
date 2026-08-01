@@ -16,6 +16,12 @@ build/
 *.freezed.dart
 *.mocks.dart
 
+# Generado por `flutter gen-l10n` (D4, l10n.yaml de apps/app). Flutter 3.44
+# ya no usa synthetic package, así que cae directo en lib/l10n/ en vez de
+# .dart_tool/flutter_gen/ — mismo criterio que *.g.dart: no se commitea,
+# se regenera en CI antes de `melos run analyze` (ver ci.yml).
+apps/app/lib/l10n/app_localizations*.dart
+
 # Melos
 .melos_tool/
 

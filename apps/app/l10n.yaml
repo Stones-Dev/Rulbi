@@ -1,0 +1,11 @@
+# Configuración de `flutter gen-l10n` (D4, plan.md rev. 1.4). Generador
+# oficial del SDK, sin dependencia de terceros (intl_utils descartado).
+#
+# Flutter 3.44 ya no usa el "synthetic package": el código generado cae
+# directamente en `lib/l10n/` (ver .gitignore raíz) en vez de en
+# `.dart_tool/flutter_gen/`.
+arb-dir: lib/l10n
+template-arb-file: app_en.arb
+output-localization-file: app_localizations.dart
+output-class: AppLocalizations
+nullable-getter: false

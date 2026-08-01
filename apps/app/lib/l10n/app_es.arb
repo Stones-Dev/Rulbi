@@ -1,0 +1,17 @@
+{
+  "@@locale": "es",
+  "appTitle": "Reproductor IPTV",
+  "navHome": "Inicio",
+  "navLiveTv": "TV en directo",
+  "navMovies": "Películas",
+  "navSeries": "Series",
+  "navSearch": "Buscar",
+  "navGuide": "Guía",
+  "navFavorites": "Favoritos",
+  "navSources": "Fuentes",
+  "navSettings": "Ajustes",
+  "commonSave": "Guardar",
+  "commonCancel": "Cancelar",
+  "channelCount": "{count, plural, =0{Sin canales} =1{1 canal} other{{count} canales}}",
+  "lastUpdated": "Última actualización: {date}"
+}
