@@ -119,6 +119,39 @@ gh run view --job <job-id> --log-failed
 
 Al anotar el resultado en `handoff.md` o Notion, cita el `<run-id>` junto a la conclusión verificada — nunca "CI verde" a secas. Si la sesión se cierra antes de que el run termine, anótalo como pendiente ("debe confirmarse verde"), no como confirmado.
 
+## Verificar antes de firmar: "declararse hecho sin haber hecho"
+
+Dos sprints consecutivos han producido la misma clase de fallo, así que ya no es un
+incidente aislado — es un modo de fallo del proceso:
+
+- **Retro de S2, defecto (c)**: la sesión que cerró ADR-007 marcó su tarea de Notion como
+  `Lista` cambiando solo el campo `Estado`, sin reescribir el "Hecho cuando" — que se
+  quedó con el criterio de aceptación original en vez de la línea de resultado real.
+- **Retro de S3, defecto (a)**: `ADR-009` y `plan.md` rev. 1.5 declararon "corregir
+  `constitution.md`" (la inversión de licencias GPL/LGPL en P8) sin que el commit de esa
+  sesión tocara de hecho el texto de P8. Se detectó en el consenso de cierre, al
+  consultar el vault antes de firmar, y se corrigió ahí mismo.
+
+**Regla generalizada**: cualquier declaración de "corrijo / actualizo / cierro X en Y"
+obliga a **abrir Y y verificar su texto antes de firmar la sesión**. Crear un ADR, una
+revisión de plan, o cambiar el estado de una tarea que *diga* que corrige otro archivo
+no corrige ese archivo — solo lo corrige el diff que lo toca.
+
+Checklist operativo antes de firmar cualquier sesión:
+
+- Si escribiste un ADR o una revisión de plan que dice "corrige X": abre X y confirma
+  que X está de hecho corregido.
+- Si marcaste una tarea de Notion como `Lista`: abre el campo "Hecho cuando" y confirma
+  que refleja el trabajo real de esta sesión (patrón de T1.4/T1.5b/T1.6b: se reescribe
+  enterito), no que sigue con el criterio de aceptación original.
+- Si el handoff dice "actualicé Y": abre Y y confirma.
+
+Los ADRs y las revisiones de plan pueden **hacer referencia** a la corrección de otro
+archivo ("esta decisión implica corregir X") — eso es legítimo. Pero entonces el commit
+de esa misma sesión también tiene que **tocar X**. Si no lo toca, la referencia es una
+promesa, no un hecho, y se anota como pendiente explícito en la siguiente entrada de
+`handoff.md`, no se da por resuelta.
+
 ## Para el usuario (viene de TypeScript / PHP-Laravel)
 
 Dart es nuevo para ti — algunos paralelismos útiles mientras trabajamos:
