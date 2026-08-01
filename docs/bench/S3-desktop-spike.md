@@ -8,7 +8,10 @@ el gate D2".
 motor de reproducción de escritorio; documentar qué queda pendiente para el gate técnico
 completo (S3.5); replanificar F2 con la decisión ya tomada, sin esperar a S3.5."
 
-**Veredicto**: *(pendiente — se rellena en el bloque 7, tras completar las mediciones)*.
+**Veredicto: media_kit 1.2.6 (libmpv, LGPLv2.1+/LGPLv3)** para Windows y Linux. libVLC
+queda **vetado** por C2 en su forma distribuida estándar (GPLv3 por defecto) y sin
+binding Flutter de escritorio viable (C3). Ver bloque 7 para la matriz completa y el
+razonamiento.
 
 ---
 
@@ -384,30 +387,118 @@ expectativa cualitativa del prompt de sprint ("libmpv suele ser 3-5x más peque�
 
 Job de CI dedicado, `workflow_dispatch` (`.github/workflows/spike-desktop-footprint.yml`,
 **no** añadido a `push`/`pull_request` — no toca el gate de `main`), que compila
-`packages/player_spike` en `ubuntu-latest` y mide el bundle con `du -sb`. **Pendiente de
-ejecutar manualmente** (requiere disparo explícito vía `gh workflow run` o la UI de
-Actions) — el número de Linux no se ha capturado todavía en esta sesión; ver riesgos
-residuales. Nota importante ya establecida en C2: `media_kit_libs_linux` **no empaqueta
-ningún binario** — depende de `libmpv` del sistema, así que el footprint de la app en sí
-en Linux será sustancialmente menor que en Windows (no hay que embarcar mpv ni ANGLE);
-el coste real recae en la instalación de sistema (`apt install libmpv2` o equivalente),
-fuera del bundle de la app.
+`packages/player_spike` en `ubuntu-latest` y mide el bundle con `du -sb`.
+
+**Hallazgo real de la primera ejecución** (run
+[30694031427](https://github.com/Stones-Dev/IPTVapp/actions/runs/30694031427), fallido):
+`flutter build linux --release` falla en el paso de CMake con
+`CMake Error ... target_link_libraries: Target "media_kit_video_plugin" links to:
+PkgConfig::mpv ... but the target was not found`. Confirma empíricamente, a nivel de
+*build*, lo que C2 ya había establecido a nivel de *empaquetado*: `media_kit_libs_linux`
+no trae su propio `libmpv`, así que **compilar** (no solo ejecutar) la app en Linux
+requiere `libmpv-dev` instalado en el sistema vía `pkg-config`. El job original no lo
+instalaba (`ninja-build libgtk-3-dev clang cmake pkg-config`, el mismo set que usa
+`ci.yml` para el resto del monorepo, que no depende de media_kit). Corregido añadiendo
+`libmpv-dev` al paso de dependencias del sistema. **Riesgo real para S4/S5, no solo
+teórico**: el `ci.yml` de producción tendrá que añadir `libmpv-dev` al job Linux de
+`analyze-and-test` en cuanto `packages/player` empiece a depender de media_kit — anotado
+en riesgos residuales.
+
+Segunda ejecución (tras el fix): *(ver Referencia de sesión para el run y la cifra final,
+si se completó dentro de esta sesión)*. Nota ya establecida en C2 sigue siendo válida:
+`media_kit_libs_linux` no empaqueta el binario en el *bundle final* (enlace dinámico
+contra el `.so` del sistema en runtime) — el footprint de la app en Linux debería ser
+notablemente menor que en Windows, aunque el *build* necesite las cabeceras de
+desarrollo.
 
 ---
 
 ## Matriz final y recomendación
 
-*(pendiente — bloque 7, solo tras completar todas las mediciones)*
+### Aplicación de la regla de veto (C2)
+
+libVLC, en la forma en la que cualquier integración razonable lo obtendría hoy (el
+binario oficial `vlc-3.0.23-win64.zip` de `get.videolan.org`, `COPYING.txt` propio
+confirmado como GPLv2 en esta misma sesión), **es GPL**. Bajo la regla acordada con el
+usuario antes de medir, **queda eliminado del comparativo aunque puntuara mejor en algún
+criterio individual** — no hay excepción vía ADR porque no hay ninguna razón de peso
+que la justifique (media_kit cubre de sobra los mismos requisitos). Se conserva su
+puntuación en la tabla solo con fines de transparencia metodológica, marcada como
+vetada.
+
+### Matriz ponderada
+
+| Criterio | Peso | media_kit (libmpv) | libVLC |
+|---|---:|---:|---:|
+| C1 — Formatos reales | 30 % | 5/5 (11/13, incl. HEVC, MKV dañado, audio-gap) | 4/5 (10/13, falla el único HEVC del corpus) |
+| C2 — Licencia | 25 % | 5/5 (LGPLv2.1+/LGPLv3, verificado en el build real) | **VETADO** (GPLv2/v3 en el binario oficial distribuido) |
+| C3 — Bindings mantenidos | 20 % | 5/5 (activo, cubre Windows/Linux/macOS) | 1/5 (dart_vlc archivado; flutter_vlc_player sin escritorio) |
+| C5 — Control programático | 12 % | 4/5 (cobertura completa vía `setProperty` + API de tracks) | 5/5 (API de más alto nivel, pero irrelevante tras el veto) |
+| C6 — Estabilidad | 8 % | 5/5 (sin crashes, resuelve los 3 casos de fallo real) | 4/5 (sin crashes, pero falla el caso HEVC) |
+| C4 — Footprint | 5 % | 4/5 (46,3 MB añadidos) | 2/5 (142-191 MB, ~3-4x más grande) |
+| **Total ponderado** | | **4,83 / 5** | **Descalificado por veto** (2,42/5 si se ignorase el veto — ni siquiera ganaría) |
+
+**El veto no es lo que decide esta comparativa por sí solo**: incluso ignorando la regla
+de licencia por completo, libVLC pierde en la suma ponderada (2,42 vs 4,83) porque C1
+Y C3 —el 50 % del peso total— ya lo penalizan con fuerza (sin binding de escritorio
+viable, y un fallo real que media_kit no tiene). La licencia GPL es un motivo de
+descalificación adicional y suficiente por sí mismo, no el único.
+
+### Recomendación firme
+
+**Motor: mpv/libmpv, LGPLv2.1+/LGPLv3 (build sin `--enable-gpl`/`-Dgpl=false`).**
+**Plugin Dart: `package:media_kit` (versión fijada en esta sesión: `media_kit ^1.2.6`,
+`media_kit_video ^2.0.1`, `media_kit_libs_windows_video ^1.0.11` para Windows,
+`media_kit_libs_linux ^1.2.1` para Linux).**
+
+Razones ligadas a los criterios de mayor peso:
+
+1. **C2 (25 %, con veto)**: es la única opción que no compromete P8/D2 sin necesidad de
+   excepción ni ADR de "adopción de componente GPL" — el build real que se distribuye ya
+   es LGPL.
+2. **C3 (20 %)**: es la única opción con un binding Flutter de escritorio vivo y
+   mantenido. No hay alternativa real que evaluar.
+3. **C1 (30 %)**: cubre más del corpus real (11/13 vs 10/13), incluyendo el único stream
+   HEVC del corpus y los dos fixtures MKV deliberadamente rotos (dañado y con hueco de
+   audio) sin fallar ni una vez.
+4. **C4 (5 %)**: confirma cuantitativamente la expectativa de partida — footprint 3-4x
+   menor que libVLC empaquetado.
+
+`packages/player_spike` (este mismo paquete, no descartado del todo — ver más abajo)
+demuestra que la integración es viable en Windows sin fricción: `flutter pub add
+media_kit media_kit_video media_kit_libs_windows_video media_kit_libs_linux` y
+`MediaKit.ensureInitialized()` en `main()` son los únicos pasos de arranque.
+
+### Riesgos residuales de la elección
+
+- **Dependencia de un solo mantenedor/organización pequeña** (`media-kit`, ~30
+  contribuidores, sin respaldo corporativo): si el proyecto se abandona, `PlayerPort` ya
+  aísla el motor (P6) — migrar a un fork comunitario o a otro binding sería un cambio
+  contenido a `packages/player`, no una reescritura. Mitigación: revisar la salud del
+  proyecto en cada release mayor de la app.
+- **Linux no verificado en runtime este sprint** — solo build/footprint. Riesgo
+  explícito para S4 (Desktop I): la primera tarea de escritorio real debe incluir una
+  verificación manual de reproducción en Linux antes de darlo por sentado.
+- **`libmpv-dev` es una dependencia de build en Linux, no solo de runtime** (hallazgo real
+  de C4: el primer intento de compilar `packages/player_spike` en `ubuntu-latest` falló
+  por `PkgConfig::mpv` no encontrado). Cuando `packages/player` empiece a depender de
+  media_kit, el job Linux de `analyze-and-test` en `ci.yml` necesitará
+  `apt-get install libmpv-dev` añadido a su paso de dependencias del sistema — si no se
+  añade, el build de Linux de la app real fallará igual que falló este del spike.
+- **Gap de corpus AC3/EAC3 y subtítulos ASS** (documentado en C1) no se ha cerrado — no
+  bloquea la decisión de motor (mpv soporta ambos nativamente, es una limitación de
+  *este spike*, no del motor), pero conviene cerrarlo con golden files reales antes de
+  considerar el soporte de formatos "verificado end-to-end" en S4/S5.
+- **El hallazgo del timeout en la fuente HEVC** (arnés B) no se investigó a fondo (¿filtra
+  por `User-Agent`? ¿es un problema puntual del servidor de prueba?) — no cambia la
+  decisión (media_kit ya gana ese caso), pero si en producción media_kit mostrara el
+  mismo patrón contra otras fuentes, revisar si el `User-Agent`/cabeceras HTTP son
+  configurables vía `setProperty`.
+- **La cifra de footprint de Linux queda pendiente de una ejecución real del workflow**
+  (`spike-desktop-footprint.yml`, disparado manualmente en esta sesión — ver referencia
+  de sesión más abajo para el resultado, si llegó a tiempo).
 
 ---
-
-## Riesgos residuales anticipados
-
-- Linux no se verifica en runtime este sprint (solo build/footprint en CI) — riesgo
-  explícito para S4/S5.
-- El brazo libVLC se mide como motor vía CLI, no como plugin Flutter real — si el veredicto
-  favoreciera igualmente a libVLC, construir el binding sería un coste adicional no medido
-  aquí.
 
 ## Referencia de sesión
 
