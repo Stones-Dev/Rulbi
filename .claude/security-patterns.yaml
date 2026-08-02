@@ -6,7 +6,7 @@ patterns:
       Credencial de panel Xtream literal en código. Las credenciales van al
       almacén seguro (Keychain/Keystore) vía el puerto de packages/data, nunca
       en fuente ni en constantes de test.
-    regex: '(?i)\b(password|passwd|pwd|xtream_key|api_key|apikey)\s*[:=]\s*["''][^"''\s]{4,}["'']'
+    regex: '(?i)[a-z0-9_$]*(password|passwd|pwd|secret|token|api_?key|xtream_?key)[a-z0-9_$]*\s*[:=]\s*["''][^"''\s]{4,}["'']'
     paths: ["**/*.dart"]
     exclude_paths: ["**/test/fixtures/**"]
 
