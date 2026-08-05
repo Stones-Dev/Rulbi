@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:iptv_tokens/iptv_tokens.dart';
 
+import '../features/sources/sources_entry_screen.dart';
 import '../l10n/app_localizations.dart';
 
 /// Shell de escritorio: `NavigationRail` lateral persistente + `IndexedStack`
@@ -19,6 +20,12 @@ class DesktopShell extends StatefulWidget {
 class _DesktopShellState extends State<DesktopShell> {
   int _selectedIndex = 0;
   final FocusNode _focusNode = FocusNode();
+
+  /// Posición de "Fuentes" en `_labels`/`_iconsByDestination` (ui-spec §1,
+  /// orden: Inicio·TV·Películas·Series·Buscar·Guía·Favoritos·**Fuentes**
+  /// ·Ajustes). Única sección con pantalla real desde S4 · Ola 2
+  /// (`SourcesEntryScreen`) — el resto sigue siendo placeholder.
+  static const _sourcesIndex = 7;
 
   static const _iconsByDestination = [
     Icons.home_outlined,
@@ -138,8 +145,11 @@ class _DesktopShellState extends State<DesktopShell> {
                 child: IndexedStack(
                   index: _selectedIndex,
                   children: [
-                    for (final label in labels)
-                      _SectionPlaceholder(label: label),
+                    for (var i = 0; i < labels.length; i++)
+                      if (i == _sourcesIndex)
+                        const SourcesEntryScreen()
+                      else
+                        _SectionPlaceholder(label: labels[i]),
                   ],
                 ),
               ),

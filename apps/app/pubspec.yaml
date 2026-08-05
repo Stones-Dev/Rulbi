@@ -41,23 +41,53 @@ dependencies:
 
   iptv_tokens: any
 
+  # `iptv_core` ya es miembro del workspace compartido (`packages/core` en
+  # el `workspace:` del pubspec raíz) — se referencia sin `path:` explícito,
+  # igual que `iptv_tokens`. Entidades de dominio (`Source`, `SourceConfig`)
+  # que construyen los formularios de S4 · Ola 2.
+  iptv_core: any
+
+  # Parsers M3U/Xtream (mismo criterio de workspace que `iptv_core`) — el
+  # botón "Probar" de ambos formularios reutiliza `parseM3u`/`XtreamClient`,
+  # nunca reimplementa nada de `packages/protocols` (P6).
+  iptv_protocols: any
+
+  # ADR-007 (verificación de migraciones drift en Android runtime): sólo
+  # las `dependencies` de un path-dependency entran en la resolución
+  # compartida del workspace, nunca sus `dev_dependencies` — así que esto
+  # arrastra `drift`/`drift_flutter` (+ sqlite3_flutter_libs/path_provider),
+  # pero NO `drift_dev`/`build_runner`, que es lo que ADR-004 sacó del
+  # workspace por conflicto real con `melos` (`analyzer`/`cli_util`).
+  # Verificado empíricamente (T-Android-drift): `flutter pub get` aquí no
+  # cambia ninguna versión ya comiteada de otra dependencia del workspace.
+  # **Real dependency desde S4 · Ola 2** (Formulario Xtream): el guardado de
+  # una fuente ya persiste de verdad vía `DriftSourceRepository` +
+  # `FlutterSecureCredentialStore` — dejó de ser dev-only.
+  iptv_data:
+    path: ../../packages/data
+
+  # Selector de archivo nativo (ui-spec §2.8, origen "Archivo" del
+  # Formulario M3U): soporta Windows/Linux/Android. MIT (P8 ok).
+  file_picker: ^8.1.7
+
+  # Id de `Source` al crearla. Ya resolvía como transitiva (pubspec.lock
+  # raíz) — declararla aquí no mueve ninguna versión. MIT (P8 ok).
+  uuid: any
+
+  # GET de muestra del "Probar" del Formulario M3U (`m3u_probe.dart`). Ya
+  # resolvía como transitiva vía `iptv_protocols` (mismo criterio que en su
+  # pubspec: no mueve versión). BSD-3 (P8 ok).
+  http: ^1.2.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  # ADR-007 (verificación de migraciones drift en Android runtime): sólo
-  # las `dependencies` de un path-dependency entran en la resolución
-  # compartida del workspace, nunca sus `dev_dependencies` — así que
-  # esto arrastra `drift`/`drift_flutter` (+ sqlite3_flutter_libs/
-  # path_provider), pero NO `drift_dev`/`build_runner`, que es lo que
-  # ADR-004 sacó del workspace por conflicto real con `melos`
-  # (`analyzer`/`cli_util`). Verificado empíricamente (T-Android-drift):
-  # `flutter pub get` aquí no cambia ninguna versión ya comiteada de
-  # otra dependencia del workspace. Dev-only porque hoy solo lo consume
-  # `integration_test/` — la app todavía no persiste nada en producción
-  # (eso llega con "Formulario Xtream").
-  iptv_data:
-    path: ../../packages/data
+  # Tests unitarios de los probes de `features/sources/` (S4 · Ola 2) no
+  # tocan widgets — `package:test` puro es más ligero que `flutter_test`
+  # para ellos. Ya resolvía como transitiva de `flutter_test`; declararla
+  # aquí no mueve ninguna versión.
+  test: any
 
   # Import directo de `package:drift/drift.dart` en el test de migración
   # (operadores de `Expression<bool>`, `NativeDatabase`) — declarada
@@ -65,13 +95,6 @@ dev_dependencies:
   # `iptv_data`/`drift_flutter` (`depend_on_referenced_packages`). Misma
   # versión que resuelve `packages/data` (2.34.3).
   drift: ^2.34.3
-
-  # `iptv_core` ya es miembro del workspace compartido (`packages/core`
-  # en el `workspace:` del pubspec raíz) — se referencia igual que
-  # `iptv_tokens` arriba, sin `path:` explícito. Dev-only: el test de
-  # migración construye entidades (`Channel`, `Favorite`, `WatchState`)
-  # directamente contra `iptv_core`.
-  iptv_core: any
 
   integration_test:
     sdk: flutter

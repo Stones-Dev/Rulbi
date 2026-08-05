@@ -13,5 +13,50 @@
   "commonSave": "Guardar",
   "commonCancel": "Cancelar",
   "channelCount": "{count, plural, =0{Sin canales} =1{1 canal} other{{count} canales}}",
-  "lastUpdated": "Última actualización: {date}"
+  "lastUpdated": "Última actualización: {date}",
+
+  "sourcesAddM3uButton": "Añadir fuente M3U",
+
+  "sourceNameLabel": "Nombre",
+  "sourceNameRequiredError": "Introduce un nombre",
+  "sourceNameDuplicateError": "Ya existe una fuente con ese nombre",
+
+  "refreshPolicyLabel": "Actualización automática",
+  "refreshPolicyManual": "Manual",
+  "refreshPolicyOnOpen": "Al abrir",
+  "refreshPolicyDaily": "Diaria",
+
+  "probingInProgress": "Probando…",
+  "probeErrorNetwork": "Error de red. Comprueba tu conexión.",
+  "probeErrorTimeout": "La petición ha tardado demasiado.",
+  "probeErrorNotFound": "No encontrado (404).",
+  "probeErrorMalformed": "No se pudo interpretar la respuesta.",
+  "probeErrorAuthFailed": "Usuario o contraseña incorrectos.",
+  "probeErrorAccountExpired": "Esta cuenta ha caducado.",
+  "probeErrorAccountDisabled": "Esta cuenta está deshabilitada.",
+  "probeErrorRateLimited": "Demasiadas peticiones. Inténtalo de nuevo en un momento.",
+  "probeErrorUnknown": "Algo ha ido mal.",
+
+  "sourceSavedSnackbar": "Fuente \"{name}\" guardada",
+  "sourceSaveErrorGeneric": "No se pudo guardar la fuente. Inténtalo de nuevo.",
+  "sourceSaveErrorSecretStore": "No se pudo guardar la contraseña de forma segura.",
+
+  "m3uFormTitle": "Fuente M3U",
+  "m3uOriginLabel": "Origen",
+  "m3uOriginUrl": "URL",
+  "m3uOriginFile": "Archivo",
+  "m3uUrlLabel": "URL de la lista",
+  "m3uUrlRequiredError": "Introduce la URL de la lista",
+  "m3uUrlInvalidError": "Introduce una URL http(s) válida",
+  "m3uFileLabel": "Archivo",
+  "m3uFilePickButton": "Elegir archivo…",
+  "m3uFileRequiredError": "Elige un archivo .m3u/.m3u8",
+  "epgUrlLabel": "URL de EPG (XMLTV, opcional)",
+  "epgUrlInvalidError": "Introduce una URL http(s) válida",
+  "userAgentLabel": "User-Agent (opcional)",
+  "advancedSectionLabel": "Avanzado",
+
+  "m3uProbeAction": "Probar",
+  "m3uProbeSuccessTitle": "{count, plural, =0{Sin canales encontrados en la muestra} =1{1 canal encontrado en la muestra} other{{count} canales encontrados en la muestra}}",
+  "m3uProbeDiscardedNote": "{count, plural, =1{1 entrada ignorada} other{{count} entradas ignoradas}}"
 }

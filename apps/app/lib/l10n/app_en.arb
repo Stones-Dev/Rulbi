@@ -66,5 +66,179 @@
         "format": "yMMMd"
       }
     }
+  },
+
+  "sourcesAddM3uButton": "Add M3U source",
+  "@sourcesAddM3uButton": {
+    "description": "Entry point in the Sources section (DesktopShell, ui-spec §2.10 approach for Ola 2) that opens the M3U source form."
+  },
+
+  "sourceNameLabel": "Name",
+  "@sourceNameLabel": {
+    "description": "Shared field label: display name of a source (ui-spec §2.8/§2.9), required and unique."
+  },
+  "sourceNameRequiredError": "Enter a name",
+  "@sourceNameRequiredError": {
+    "description": "Validation error when the source name field is left empty."
+  },
+  "sourceNameDuplicateError": "A source with this name already exists",
+  "@sourceNameDuplicateError": {
+    "description": "Validation/save error when another live (non-deleted) source already uses this name."
+  },
+
+  "refreshPolicyLabel": "Automatic update",
+  "@refreshPolicyLabel": {
+    "description": "Shared field label: SourceRefreshPolicy selector (ui-spec §2.8/§2.9)."
+  },
+  "refreshPolicyManual": "Manual",
+  "@refreshPolicyManual": {
+    "description": "SourceRefreshPolicy.manual option label."
+  },
+  "refreshPolicyOnOpen": "On open",
+  "@refreshPolicyOnOpen": {
+    "description": "SourceRefreshPolicy.onOpen option label."
+  },
+  "refreshPolicyDaily": "Daily",
+  "@refreshPolicyDaily": {
+    "description": "SourceRefreshPolicy.daily option label."
+  },
+
+  "probingInProgress": "Testing…",
+  "@probingInProgress": {
+    "description": "Shared label shown on the probe button while a probe (M3U or Xtream) is in flight."
+  },
+  "probeErrorNetwork": "Network error. Check your connection.",
+  "@probeErrorNetwork": {
+    "description": "ProbeFailureReason.network, shared between the M3U and Xtream probes."
+  },
+  "probeErrorTimeout": "The request took too long.",
+  "@probeErrorTimeout": {
+    "description": "ProbeFailureReason.timeout, shared between the M3U and Xtream probes."
+  },
+  "probeErrorNotFound": "Not found (404).",
+  "@probeErrorNotFound": {
+    "description": "ProbeFailureReason.notFound, shared between the M3U and Xtream probes."
+  },
+  "probeErrorMalformed": "The response could not be read.",
+  "@probeErrorMalformed": {
+    "description": "ProbeFailureReason.malformed, shared between the M3U and Xtream probes."
+  },
+  "probeErrorAuthFailed": "Incorrect username or password.",
+  "@probeErrorAuthFailed": {
+    "description": "ProbeFailureReason.authFailed — only reachable from the Xtream probe, key lives here (shared mapper) so both forms stay i18n-ready from the same commit."
+  },
+  "probeErrorAccountExpired": "This account has expired.",
+  "@probeErrorAccountExpired": {
+    "description": "ProbeFailureReason.accountExpired — Xtream probe only."
+  },
+  "probeErrorAccountDisabled": "This account is disabled.",
+  "@probeErrorAccountDisabled": {
+    "description": "ProbeFailureReason.accountDisabled — Xtream probe only."
+  },
+  "probeErrorRateLimited": "Too many requests. Try again in a moment.",
+  "@probeErrorRateLimited": {
+    "description": "ProbeFailureReason.rateLimited — Xtream probe only (also reachable in theory from the M3U HTTP probe)."
+  },
+  "probeErrorUnknown": "Something went wrong.",
+  "@probeErrorUnknown": {
+    "description": "ProbeFailureReason.unknown fallback, shared between the M3U and Xtream probes."
+  },
+
+  "sourceSavedSnackbar": "Source \"{name}\" saved",
+  "@sourceSavedSnackbar": {
+    "description": "Snackbar shown after successfully saving a source (M3U or Xtream), before popping back to the shell.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sourceSaveErrorGeneric": "Couldn't save the source. Try again.",
+  "@sourceSaveErrorGeneric": {
+    "description": "SaveSourceFailureReason.persistFailed — generic save error shared between both forms."
+  },
+  "sourceSaveErrorSecretStore": "Couldn't save the password securely.",
+  "@sourceSaveErrorSecretStore": {
+    "description": "SaveSourceFailureReason.secretStoreFailed — Xtream form only, key lives here for the shared mapper."
+  },
+
+  "m3uFormTitle": "M3U source",
+  "@m3uFormTitle": {
+    "description": "AppBar title of the M3U source form (ui-spec §2.8)."
+  },
+  "m3uOriginLabel": "Source",
+  "@m3uOriginLabel": {
+    "description": "Label for the URL/File origin selector of the M3U form (ui-spec §2.8)."
+  },
+  "m3uOriginUrl": "URL",
+  "@m3uOriginUrl": {
+    "description": "M3U origin selector option: URL."
+  },
+  "m3uOriginFile": "File",
+  "@m3uOriginFile": {
+    "description": "M3U origin selector option: local file."
+  },
+  "m3uUrlLabel": "Playlist URL",
+  "@m3uUrlLabel": {
+    "description": "M3U form field label (ui-spec §2.8) when origin is URL."
+  },
+  "m3uUrlRequiredError": "Enter the playlist URL",
+  "@m3uUrlRequiredError": {
+    "description": "Validation error when the M3U URL field is left empty."
+  },
+  "m3uUrlInvalidError": "Enter a valid http(s) URL",
+  "@m3uUrlInvalidError": {
+    "description": "Validation error when the M3U URL is not a well-formed http(s) URL with a host."
+  },
+  "m3uFileLabel": "File",
+  "@m3uFileLabel": {
+    "description": "M3U form field label (ui-spec §2.8) when origin is File — shows the picked path."
+  },
+  "m3uFilePickButton": "Choose file…",
+  "@m3uFilePickButton": {
+    "description": "Button that opens the native file picker for the M3U form's File origin."
+  },
+  "m3uFileRequiredError": "Choose an .m3u/.m3u8 file",
+  "@m3uFileRequiredError": {
+    "description": "Validation error when origin is File and no file has been picked yet."
+  },
+  "epgUrlLabel": "EPG URL (XMLTV, optional)",
+  "@epgUrlLabel": {
+    "description": "M3U form field label (ui-spec §2.8): optional XMLTV EPG URL, supports .gz."
+  },
+  "epgUrlInvalidError": "Enter a valid http(s) URL",
+  "@epgUrlInvalidError": {
+    "description": "Validation error when the optional EPG URL field is non-empty but not a well-formed http(s) URL."
+  },
+  "userAgentLabel": "User-Agent (optional)",
+  "@userAgentLabel": {
+    "description": "M3U form field label (ui-spec §2.8), inside the collapsed Advanced section."
+  },
+  "advancedSectionLabel": "Advanced",
+  "@advancedSectionLabel": {
+    "description": "Collapsed section header in the M3U form containing User-Agent (ui-spec §2.8)."
+  },
+
+  "m3uProbeAction": "Test",
+  "@m3uProbeAction": {
+    "description": "M3U form probe button label (ui-spec §2.8: \"Probar\")."
+  },
+  "m3uProbeSuccessTitle": "{count, plural, =0{No channels found in the sample} =1{1 channel found in the sample} other{{count} channels found in the sample}}",
+  "@m3uProbeSuccessTitle": {
+    "description": "M3U probe success summary: how many channels were parsed from the sample.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "m3uProbeDiscardedNote": "{count, plural, =1{1 entry ignored} other{{count} entries ignored}}",
+  "@m3uProbeDiscardedNote": {
+    "description": "M3U probe success summary: additional note shown only when discardedCount > 0.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }
