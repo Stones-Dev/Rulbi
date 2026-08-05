@@ -27,6 +27,7 @@ dependencies:
   # sin escribir ese cableado a mano; envuelve sqlite3_flutter_libs +
   # path_provider.
   drift_flutter: ^0.3.1
+  flutter_secure_storage: ^10.3.1
 
 dev_dependencies:
   flutter_test:
@@ -43,5 +44,6 @@ dev_dependencies:
   # (CLAUDE.md, regla de capas).
   iptv_protocols:
     path: ../protocols
+  flutter_secure_storage_platform_interface: ^2.0.3
 
 flutter:

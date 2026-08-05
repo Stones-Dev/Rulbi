@@ -13,3 +13,4 @@ export 'src/repositories/favorites_repository.dart';
 export 'src/repositories/paired_device_repository.dart';
 export 'src/repositories/source_repository.dart';
 export 'src/repositories/watch_state_repository.dart';
+export 'src/security/flutter_secure_credential_store.dart';
