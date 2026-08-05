@@ -1,8 +1,8 @@
 {
   "@@locale": "en",
-  "appTitle": "IPTV Player",
+  "appTitle": "Rulbi",
   "@appTitle": {
-    "description": "App title shown in the window/task title and used as the default MaterialApp title. Placeholder name — D1 (commercial name) is still an open decision; this is the only key to change once it closes."
+    "description": "App title shown in the window/task title and used as the default MaterialApp title. Commercial name (D1, resolved 2026-08-02): Rulbi."
   },
   "navHome": "Home",
   "@navHome": {
