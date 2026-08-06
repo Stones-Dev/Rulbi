@@ -10,14 +10,24 @@ import 'source_form_widgets.dart';
 import 'source_providers.dart';
 import 'xtream_probe.dart';
 
-/// Formulario de fuente Xtream (ui-spec §2.9, ADR-006, S4 · Ola 2). La
-/// contraseña nunca entra en `Source`/`XtreamSourceConfig` (ver
-/// `source.dart:52-56`): se pasa a `SaveSource` como `secret` y termina
-/// solo en `SecureCredentialStore`. La URL del servidor se normaliza con
-/// `normalizeXtreamPanelHost` (`packages/protocols`) — este widget no
-/// reimplementa esa lógica (P6/ADR-006).
+/// Formulario de fuente Xtream (ui-spec §2.9, ADR-006, S4 · Ola 2; edición
+/// desde S4 · Ola 3). La contraseña nunca entra en `Source`/
+/// `XtreamSourceConfig` (ver `source.dart:52-56`): se pasa a `SaveSource`
+/// como `secret` y termina solo en `SecureCredentialStore`. La URL del
+/// servidor se normaliza con `normalizeXtreamPanelHost`
+/// (`packages/protocols`) — este widget no reimplementa esa lógica
+/// (P6/ADR-006).
+///
+/// [initialSource] `!= null` activa el modo edición: precarga
+/// nombre/host/usuario, pero **nunca** la contraseña (P5) — el campo
+/// arranca vacío con una pista ("déjalo en blanco para mantener la
+/// actual"); un campo vacío al guardar significa "sin cambios" y no toca
+/// el almacén seguro (ver `SaveSource.call`).
 class XtreamSourceForm extends ConsumerStatefulWidget {
-  const XtreamSourceForm({super.key});
+  const XtreamSourceForm({this.initialSource, super.key});
+
+  /// Fuente a editar, o `null` para dar de alta una nueva.
+  final Source? initialSource;
 
   static const nameFieldKey = Key('xtreamSourceForm.name');
   static const hostFieldKey = Key('xtreamSourceForm.host');
@@ -45,6 +55,24 @@ class _XtreamSourceFormState extends ConsumerState<XtreamSourceForm> {
   bool _isSaving = false;
   ProbeResult<XtreamProbeSummary>? _probeResult;
   SaveSourceFailureReason? _saveFailure;
+
+  bool get _isEditing => widget.initialSource != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final source = widget.initialSource;
+    if (source == null) return;
+
+    _nameController.text = source.name;
+    _refreshPolicy = source.refreshPolicy;
+    if (source.config case XtreamSourceConfig(:final host, :final username)) {
+      _hostController.text = host.toString();
+      _usernameController.text = username;
+    }
+    // La contraseña NUNCA se precarga desde el almacén seguro (P5) — el
+    // campo queda vacío a propósito, ver docstring de la clase.
+  }
 
   @override
   void dispose() {
@@ -110,11 +138,17 @@ class _XtreamSourceFormState extends ConsumerState<XtreamSourceForm> {
 
     final saveSource = ref.read(saveSourceProvider);
     final username = _usernameController.text.trim();
+    // Campo vacío en edición == "sin cambios" (P5, patrón estándar de
+    // formularios de credenciales): SaveSource no toca el almacén seguro
+    // cuando `secret` es null. En alta, el validador ya exige contraseña,
+    // así que aquí nunca llega vacío por ese camino.
+    final password = _passwordController.text;
     final result = await saveSource(
       name: _nameController.text.trim(),
       config: XtreamSourceConfig(host: hostResult.host, username: username),
       refreshPolicy: _refreshPolicy,
-      secret: _passwordController.text,
+      secret: password.isEmpty ? null : password,
+      existing: widget.initialSource,
     );
 
     if (!mounted) return;
@@ -124,7 +158,7 @@ class _XtreamSourceFormState extends ConsumerState<XtreamSourceForm> {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(l10n.sourceSavedSnackbar(source.name))));
-        Navigator.of(context).pop();
+        Navigator.of(context).pop(source);
       case SaveSourceFailed(:final reason):
         setState(() {
           _isSaving = false;
@@ -178,6 +212,7 @@ class _XtreamSourceFormState extends ConsumerState<XtreamSourceForm> {
                 obscureText: _obscurePassword,
                 decoration: InputDecoration(
                   labelText: l10n.xtreamPasswordLabel,
+                  helperText: _isEditing ? l10n.xtreamPasswordKeepHint : null,
                   suffixIcon: IconButton(
                     key: XtreamSourceForm.togglePasswordVisibilityKey,
                     icon: Icon(
@@ -190,8 +225,11 @@ class _XtreamSourceFormState extends ConsumerState<XtreamSourceForm> {
                         setState(() => _obscurePassword = !_obscurePassword),
                   ),
                 ),
-                validator: (value) =>
-                    (value == null || value.isEmpty) ? l10n.xtreamPasswordRequiredError : null,
+                // En edición, un campo vacío es válido — significa "sin
+                // cambios" (ver _handleSave). Solo se exige en alta.
+                validator: (value) => (!_isEditing && (value == null || value.isEmpty))
+                    ? l10n.xtreamPasswordRequiredError
+                    : null,
               ),
               const SizedBox(height: 16),
               RefreshPolicyDropdown(

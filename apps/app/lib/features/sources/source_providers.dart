@@ -83,3 +83,21 @@ final xtreamImportChannelSourceProvider = Provider<ImportChannelSource>((ref) {
     transportFactory: () => RetryingXtreamTransport(HttpXtreamTransport()),
   );
 });
+
+/// Gestión de fuentes (S4 · Ola 3, ui-spec §2.10). `watchAll()` incluye
+/// tombstones (`DriftSourceRepository`, sin filtro) — se filtran aquí,
+/// una sola vez, para que ningún widget tenga que acordarse de excluir
+/// `isDeleted` por su cuenta.
+final sourcesStreamProvider = StreamProvider<List<Source>>((ref) {
+  return ref
+      .watch(sourceRepositoryProvider)
+      .watchAll()
+      .map((sources) => sources.where((s) => !s.isDeleted).toList());
+});
+
+/// Nº de canales vivos por fuente (`ChannelRepository.countBySource`, ver
+/// commit de recuento de canales). `family` porque cada fila del listado
+/// pide el suyo — Riverpod cachea por `sourceId`.
+final channelCountProvider = FutureProvider.family<int, String>((ref, sourceId) {
+  return ref.watch(channelRepositoryProvider).countBySource(sourceId);
+});

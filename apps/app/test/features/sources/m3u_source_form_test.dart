@@ -298,4 +298,58 @@ void main() {
       expect(find.byKey(M3uSourceForm.nameFieldKey), findsOneWidget);
     });
   });
+
+  group('edición (Gestión de fuentes, S4 · Ola 3)', () {
+    final existing = Source(
+      id: 'existente-id',
+      config: M3uUrlSourceConfig(
+        url: Uri.parse('http://host/vieja.m3u'),
+        epgUrl: Uri.parse('http://host/guide.xml'),
+        userAgent: 'ViejoAgente/1.0',
+      ),
+      name: 'Nombre viejo',
+      updatedAt: DateTime.utc(2026, 8, 1),
+      lastRefresh: DateTime.utc(2026, 8, 2),
+      refreshPolicy: SourceRefreshPolicy.daily,
+    );
+
+    testWidgets('precarga los campos desde el Source existente', (tester) async {
+      await pumpSourceForm(
+        tester,
+        M3uSourceForm(initialSource: existing),
+        overrides: overridesWith(),
+      );
+
+      expect(find.text('Nombre viejo'), findsOneWidget);
+      expect(find.text('http://host/vieja.m3u'), findsOneWidget);
+      expect(find.text('http://host/guide.xml'), findsOneWidget);
+    });
+
+    testWidgets(
+      'guardar en edición conserva el id y devuelve el Source al hacer pop',
+      (tester) async {
+        await sources.upsert(existing);
+        await pumpSourceForm(
+          tester,
+          M3uSourceForm(initialSource: existing),
+          overrides: overridesWith(),
+        );
+
+        await tester.enterText(
+          find.byKey(M3uSourceForm.urlFieldKey),
+          'http://host/nueva.m3u',
+        );
+        await tester.tap(find.text('Save'));
+        await tester.pumpAndSettle();
+
+        final saved = sources.savedSources.single;
+        expect(saved.id, 'existente-id');
+        expect(saved.lastRefresh, DateTime.utc(2026, 8, 2)); // conservado
+        expect(
+          (saved.config as M3uUrlSourceConfig).url,
+          Uri.parse('http://host/nueva.m3u'),
+        );
+      },
+    );
+  });
 }

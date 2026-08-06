@@ -9,6 +9,15 @@ import 'package:iptv_protocols/iptv_protocols.dart';
 import 'probe_result.dart';
 import 'source_providers.dart';
 
+/// Estado ok/error del último import de esta *sesión de app* — deuda de
+/// persistencia documentada y aceptada (D-plan-gestión, S4 · Ola 3): no
+/// hay columna en `sources` para esto todavía, así que se pierde al cerrar
+/// la app. [ImportController] lo actualiza al terminar cada import
+/// (Done/Failed); [ImportCancelled] no lo toca — cancelar no es un juicio
+/// sobre la fuente.
+final lastImportStatusProvider =
+    StateProvider<Map<String, bool>>((ref) => const {});
+
 /// Informe de tolerancia de una importación (S4 · Ola 3, ui-spec §2.14):
 /// envuelve `ImportReport` (M3U) o `XtreamImportReport` (Xtream) sin
 /// reinventar sus campos (P6 — cada capa de protocolo describe sus
@@ -265,6 +274,7 @@ class ImportController extends Notifier<ImportState> {
         reason: _mapImportError(error),
         channelsSeen: 0,
       );
+      _markStatus(source.id, ok: false);
       return;
     }
     // `parseM3u`/`XtreamClient.importChannels()` completan su informe con
@@ -314,31 +324,37 @@ class ImportController extends Notifier<ImportState> {
           : await manageSources.refreshSource(source.id, relay.stream);
       final summary = await outcome.summary;
 
-      state = _cancelRequested
-          ? ImportCancelled(
-              sourceId: source.id,
-              sourceName: source.name,
-              channelsSeen: seen,
-            )
-          : ImportDone(
-              sourceId: source.id,
-              sourceName: source.name,
-              stats: stats,
-              summary: summary,
-            );
+      if (_cancelRequested) {
+        state = ImportCancelled(
+          sourceId: source.id,
+          sourceName: source.name,
+          channelsSeen: seen,
+        );
+      } else {
+        state = ImportDone(
+          sourceId: source.id,
+          sourceName: source.name,
+          stats: stats,
+          summary: summary,
+        );
+        _markStatus(source.id, ok: true);
+      }
     } catch (error) {
-      state = _cancelRequested
-          ? ImportCancelled(
-              sourceId: source.id,
-              sourceName: source.name,
-              channelsSeen: seen,
-            )
-          : ImportFailed(
-              sourceId: source.id,
-              sourceName: source.name,
-              reason: _mapImportError(error),
-              channelsSeen: seen,
-            );
+      if (_cancelRequested) {
+        state = ImportCancelled(
+          sourceId: source.id,
+          sourceName: source.name,
+          channelsSeen: seen,
+        );
+      } else {
+        state = ImportFailed(
+          sourceId: source.id,
+          sourceName: source.name,
+          reason: _mapImportError(error),
+          channelsSeen: seen,
+        );
+        _markStatus(source.id, ok: false);
+      }
     } finally {
       await _subscription?.cancel();
       _subscription = null;
@@ -364,6 +380,15 @@ class ImportController extends Notifier<ImportState> {
     HttpException() => ProbeFailureReason.malformed,
     _ => ProbeFailureReason.unknown,
   };
+
+  /// Gestión de fuentes (ui-spec §2.10): registra el resultado ok/error del
+  /// último import de esta sesión — deuda de persistencia documentada y
+  /// aceptada, ver [lastImportStatusProvider].
+  void _markStatus(String sourceId, {required bool ok}) {
+    ref.read(lastImportStatusProvider.notifier).update(
+      (map) => {...map, sourceId: ok},
+    );
+  }
 }
 
 final importControllerProvider =

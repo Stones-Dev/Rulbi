@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:iptv_app/features/sources/import_controller.dart';
 import 'package:iptv_app/features/sources/m3u_probe.dart';
 import 'package:iptv_app/features/sources/probe_result.dart';
@@ -13,8 +15,15 @@ import 'package:iptv_protocols/iptv_protocols.dart';
 /// [SourceRepository] en memoria. `upsert` puede configurarse para fallar
 /// (`failUpsert`) — necesario para probar la compensación de
 /// `SaveSource` cuando el guardado del secreto ya tuvo éxito.
+///
+/// `watchAll()` es reactivo (`StreamController.broadcast`, no
+/// `Stream.value` de un solo disparo, S4 · Ola 3): Gestión de fuentes
+/// depende de que el listado se refresque solo tras editar/activar/
+/// eliminar, igual que hace `DriftSourceRepository.watchAll()` con una
+/// live query real de drift.
 final class FakeSourceRepository implements SourceRepository {
   final Map<String, Source> _byId = {};
+  final _controller = StreamController<List<Source>>.broadcast();
   bool failUpsert = false;
 
   List<Source> get savedSources => _byId.values.toList();
@@ -31,10 +40,14 @@ final class FakeSourceRepository implements SourceRepository {
       throw StateError('upsert forzado a fallar (fixture de test)');
     }
     _byId[source.id] = source;
+    _controller.add(_byId.values.toList());
   }
 
   @override
-  Stream<List<Source>> watchAll() => Stream.value(_byId.values.toList());
+  Stream<List<Source>> watchAll() async* {
+    yield _byId.values.toList();
+    yield* _controller.stream;
+  }
 }
 
 /// [SecureCredentialStore] en memoria. `failSave`/`failDelete` permiten

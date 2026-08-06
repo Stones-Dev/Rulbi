@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iptv_tokens/iptv_tokens.dart';
 
 import '../features/sources/import_status_bar.dart';
-import '../features/sources/sources_entry_screen.dart';
+import '../features/sources/sources_screen.dart';
 import '../l10n/app_localizations.dart';
 
 /// Shell de escritorio: `NavigationRail` lateral persistente + `IndexedStack`
@@ -28,7 +28,8 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
   /// Posición de "Fuentes" en `_labels`/`_iconsByDestination` (ui-spec §1,
   /// orden: Inicio·TV·Películas·Series·Buscar·Guía·Favoritos·**Fuentes**
   /// ·Ajustes). Única sección con pantalla real desde S4 · Ola 2
-  /// (`SourcesEntryScreen`) — el resto sigue siendo placeholder.
+  /// (`SourcesScreen`, gestión de fuentes desde Ola 3) — el resto sigue
+  /// siendo placeholder.
   static const _sourcesIndex = 7;
 
   static const _iconsByDestination = [
@@ -161,7 +162,7 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
             children: [
               for (var i = 0; i < labels.length; i++)
                 if (i == _sourcesIndex)
-                  const SourcesEntryScreen()
+                  const SourcesScreen()
                 else
                   _SectionPlaceholder(label: labels[i]),
             ],

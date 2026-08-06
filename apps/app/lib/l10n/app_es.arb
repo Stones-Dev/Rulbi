@@ -101,5 +101,20 @@
   "importM3uDiscardLine": "Línea {lineNumber}: {reason}",
   "importXtreamDiscardLine": "{action}: {reason}",
 
-  "importStatusBarRunning": "Importando {name}…"
+  "importStatusBarRunning": "Importando {name}…",
+
+  "sourcesEmptyTitle": "Aún no hay fuentes",
+  "sourcesEmptyHint": "Añade una lista M3U o conecta un panel Xtream para empezar.",
+  "sourceNeverImported": "Nunca importada",
+  "sourceRefreshTooltip": "Actualizar",
+  "sourceEditTooltip": "Editar",
+  "sourceDeleteTooltip": "Eliminar",
+  "sourceDeleteConfirmTitle": "¿Eliminar fuente?",
+  "sourceDeleteConfirmBody": "Se eliminará \"{name}\" y sus canales. Esta acción no se puede deshacer.",
+  "sourceDeleteConfirmAction": "Eliminar",
+  "sourceDeleteError": "No se pudo eliminar la fuente. Inténtalo de nuevo.",
+  "sourceTypeM3u": "M3U",
+  "sourceTypeXtream": "Xtream",
+
+  "xtreamPasswordKeepHint": "Déjalo en blanco para mantener la contraseña actual"
 }

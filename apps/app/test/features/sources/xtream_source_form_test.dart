@@ -453,4 +453,88 @@ void main() {
       expect(find.text("Couldn't save the source. Try again."), findsOneWidget);
     });
   });
+
+  group('edición (Gestión de fuentes, S4 · Ola 3)', () {
+    final existing = Source(
+      id: 'xtream-existente',
+      config: XtreamSourceConfig(
+        host: Uri.parse('http://panel.example:8080'),
+        username: 'demo',
+      ),
+      name: 'Mi panel viejo',
+      updatedAt: DateTime.utc(2026, 8, 1),
+      lastRefresh: DateTime.utc(2026, 8, 2),
+    );
+
+    testWidgets(
+      'precarga nombre/host/usuario, pero la contraseña queda vacía con pista (P5)',
+      (tester) async {
+        await pumpSourceForm(
+          tester,
+          XtreamSourceForm(initialSource: existing),
+          overrides: overridesWith(),
+        );
+
+        expect(find.text('Mi panel viejo'), findsOneWidget);
+        expect(find.text('http://panel.example:8080'), findsOneWidget);
+        expect(find.text('demo'), findsOneWidget);
+        final passwordField = tester.widget<TextFormField>(
+          find.byKey(XtreamSourceForm.passwordFieldKey),
+        );
+        expect(passwordField.controller?.text, isEmpty);
+        expect(
+          find.text('Leave blank to keep the current password'),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'guardar con la contraseña en blanco no toca el almacén seguro (P5)',
+      (tester) async {
+        await sources.upsert(existing);
+        await secureStore.save('xtream-existente', 'contraseña-original');
+        await pumpSourceForm(
+          tester,
+          XtreamSourceForm(initialSource: existing),
+          overrides: overridesWith(),
+        );
+
+        await tester.enterText(
+          find.byKey(XtreamSourceForm.nameFieldKey),
+          'Mi panel renombrado',
+        );
+        await tester.tap(find.text('Save'));
+        await tester.pumpAndSettle();
+
+        expect(secureStore.secrets['xtream-existente'], 'contraseña-original');
+        final saved = sources.savedSources.single;
+        expect(saved.id, 'xtream-existente');
+        expect(saved.name, 'Mi panel renombrado');
+        expect(saved.lastRefresh, DateTime.utc(2026, 8, 2)); // conservado
+      },
+    );
+
+    testWidgets(
+      'guardar con una contraseña nueva la reemplaza en el almacén seguro',
+      (tester) async {
+        await sources.upsert(existing);
+        await secureStore.save('xtream-existente', 'contraseña-original');
+        await pumpSourceForm(
+          tester,
+          XtreamSourceForm(initialSource: existing),
+          overrides: overridesWith(),
+        );
+
+        await tester.enterText(
+          find.byKey(XtreamSourceForm.passwordFieldKey),
+          'contraseña-nueva',
+        );
+        await tester.tap(find.text('Save'));
+        await tester.pumpAndSettle();
+
+        expect(secureStore.secrets['xtream-existente'], 'contraseña-nueva');
+      },
+    );
+  });
 }

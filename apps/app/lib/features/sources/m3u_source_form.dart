@@ -12,16 +12,24 @@ import 'source_providers.dart';
 
 enum M3uOrigin { url, file }
 
-/// Formulario de fuente M3U (ui-spec §2.8, S4 · Ola 2). No llama a
-/// `ManageSources.addSource` (Ola 3): guarda la fuente con
-/// `lastRefresh == null` vía `SaveSource` y vuelve al shell.
+/// Formulario de fuente M3U (ui-spec §2.8, S4 · Ola 2; edición desde S4 ·
+/// Ola 3). No llama a `ManageSources.addSource`/`refreshSource` — eso es
+/// `ImportController` (Ola 3), invocado por Gestión de fuentes tras
+/// recibir el `Source` que devuelve este formulario al hacer pop.
+///
+/// [initialSource] `!= null` activa el modo edición (Gestión de fuentes):
+/// precarga los campos desde el `Source` existente y pasa `existing` a
+/// `SaveSource` para conservar `id`/`enabled`/`lastRefresh`.
 class M3uSourceForm extends ConsumerStatefulWidget {
-  const M3uSourceForm({this.pickFile, super.key});
+  const M3uSourceForm({this.pickFile, this.initialSource, super.key});
 
   /// Inyectable para tests de widget — el `file_picker` real dispara un
   /// diálogo nativo que no existe en el entorno de test. `null` (el valor
   /// de producción) usa `FilePicker.platform.pickFiles`.
   final Future<String?> Function()? pickFile;
+
+  /// Fuente a editar, o `null` para dar de alta una nueva.
+  final Source? initialSource;
 
   static const nameFieldKey = Key('m3uSourceForm.name');
   static const originSegmentKey = Key('m3uSourceForm.origin');
@@ -50,6 +58,31 @@ class _M3uSourceFormState extends ConsumerState<M3uSourceForm> {
   bool _isSaving = false;
   ProbeResult<M3uProbeSummary>? _probeResult;
   SaveSourceFailureReason? _saveFailure;
+
+  @override
+  void initState() {
+    super.initState();
+    final source = widget.initialSource;
+    if (source == null) return;
+
+    _nameController.text = source.name;
+    _refreshPolicy = source.refreshPolicy;
+    switch (source.config) {
+      case M3uUrlSourceConfig(:final url, :final epgUrl, :final userAgent):
+        _origin = M3uOrigin.url;
+        _urlController.text = url.toString();
+        if (epgUrl != null) _epgUrlController.text = epgUrl.toString();
+        if (userAgent != null) _userAgentController.text = userAgent;
+      case M3uFileSourceConfig(:final filePath, :final epgUrl):
+        _origin = M3uOrigin.file;
+        _fileController.text = filePath;
+        if (epgUrl != null) _epgUrlController.text = epgUrl.toString();
+      case XtreamSourceConfig():
+        // No debería llegar aquí: Gestión de fuentes abre este formulario
+        // solo para SourceKind.m3uUrl/m3uFile (ver sources_screen.dart).
+        break;
+    }
+  }
 
   @override
   void dispose() {
@@ -159,6 +192,7 @@ class _M3uSourceFormState extends ConsumerState<M3uSourceForm> {
       name: _nameController.text.trim(),
       config: config,
       refreshPolicy: _refreshPolicy,
+      existing: widget.initialSource,
     );
 
     if (!mounted) return;
@@ -168,7 +202,7 @@ class _M3uSourceFormState extends ConsumerState<M3uSourceForm> {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(l10n.sourceSavedSnackbar(source.name))));
-        Navigator.of(context).pop();
+        Navigator.of(context).pop(source);
       case SaveSourceFailed(:final reason):
         setState(() {
           _isSaving = false;

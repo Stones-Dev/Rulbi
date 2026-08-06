@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:iptv_app/features/sources/source_providers.dart';
 import 'package:iptv_app/l10n/app_localizations.dart';
 import 'package:iptv_app/shell/desktop_shell.dart';
+
+import 'features/sources/_helpers/fakes.dart';
 
 /// DesktopShell navegable (S4 · Desktop I, Ola 1). Escrito ANTES de la
 /// implementación real del NavigationRail (deben fallar en rojo hasta esa
@@ -12,6 +15,14 @@ import 'package:iptv_app/shell/desktop_shell.dart';
 void main() {
   Widget wrap(Widget child, {Locale locale = const Locale('en')}) {
     return ProviderScope(
+      // La sección Fuentes (S4 · Ola 3) está cableada a persistencia real
+      // (sourceRepositoryProvider -> iptvDatabaseProvider -> SQLite real)
+      // — sin este override, cualquier test que monte DesktopShell entero
+      // intenta abrir una BD real y pumpAndSettle() nunca termina
+      // (CircularProgressIndicator indeterminado mientras carga).
+      overrides: [
+        sourceRepositoryProvider.overrideWithValue(FakeSourceRepository()),
+      ],
       child: MaterialApp(
         locale: locale,
         localizationsDelegates: AppLocalizations.localizationsDelegates,

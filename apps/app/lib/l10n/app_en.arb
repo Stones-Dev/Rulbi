@@ -471,5 +471,64 @@
         "type": "String"
       }
     }
+  },
+
+  "sourcesEmptyTitle": "No sources yet",
+  "@sourcesEmptyTitle": {
+    "description": "Headline of the empty state in source management (ui-spec §2.1/§2.10) — shown before the user has added any source."
+  },
+  "sourcesEmptyHint": "Add an M3U playlist or connect to an Xtream panel to get started.",
+  "@sourcesEmptyHint": {
+    "description": "Subtitle of the empty state, inviting the first action (ui-spec §2.1: \"llegar a contenido en el mínimo de pasos\")."
+  },
+  "sourceNeverImported": "Never imported",
+  "@sourceNeverImported": {
+    "description": "Shown instead of lastUpdated when Source.lastRefresh is null (ui-spec §2.10) — every source starts this way until its first import."
+  },
+  "sourceRefreshTooltip": "Refresh",
+  "@sourceRefreshTooltip": {
+    "description": "Icon button tooltip: re-import a source (ui-spec §2.10) — triggers ImportScreen with refreshSource, not addSource."
+  },
+  "sourceEditTooltip": "Edit",
+  "@sourceEditTooltip": {
+    "description": "Icon button tooltip: reopen the M3U/Xtream form pre-filled with the source's current data (ui-spec §2.10)."
+  },
+  "sourceDeleteTooltip": "Delete",
+  "@sourceDeleteTooltip": {
+    "description": "Icon button tooltip: delete a source, after confirmation (ui-spec §2.10)."
+  },
+  "sourceDeleteConfirmTitle": "Delete source?",
+  "@sourceDeleteConfirmTitle": {
+    "description": "Confirmation dialog title before deleting a source."
+  },
+  "sourceDeleteConfirmBody": "\"{name}\" and its channels will be removed. This can't be undone.",
+  "@sourceDeleteConfirmBody": {
+    "description": "Confirmation dialog body — DeleteSource tombstones the source (ADR-003) but the effect for the user is a permanent removal from their library.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sourceDeleteConfirmAction": "Delete",
+  "@sourceDeleteConfirmAction": {
+    "description": "Confirmation dialog destructive action button."
+  },
+  "sourceDeleteError": "Couldn't delete the source. Try again.",
+  "@sourceDeleteError": {
+    "description": "Snackbar shown when DeleteSource.call returns DeleteSourceFailed."
+  },
+  "sourceTypeM3u": "M3U",
+  "@sourceTypeM3u": {
+    "description": "Type badge shown on each row of source management for SourceKind.m3uUrl/m3uFile (ui-spec §2.10)."
+  },
+  "sourceTypeXtream": "Xtream",
+  "@sourceTypeXtream": {
+    "description": "Type badge shown on each row of source management for SourceKind.xtream (ui-spec §2.10)."
+  },
+
+  "xtreamPasswordKeepHint": "Leave blank to keep the current password",
+  "@xtreamPasswordKeepHint": {
+    "description": "Helper text on the Xtream password field when editing an existing source (P5): the password is never reloaded from the secure store to display it — an empty field means \"no change\"."
   }
 }
