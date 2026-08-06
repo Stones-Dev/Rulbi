@@ -330,5 +330,146 @@
   "xtreamProbeStreamCountUnavailable": "Live channel count unavailable",
   "@xtreamProbeStreamCountUnavailable": {
     "description": "Xtream probe success summary: shown instead of xtreamProbeStreamCount when XtreamProbeSummary.liveStreamCount is null — best-effort failure of get_live_streams after a successful authentication, not a probe failure (ui-spec §2.9 only promises account status/expiry before saving)."
+  },
+
+  "importScreenTitle": "Importing {name}",
+  "@importScreenTitle": {
+    "description": "AppBar title of the import progress/report screen (ui-spec §2.14), reused for new sources and refreshes.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "importCancelButton": "Cancel import",
+  "@importCancelButton": {
+    "description": "Button that cancels a running import (ui-spec §2.14) — distinct from commonCancel, which just dismisses a form without side effects."
+  },
+  "importBackgroundButton": "Continue in background",
+  "@importBackgroundButton": {
+    "description": "Button that pops the import screen while the import keeps running (ui-spec §2.14: \"en segundo plano, se puede navegar\")."
+  },
+  "importDoneTitle": "Import complete",
+  "@importDoneTitle": {
+    "description": "Headline shown when an import finished successfully (ImportDone)."
+  },
+  "importFailedTitle": "Import failed",
+  "@importFailedTitle": {
+    "description": "Headline shown when an import stopped with a hard error (ImportFailed) — the specific reason reuses probeFailureReasonLabel, shared with the M3U/Xtream probes."
+  },
+  "importFailedHint": "You can try again from the Sources screen.",
+  "@importFailedHint": {
+    "description": "RNF-09: every error shows a suggested next action, not just a raw failure message."
+  },
+  "importCancelledTitle": "Import cancelled",
+  "@importCancelledTitle": {
+    "description": "Headline shown when the user cancelled the import (ImportCancelled)."
+  },
+  "importCancelledMessage": "No changes were made — the source is unchanged.",
+  "@importCancelledMessage": {
+    "description": "Reassuring copy after a cancellation: ImportController's relay/rollback design guarantees nothing partial was persisted."
+  },
+  "importBackButton": "Back to Sources",
+  "@importBackButton": {
+    "description": "Button on the done/failed/cancelled states of the import screen that returns to source management (ui-spec §2.10)."
+  },
+
+  "importStatsInserted": "{count, plural, =0{No new channels} =1{1 new channel} other{{count} new channels}}",
+  "@importStatsInserted": {
+    "description": "SourceImportStats.inserted, in plain language (RNF-09: no \"upsert\" jargon in front of the user).",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "importStatsUpdated": "{count, plural, =0{No channels updated} =1{1 channel updated} other{{count} channels updated}}",
+  "@importStatsUpdated": {
+    "description": "SourceImportStats.updated.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "importStatsUnchanged": "{count, plural, =0{No unchanged channels} =1{1 channel unchanged} other{{count} channels unchanged}}",
+  "@importStatsUnchanged": {
+    "description": "SourceImportStats.unchanged.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "importStatsTombstoned": "{count, plural, =0{No channels removed} =1{1 channel removed} other{{count} channels removed}}",
+  "@importStatsTombstoned": {
+    "description": "SourceImportStats.tombstoned, in plain language — the domain word \"tombstone\" never reaches the user (RNF-09).",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "importStatsResurrected": "{count, plural, =0{No channels restored} =1{1 channel restored} other{{count} channels restored}}",
+  "@importStatsResurrected": {
+    "description": "SourceImportStats.resurrected.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "importStatsDuplicates": "{count, plural, =0{No duplicate entries} =1{1 duplicate entry} other{{count} duplicate entries}}",
+  "@importStatsDuplicates": {
+    "description": "SourceImportStats.duplicateRefs.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
+  "importIssuesToggle": "{count, plural, =1{View 1 issue} other{View {count} issues}}",
+  "@importIssuesToggle": {
+    "description": "Expansion toggle for the discarded-entries list (ImportSummary.discardedCount > 0) — the \"visor de incidencias\" of ui-spec §2.14.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "importM3uDiscardLine": "Line {lineNumber}: {reason}",
+  "@importM3uDiscardLine": {
+    "description": "One row of the issues list for an M3U import — DiscardedLine (packages/protocols), reused as-is, no reinvented fields.",
+    "placeholders": {
+      "lineNumber": {
+        "type": "int"
+      },
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "importXtreamDiscardLine": "{action}: {reason}",
+  "@importXtreamDiscardLine": {
+    "description": "One row of the issues list for an Xtream import — XtreamDiscard (packages/protocols), reused as-is.",
+    "placeholders": {
+      "action": {
+        "type": "String"
+      },
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+
+  "importStatusBarRunning": "Importing {name}…",
+  "@importStatusBarRunning": {
+    "description": "Global status chip shown in DesktopShell while an import runs in the background (ui-spec §2.14) — tapping it returns to the import screen.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   }
 }

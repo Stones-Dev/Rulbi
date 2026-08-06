@@ -1,23 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iptv_tokens/iptv_tokens.dart';
 
+import '../features/sources/import_status_bar.dart';
 import '../features/sources/sources_entry_screen.dart';
 import '../l10n/app_localizations.dart';
 
 /// Shell de escritorio: `NavigationRail` lateral persistente + `IndexedStack`
 /// con las 9 secciones de ui-spec.md §1 (Inicio · TV en directo · Películas
 /// · Series · Buscar · Guía · Favoritos · Fuentes · Ajustes) + atajos de
-/// teclado `Ctrl+1`…`Ctrl+9`. Todas las secciones son placeholder hoy — las
-/// pantallas reales llegan en las Olas 2-3 de S4 y en sprints posteriores.
-class DesktopShell extends StatefulWidget {
+/// teclado `Ctrl+1`…`Ctrl+9` + [ImportStatusBar] (ui-spec §2.14, S4 · Ola
+/// 3: indicador global de import en segundo plano, visible desde
+/// cualquier sección). Todas las secciones salvo Fuentes son placeholder
+/// hoy — las pantallas reales llegan en sprints posteriores.
+class DesktopShell extends ConsumerStatefulWidget {
   const DesktopShell({super.key});
 
   @override
-  State<DesktopShell> createState() => _DesktopShellState();
+  ConsumerState<DesktopShell> createState() => _DesktopShellState();
 }
 
-class _DesktopShellState extends State<DesktopShell> {
+class _DesktopShellState extends ConsumerState<DesktopShell> {
   int _selectedIndex = 0;
   final FocusNode _focusNode = FocusNode();
 
@@ -93,70 +97,77 @@ class _DesktopShellState extends State<DesktopShell> {
         autofocus: true,
         child: Scaffold(
           backgroundColor: IptvColors.background,
-          body: Row(
+          body: Column(
             children: [
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final extended = MediaQuery.sizeOf(context).width >= 1000;
-                  final rail = NavigationRail(
-                    backgroundColor: IptvColors.surface,
-                    selectedIndex: _selectedIndex,
-                    onDestinationSelected: _selectIndex,
-                    extended: extended,
-                    labelType: extended
-                        ? NavigationRailLabelType.none
-                        : NavigationRailLabelType.all,
-                    leading: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: IptvSpacing.md,
-                      ),
-                      child: Text(
-                        l10n.appTitle,
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(color: IptvColors.textPrimary),
-                      ),
-                    ),
-                    destinations: [
-                      for (var i = 0; i < labels.length; i++)
-                        NavigationRailDestination(
-                          icon: Icon(_iconsByDestination[i]),
-                          selectedIcon: Icon(_selectedIconsByDestination[i]),
-                          label: Text(labels[i]),
-                        ),
-                    ],
-                  );
-                  // Con 9 destinos + labelType.all (ventanas < 1000px), la
-                  // altura intrínseca del rail puede superar la disponible
-                  // (ventanas de escritorio bajas/TV). Patrón oficial de
-                  // Flutter para NavigationRail con muchos destinos:
-                  // envolverlo en scroll en vez de recortar destinos.
-                  return SingleChildScrollView(
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minHeight: constraints.maxHeight,
-                      ),
-                      child: IntrinsicHeight(child: rail),
-                    ),
-                  );
-                },
-              ),
-              const VerticalDivider(width: 1, color: IptvColors.border),
-              Expanded(
-                child: IndexedStack(
-                  index: _selectedIndex,
-                  children: [
-                    for (var i = 0; i < labels.length; i++)
-                      if (i == _sourcesIndex)
-                        const SourcesEntryScreen()
-                      else
-                        _SectionPlaceholder(label: labels[i]),
-                  ],
-                ),
-              ),
+              const ImportStatusBar(),
+              Expanded(child: _buildBody(context, labels)),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildBody(BuildContext context, List<String> labels) {
+    final l10n = AppLocalizations.of(context);
+    return Row(
+      children: [
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final extended = MediaQuery.sizeOf(context).width >= 1000;
+            final rail = NavigationRail(
+              backgroundColor: IptvColors.surface,
+              selectedIndex: _selectedIndex,
+              onDestinationSelected: _selectIndex,
+              extended: extended,
+              labelType: extended
+                  ? NavigationRailLabelType.none
+                  : NavigationRailLabelType.all,
+              leading: Padding(
+                padding: const EdgeInsets.symmetric(vertical: IptvSpacing.md),
+                child: Text(
+                  l10n.appTitle,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: IptvColors.textPrimary,
+                  ),
+                ),
+              ),
+              destinations: [
+                for (var i = 0; i < labels.length; i++)
+                  NavigationRailDestination(
+                    icon: Icon(_iconsByDestination[i]),
+                    selectedIcon: Icon(_selectedIconsByDestination[i]),
+                    label: Text(labels[i]),
+                  ),
+              ],
+            );
+            // Con 9 destinos + labelType.all (ventanas < 1000px), la
+            // altura intrínseca del rail puede superar la disponible
+            // (ventanas de escritorio bajas/TV). Patrón oficial de
+            // Flutter para NavigationRail con muchos destinos:
+            // envolverlo en scroll en vez de recortar destinos.
+            return SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: IntrinsicHeight(child: rail),
+              ),
+            );
+          },
+        ),
+        const VerticalDivider(width: 1, color: IptvColors.border),
+        Expanded(
+          child: IndexedStack(
+            index: _selectedIndex,
+            children: [
+              for (var i = 0; i < labels.length; i++)
+                if (i == _sourcesIndex)
+                  const SourcesEntryScreen()
+                else
+                  _SectionPlaceholder(label: labels[i]),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

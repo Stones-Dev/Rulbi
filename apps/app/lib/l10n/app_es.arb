@@ -78,5 +78,28 @@
   "xtreamProbeExpiresLabel": "Caduca {date}",
   "xtreamProbeNoExpiry": "Sin fecha de caducidad",
   "xtreamProbeStreamCount": "{count, plural, =0{Sin canales en directo} =1{1 canal en directo} other{{count} canales en directo}}",
-  "xtreamProbeStreamCountUnavailable": "Nº de canales en directo no disponible"
+  "xtreamProbeStreamCountUnavailable": "Nº de canales en directo no disponible",
+
+  "importScreenTitle": "Importando {name}",
+  "importCancelButton": "Cancelar importación",
+  "importBackgroundButton": "Continuar en segundo plano",
+  "importDoneTitle": "Importación completa",
+  "importFailedTitle": "Importación fallida",
+  "importFailedHint": "Puedes volver a intentarlo desde la pantalla de Fuentes.",
+  "importCancelledTitle": "Importación cancelada",
+  "importCancelledMessage": "No se ha guardado ningún cambio — la fuente sigue igual.",
+  "importBackButton": "Volver a Fuentes",
+
+  "importStatsInserted": "{count, plural, =0{Sin canales nuevos} =1{1 canal nuevo} other{{count} canales nuevos}}",
+  "importStatsUpdated": "{count, plural, =0{Sin canales actualizados} =1{1 canal actualizado} other{{count} canales actualizados}}",
+  "importStatsUnchanged": "{count, plural, =0{Sin canales sin cambios} =1{1 canal sin cambios} other{{count} canales sin cambios}}",
+  "importStatsTombstoned": "{count, plural, =0{Sin canales eliminados} =1{1 canal eliminado} other{{count} canales eliminados}}",
+  "importStatsResurrected": "{count, plural, =0{Sin canales recuperados} =1{1 canal recuperado} other{{count} canales recuperados}}",
+  "importStatsDuplicates": "{count, plural, =0{Sin entradas duplicadas} =1{1 entrada duplicada} other{{count} entradas duplicadas}}",
+
+  "importIssuesToggle": "{count, plural, =1{Ver 1 incidencia} other{Ver {count} incidencias}}",
+  "importM3uDiscardLine": "Línea {lineNumber}: {reason}",
+  "importXtreamDiscardLine": "{action}: {reason}",
+
+  "importStatusBarRunning": "Importando {name}…"
 }
