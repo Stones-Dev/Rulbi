@@ -5,6 +5,7 @@ import 'package:iptv_core/iptv_core.dart';
 
 import '../db/content_hash.dart';
 import '../db/database.dart';
+import '../db/fts_query.dart';
 
 /// Implementa `ChannelRepository` y `ChannelSearchPort` (T1.6) sobre el
 /// esquema de `channels`/`categories`/el índice FTS5 (T1.5).
@@ -293,6 +294,113 @@ final class DriftChannelRepository
         .map((rows) => rows.map(_channelToEntity).toList());
   }
 
+  /// Listado virtualizado de 100k canales (ui-spec §2.3, S5 · Ola 1):
+  /// `COUNT(*)` sobre el motor, nunca sobre filas traídas a Dart — fija
+  /// `itemCount` del `ListView.builder` sin cargar nada más.
+  @override
+  Future<int> countChannels(ChannelQuery query) async {
+    final countExp = _db.channels.id.count();
+    final selectQuery = _db.selectOnly(_db.channels)
+      ..addColumns([countExp])
+      ..where(_channelQueryFilter(query));
+    final row = await selectQuery.getSingle();
+    return row.read(countExp) ?? 0;
+  }
+
+  /// Una página de [query] (S5 · Ola 1) — ver docstring del puerto.
+  /// `ORDER BY name, id`: `id` desempata de forma estable cuando dos
+  /// canales comparten nombre, para que `OFFSET` no reordene páginas ya
+  /// servidas mientras el usuario sigue haciendo scroll.
+  @override
+  Future<List<Channel>> channelsPage(
+    ChannelQuery query, {
+    required int offset,
+    required int limit,
+  }) async {
+    final selectQuery = _db.select(_db.channels)
+      ..where((c) => _channelQueryFilter(query))
+      ..orderBy([(c) => OrderingTerm.asc(c.name), (c) => OrderingTerm.asc(c.id)])
+      ..limit(limit, offset: offset);
+    final rows = await selectQuery.get();
+    return rows.map(_channelToEntity).toList();
+  }
+
+  /// Panel de categorías con contador (ui-spec §2.3, S5 · Ola 1): `LEFT
+  /// JOIN` + `COUNT` agrupado, no una consulta de recuento por categoría
+  /// (N+1). `leftOuterJoin` porque una categoría sin ningún canal vivo
+  /// (todos tumbados o fuente desactivada) debe seguir apareciendo con
+  /// contador 0, no desaparecer del panel.
+  @override
+  Future<List<CategoryWithCount>> categoriesWithCount(
+    ChannelQuery query,
+  ) async {
+    final countExp = _db.channels.id.count();
+    final selectQuery =
+        _db.select(_db.categories).join([
+            leftOuterJoin(
+              _db.channels,
+              _db.channels.categoryId.equalsExp(_db.categories.id) &
+                  _db.channels.deletedAt.isNull() &
+                  _db.channels.sourceId.isIn(query.sourceIds),
+              useColumns: false,
+            ),
+          ])
+          ..addColumns([countExp])
+          ..where(
+            _db.categories.contentType.equals(query.type.name) &
+                _db.categories.sourceId.isIn(query.sourceIds),
+          )
+          ..groupBy([_db.categories.id])
+          ..orderBy([
+            OrderingTerm.asc(_db.categories.sortOrder),
+            OrderingTerm.asc(_db.categories.name),
+          ]);
+
+    final rows = await selectQuery.get();
+    return [
+      for (final row in rows)
+        CategoryWithCount(
+          category: _categoryToEntity(row.readTable(_db.categories)),
+          channelCount: row.read(countExp) ?? 0,
+        ),
+    ];
+  }
+
+  /// Hidrata [refs] a su `Channel` completo (Home desktop, ui-spec §2.2,
+  /// S5 · Ola 1) — `WatchStateRepository` solo guarda el `ChannelRef`. Un
+  /// `OR` de pares `(sourceId, refKey)` en vez de un `IN` compuesto:
+  /// SQLite no tiene tuplas `IN` nativas y esta lista es corta (el límite
+  /// de "Continuar viendo" es ~10), así que el coste es irrelevante.
+  @override
+  Future<List<Channel>> findByRefs(List<ChannelRef> refs) async {
+    if (refs.isEmpty) return const [];
+
+    Expression<bool> filter = const Constant(false);
+    for (final ref in refs) {
+      filter =
+          filter |
+          (_db.channels.sourceId.equals(ref.sourceId) &
+              _db.channels.refKey.equals(ref.key));
+    }
+
+    final rows = await (_db.select(
+      _db.channels,
+    )..where((c) => filter & c.deletedAt.isNull())).get();
+    return rows.map(_channelToEntity).toList();
+  }
+
+  Expression<bool> _channelQueryFilter(ChannelQuery query) {
+    Expression<bool> filter =
+        _db.channels.contentType.equals(query.type.name) &
+        _db.channels.deletedAt.isNull() &
+        _db.channels.sourceId.isIn(query.sourceIds);
+    final categoryId = query.categoryId;
+    if (categoryId != null) {
+      filter = filter & _db.channels.categoryId.equals(categoryId);
+    }
+    return filter;
+  }
+
   /// RNF-01: percibido < 100 ms sobre 100k canales. `channels_fts` es
   /// una tabla "external content" (T1.5): la consulta hace `JOIN` con
   /// `channels` por `rowid`/`id` para recuperar la fila completa.
@@ -302,15 +410,45 @@ final class DriftChannelRepository
   /// así que un canal tumbado sigue en el índice — se filtra aquí, no en
   /// el trigger (una external-content FTS5 cuyo trigger a veces no
   /// dispara se desincroniza del contenido real).
+  ///
+  /// [query] es lenguaje natural del usuario, no una expresión FTS5:
+  /// `toFtsMatchQuery` (S5 · Ola 1) la traduce a un `MATCH` seguro antes
+  /// de tocar el motor — sin ese paso, un `"` o un `AND` sueltos en el
+  /// cuadro de búsqueda lanzaban una excepción de SQLite directamente.
+  /// Una consulta que se reduce a nada (solo puntuación) no toca la BD.
   @override
-  Future<List<Channel>> search(String query, {int limit = 50}) async {
+  Future<List<Channel>> search(
+    String query, {
+    ContentType? type,
+    Set<String>? sourceIds,
+    int limit = 50,
+  }) async {
+    final matchQuery = toFtsMatchQuery(query);
+    if (matchQuery.isEmpty) return const [];
+
+    final whereClauses = StringBuffer('c.deleted_at IS NULL');
+    final variables = <Variable<Object>>[Variable<String>(matchQuery)];
+
+    if (type != null) {
+      whereClauses.write(' AND c.content_type = ?');
+      variables.add(Variable<String>(type.name));
+    }
+    if (sourceIds != null) {
+      if (sourceIds.isEmpty) return const [];
+      final placeholders = List.filled(sourceIds.length, '?').join(', ');
+      whereClauses.write(' AND c.source_id IN ($placeholders)');
+      variables.addAll(sourceIds.map(Variable<String>.new));
+    }
+
+    variables.add(Variable<int>(limit));
+
     final rows = await _db
         .customSelect(
           'SELECT c.* FROM channels_fts f '
           'JOIN channels c ON c.id = f.rowid '
-          'WHERE channels_fts MATCH ? AND c.deleted_at IS NULL '
+          'WHERE channels_fts MATCH ? AND $whereClauses '
           'LIMIT ?',
-          variables: [Variable<String>(query), Variable<int>(limit)],
+          variables: variables,
           readsFrom: {_db.channels},
         )
         .get();

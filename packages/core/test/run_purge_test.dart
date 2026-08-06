@@ -125,6 +125,24 @@ final class _FakeChannelRepository implements ChannelRepository {
 
   @override
   Future<int> countBySource(String sourceId) async => 0;
+
+  @override
+  Future<int> countChannels(ChannelQuery query) async => 0;
+
+  @override
+  Future<List<Channel>> channelsPage(
+    ChannelQuery query, {
+    required int offset,
+    required int limit,
+  }) async => const [];
+
+  @override
+  Future<List<CategoryWithCount>> categoriesWithCount(
+    ChannelQuery query,
+  ) async => const [];
+
+  @override
+  Future<List<Channel>> findByRefs(List<ChannelRef> refs) async => const [];
 }
 
 /// Fake de `RunPurge` para los tests de `PurgeScheduler`: aísla al

@@ -108,6 +108,24 @@ final class _FakeChannelRepository implements ChannelRepository {
   @override
   Future<int> purgeOrphanTombstones({required DateTime deletedBefore}) async =>
       0;
+
+  @override
+  Future<int> countChannels(ChannelQuery query) async => 0;
+
+  @override
+  Future<List<Channel>> channelsPage(
+    ChannelQuery query, {
+    required int offset,
+    required int limit,
+  }) async => const [];
+
+  @override
+  Future<List<CategoryWithCount>> categoriesWithCount(
+    ChannelQuery query,
+  ) async => const [];
+
+  @override
+  Future<List<Channel>> findByRefs(List<ChannelRef> refs) async => const [];
 }
 
 /// Variante que registra el orden de entrada/salida de
@@ -156,17 +174,108 @@ final class _SequencedChannelRepository implements ChannelRepository {
   @override
   Future<int> purgeOrphanTombstones({required DateTime deletedBefore}) async =>
       0;
+
+  @override
+  Future<int> countChannels(ChannelQuery query) async => 0;
+
+  @override
+  Future<List<Channel>> channelsPage(
+    ChannelQuery query, {
+    required int offset,
+    required int limit,
+  }) async => const [];
+
+  @override
+  Future<List<CategoryWithCount>> categoriesWithCount(
+    ChannelQuery query,
+  ) async => const [];
+
+  @override
+  Future<List<Channel>> findByRefs(List<ChannelRef> refs) async => const [];
 }
 
 final class _FakeChannelSearchPort implements ChannelSearchPort {
   List<Channel> results = const [];
   String? lastQuery;
+  ContentType? lastType;
+  Set<String>? lastSourceIds;
+
+  /// Resultados por tipo para `SearchChannels.grouped` — si no se fija,
+  /// [search] cae a filtrar [results] por [ContentType] a mano, que es
+  /// suficiente para no repetir la lista tres veces en los tests simples.
+  Map<ContentType, List<Channel>>? resultsByType;
 
   @override
-  Future<List<Channel>> search(String query, {int limit = 50}) async {
+  Future<List<Channel>> search(
+    String query, {
+    ContentType? type,
+    Set<String>? sourceIds,
+    int limit = 50,
+  }) async {
     lastQuery = query;
-    return results.take(limit).toList();
+    lastType = type;
+    lastSourceIds = sourceIds;
+    final byType = resultsByType;
+    final source = byType != null
+        ? (type == null
+              ? byType.values.expand((c) => c).toList()
+              : (byType[type] ?? const []))
+        : (type == null
+              ? results
+              : results.where((c) => c.type == type).toList());
+    return source.take(limit).toList();
   }
+}
+
+/// Fake de `ChannelRepository` para `GetContinueWatching`: solo
+/// `findByRefs` tiene comportamiento real (busca en un `Map` por
+/// `ChannelRef`, un ref ausente simplemente no aparece — mismo contrato
+/// que la implementación de `data`); el resto de la interfaz no participa
+/// en este caso de uso.
+final class _InMemoryChannelStore implements ChannelRepository {
+  final Map<ChannelRef, Channel> _byRef = {};
+
+  void seed(Channel channel) => _byRef[channel.ref] = channel;
+
+  @override
+  Future<List<Channel>> findByRefs(List<ChannelRef> refs) async =>
+      [for (final ref in refs) ?_byRef[ref]];
+
+  @override
+  Future<SourceImportStats> importSourceContent(
+    String sourceId,
+    Stream<Channel> channels, {
+    required DateTime now,
+  }) => throw UnimplementedError();
+
+  @override
+  Future<List<Category>> categoriesFor(String sourceId) async => const [];
+
+  @override
+  Stream<List<Channel>> watchChannels({required String categoryId}) =>
+      const Stream.empty();
+
+  @override
+  Future<int> countBySource(String sourceId) async => 0;
+
+  @override
+  Future<int> purgeOrphanTombstones({required DateTime deletedBefore}) async =>
+      0;
+
+  @override
+  Future<int> countChannels(ChannelQuery query) async => 0;
+
+  @override
+  Future<List<Channel>> channelsPage(
+    ChannelQuery query, {
+    required int offset,
+    required int limit,
+  }) async => const [];
+
+  @override
+  Future<List<CategoryWithCount>> categoriesWithCount(
+    ChannelQuery query,
+  ) async => const [];
 }
 
 void main() {
@@ -498,6 +607,193 @@ void main() {
       await useCase('  españa  ');
 
       expect(port.lastQuery, 'españa');
+    });
+
+    group('grouped (ui-spec §2.11)', () {
+      Channel channelOf(ContentType type, String name) => Channel(
+        ref: ChannelRef(sourceId: 's1', key: name),
+        sourceId: 's1',
+        type: type,
+        name: name,
+        url: Uri.parse('http://example.com/$name'),
+      );
+
+      test('consulta vacía no llama al puerto y devuelve tres grupos vacíos', () async {
+        final port = _FakeChannelSearchPort();
+        final useCase = SearchChannels(port);
+
+        final result = await useCase.grouped('   ');
+
+        expect(result.isEmpty, isTrue);
+        expect(port.lastQuery, isNull);
+      });
+
+      test('reparte los resultados en directo/vod/series por tipo', () async {
+        final port = _FakeChannelSearchPort()
+          ..resultsByType = {
+            ContentType.live: [channelOf(ContentType.live, 'La 1')],
+            ContentType.vod: [channelOf(ContentType.vod, 'La 1: la película')],
+            ContentType.series: <Channel>[],
+          };
+        final useCase = SearchChannels(port);
+
+        final result = await useCase.grouped('la 1');
+
+        expect(result.live.map((c) => c.name), ['La 1']);
+        expect(result.vod.map((c) => c.name), ['La 1: la película']);
+        expect(result.series, isEmpty);
+      });
+
+      test('un tipo con muchos aciertos no roba el límite de los otros', () async {
+        final port = _FakeChannelSearchPort()
+          ..resultsByType = {
+            ContentType.live: List.generate(
+              50,
+              (i) => channelOf(ContentType.live, 'canal-$i'),
+            ),
+            ContentType.vod: [channelOf(ContentType.vod, 'peli-1')],
+            ContentType.series: <Channel>[],
+          };
+        final useCase = SearchChannels(port);
+
+        final result = await useCase.grouped('canal', limitPerType: 20);
+
+        expect(result.live, hasLength(20));
+        expect(result.vod, hasLength(1));
+      });
+    });
+  });
+
+  group('GetContinueWatching (ui-spec §2.2, S5 · Ola 1)', () {
+    late _InMemoryWatchStateRepository watchStateRepository;
+    late _InMemoryChannelStore channels;
+    late _FakeClock clock;
+    late TrackWatchProgress trackWatchProgress;
+    late GetContinueWatching useCase;
+
+    setUp(() {
+      watchStateRepository = _InMemoryWatchStateRepository();
+      channels = _InMemoryChannelStore();
+      clock = _FakeClock(DateTime(2026, 1, 1));
+      trackWatchProgress = TrackWatchProgress(watchStateRepository, clock);
+      useCase = GetContinueWatching(trackWatchProgress, channels);
+    });
+
+    test('hidrata cada ref con su canal completo', () async {
+      const ref = ChannelRef(sourceId: 's1', key: 'canal-1');
+      channels.seed(
+        Channel(
+          ref: ref,
+          sourceId: 's1',
+          type: ContentType.vod,
+          name: 'Oppenheimer',
+          url: Uri.parse('http://example.com/oppenheimer'),
+        ),
+      );
+      await trackWatchProgress.updateProgress(
+        ref,
+        position: const Duration(minutes: 30),
+        duration: const Duration(minutes: 120),
+      );
+
+      final result = await useCase();
+
+      expect(result, hasLength(1));
+      expect(result.single.channel.name, 'Oppenheimer');
+      expect(result.single.fraction, closeTo(0.25, 0.0001));
+    });
+
+    test('descarta refs cuyo canal ya no existe (fuente borrada)', () async {
+      const gone = ChannelRef(sourceId: 's1', key: 'ya-no-existe');
+      // Nunca sembrado en `channels`: simula una fuente eliminada tras
+      // guardarse el progreso.
+      await trackWatchProgress.updateProgress(
+        gone,
+        position: const Duration(minutes: 5),
+        duration: const Duration(minutes: 50),
+      );
+
+      final result = await useCase();
+
+      expect(result, isEmpty);
+    });
+
+    test('preserva el orden de continueWatching (más reciente primero)', () async {
+      const first = ChannelRef(sourceId: 's1', key: 'first');
+      const second = ChannelRef(sourceId: 's1', key: 'second');
+      for (final ref in [first, second]) {
+        channels.seed(
+          Channel(
+            ref: ref,
+            sourceId: 's1',
+            type: ContentType.vod,
+            name: ref.key,
+            url: Uri.parse('http://example.com/${ref.key}'),
+          ),
+        );
+      }
+      await trackWatchProgress.updateProgress(
+        first,
+        position: const Duration(minutes: 1),
+        duration: const Duration(minutes: 100),
+      );
+      clock.advance(const Duration(minutes: 1));
+      await trackWatchProgress.updateProgress(
+        second,
+        position: const Duration(minutes: 1),
+        duration: const Duration(minutes: 100),
+      );
+
+      final result = await useCase();
+
+      expect(result.map((i) => i.channel.name), ['second', 'first']);
+    });
+
+    test('respeta el límite pedido', () async {
+      for (var i = 0; i < 5; i++) {
+        final ref = ChannelRef(sourceId: 's1', key: 'canal-$i');
+        channels.seed(
+          Channel(
+            ref: ref,
+            sourceId: 's1',
+            type: ContentType.vod,
+            name: 'canal-$i',
+            url: Uri.parse('http://example.com/canal-$i'),
+          ),
+        );
+        await trackWatchProgress.updateProgress(
+          ref,
+          position: const Duration(minutes: 1),
+          duration: const Duration(minutes: 100),
+        );
+      }
+
+      final result = await useCase(limit: 2);
+
+      expect(result, hasLength(2));
+    });
+
+    test('un ítem en directo (duration cero) se incluye con fraction 0', () async {
+      const ref = ChannelRef(sourceId: 's1', key: 'directo');
+      channels.seed(
+        Channel(
+          ref: ref,
+          sourceId: 's1',
+          type: ContentType.live,
+          name: 'DAZN 1',
+          url: Uri.parse('http://example.com/dazn1'),
+        ),
+      );
+      await trackWatchProgress.updateProgress(
+        ref,
+        position: const Duration(minutes: 5),
+        duration: Duration.zero,
+      );
+
+      final result = await useCase();
+
+      expect(result, hasLength(1));
+      expect(result.single.fraction, 0);
     });
   });
 }

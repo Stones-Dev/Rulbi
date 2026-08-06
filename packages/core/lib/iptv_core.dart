@@ -5,6 +5,7 @@ library;
 
 export 'src/entities/category.dart';
 export 'src/entities/channel.dart';
+export 'src/entities/channel_query.dart';
 export 'src/entities/content_type.dart';
 export 'src/entities/epg_programme.dart';
 export 'src/entities/favorite.dart';
@@ -28,6 +29,7 @@ export 'src/sync/syncable.dart';
 
 export 'src/text/normalize.dart';
 
+export 'src/use_cases/get_continue_watching.dart';
 export 'src/use_cases/manage_favorites.dart';
 export 'src/use_cases/manage_sources.dart';
 export 'src/use_cases/run_purge.dart';

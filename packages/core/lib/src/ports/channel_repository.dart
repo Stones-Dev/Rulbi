@@ -1,5 +1,7 @@
 import '../entities/category.dart';
 import '../entities/channel.dart';
+import '../entities/channel_query.dart';
+import '../sync/channel_ref.dart';
 
 abstract interface class ChannelRepository {
   /// Importa el contenido de una fuente de forma diferencial (T1.6b): un
@@ -42,6 +44,56 @@ abstract interface class ChannelRepository {
   /// NULL`; un favorito ya tumbado por el merge LWW no protege al canal.
   /// Devuelve el número de filas borradas.
   Future<int> purgeOrphanTombstones({required DateTime deletedBefore});
+
+  /// Nº de canales vivos que cumplen [query] — usado para fijar
+  /// `itemCount` del listado virtualizado (ui-spec §2.3, S5 · Ola 1) sin
+  /// traer ninguna fila a Dart.
+  Future<int> countChannels(ChannelQuery query);
+
+  /// Una página de [query], ordenada por nombre (con `id` como desempate
+  /// estable para nombres duplicados) — la base del listado virtualizado
+  /// de 100k canales (RNF-01). [offset]/[limit] son responsabilidad de
+  /// quien pagina (`ChannelPageCache` en `apps/app`); el repositorio no
+  /// impone un tamaño de página.
+  Future<List<Channel>> channelsPage(
+    ChannelQuery query, {
+    required int offset,
+    required int limit,
+  });
+
+  /// Categorías de [query.type] limitadas a [query.sourceIds], cada una
+  /// con su nº de canales vivos (ui-spec §2.3: panel de categorías con
+  /// "nombre + contador").
+  Future<List<CategoryWithCount>> categoriesWithCount(ChannelQuery query);
+
+  /// Hidrata un lote de [ChannelRef] a su [Channel] completo — usado por
+  /// `GetContinueWatching` para completar nombre/logo a partir de lo que
+  /// `WatchStateRepository` solo guarda como referencia. Un ref sin canal
+  /// vivo (fuente borrada, tombstone) simplemente no aparece en el
+  /// resultado: es responsabilidad de quien llama descartar los huecos.
+  Future<List<Channel>> findByRefs(List<ChannelRef> refs);
+}
+
+/// Una categoría junto al nº de canales vivos que contiene, acotado a un
+/// [ChannelQuery] (misma fuente/tipo que el listado que la panel de
+/// categorías acompaña).
+final class CategoryWithCount {
+  const CategoryWithCount({required this.category, required this.channelCount});
+
+  final Category category;
+  final int channelCount;
+
+  @override
+  bool operator ==(Object other) =>
+      other is CategoryWithCount &&
+      other.category == category &&
+      other.channelCount == channelCount;
+
+  @override
+  int get hashCode => Object.hash(category, channelCount);
+
+  @override
+  String toString() => 'CategoryWithCount(${category.name}, $channelCount)';
 }
 
 /// Recuento de lo que hizo un [ChannelRepository.importSourceContent] — la
