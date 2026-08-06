@@ -48,7 +48,7 @@ class IptvDatabase extends _$IptvDatabase {
   factory IptvDatabase.open() => IptvDatabase(driftDatabase(name: 'iptv'));
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -83,6 +83,12 @@ class IptvDatabase extends _$IptvDatabase {
       if (from < 2) {
         await m.addColumn(channels, channels.deletedAt);
         await m.addColumn(channels, channels.contentHash);
+      }
+      // v2 -> v3 (S5 · Ola 1): índices de listado paginado, ver
+      // docstring de `Channels` en `tables/channels.dart`.
+      if (from < 3) {
+        await m.createIndex(idxChannelsTypeName);
+        await m.createIndex(idxChannelsCategoryName);
       }
     },
     beforeOpen: (details) async {

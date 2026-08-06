@@ -12,6 +12,19 @@ import 'package:drift/drift.dart';
 // `ChannelRow`, no `Channel`: evita colisión con la entidad `Channel`
 // de iptv_core.
 @DataClassName('ChannelRow')
+// S5 · Ola 1 (esquema v3): sin estos dos índices, el listado paginado
+// de `channelsPage`/`countChannels` (`ChannelRepository`) es un
+// scan+sort completo de la tabla en cada página — inviable sobre 100k
+// filas (RNF-01). `idx_channels_type_name` cubre el listado por
+// sección (TV/Cine/Series) ordenado alfabéticamente;
+// `idx_channels_category_name` cubre el filtro por categoría dentro de
+// una sección. Ver `migration_v3_test.dart` (verifica con `EXPLAIN
+// QUERY PLAN` que se usan, no solo que existen).
+@TableIndex(name: 'idx_channels_type_name', columns: {#contentType, #name})
+@TableIndex(
+  name: 'idx_channels_category_name',
+  columns: {#categoryId, #name},
+)
 class Channels extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get sourceId => text()();

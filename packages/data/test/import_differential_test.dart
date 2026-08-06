@@ -543,10 +543,10 @@ void main() {
     });
   });
 
-  group('migración v1 -> v2', () {
+  group('migración v1 -> v3', () {
     test(
-      'una BD creada con el esquema v1 abre en v2 sin perder filas de '
-      'channels, con las columnas nuevas en NULL',
+      'una BD creada con el esquema v1 abre en la versión actual sin '
+      'perder filas de channels, con las columnas nuevas en NULL',
       () async {
         final tempDir = await Directory.systemTemp.createTemp(
           'iptv_migration_test_',
@@ -594,7 +594,7 @@ void main() {
         // `Channels.contentHash`).
         expect(rows.single.deletedAt, isNull);
         expect(rows.single.contentHash, isNull);
-        expect(migratedDb.schemaVersion, 2);
+        expect(migratedDb.schemaVersion, 3);
       },
     );
   });
