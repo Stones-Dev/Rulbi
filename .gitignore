@@ -100,7 +100,6 @@ coverage/
 .env
 .env.local
 *.local.json
-!.claude/settings.local.json
 
 # codebase-memory-mcp (norma 2 del proyecto, ADR-005): la BD de trabajo
 # vive fuera del repo (~/.cache/codebase-memory-mcp/), nada que ignorar
