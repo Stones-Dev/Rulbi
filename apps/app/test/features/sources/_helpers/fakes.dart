@@ -1,7 +1,9 @@
+import 'package:iptv_app/features/sources/import_controller.dart';
 import 'package:iptv_app/features/sources/m3u_probe.dart';
 import 'package:iptv_app/features/sources/probe_result.dart';
 import 'package:iptv_app/features/sources/xtream_probe.dart';
 import 'package:iptv_core/iptv_core.dart';
+import 'package:iptv_protocols/iptv_protocols.dart';
 
 /// Dobles compartidos entre `save_source_test.dart` y los tests de los dos
 /// formularios (M3U/Xtream) — S4 · Ola 2. Viven en `_helpers/` (prefijo
@@ -114,5 +116,75 @@ final class FakeXtreamProbe implements XtreamProbe {
     lastUsername = username;
     lastPassword = password;
     return result;
+  }
+}
+
+/// [ChannelRepository] en memoria para `ImportController` (S4 · Ola 3): un
+/// `await for` real sobre el stream que le pasa `ManageSources`, así que
+/// propaga sus errores exactamente igual que `DriftChannelRepository`. Solo
+/// "confirma" en [importedChannels] si el stream termina sin error —
+/// mismo criterio de todo-o-nada que la transacción real de drift
+/// (`_db.transaction()`, ver `packages/data/.../channel_repository.dart`):
+/// un error a mitad de stream no debe dejar canales a medias persistidos.
+final class FakeChannelRepository implements ChannelRepository {
+  final List<Channel> importedChannels = [];
+  int importCalls = 0;
+
+  @override
+  Future<SourceImportStats> importSourceContent(
+    String sourceId,
+    Stream<Channel> channels, {
+    required DateTime now,
+  }) async {
+    importCalls++;
+    final buffer = <Channel>[];
+    await for (final channel in channels) {
+      buffer.add(channel);
+    }
+    importedChannels.addAll(buffer); // "commit": solo si el stream no falló
+    return SourceImportStats(
+      inserted: buffer.length,
+      updated: 0,
+      unchanged: 0,
+      tombstoned: 0,
+      resurrected: 0,
+      duplicateRefs: 0,
+    );
+  }
+
+  @override
+  Future<List<Category>> categoriesFor(String sourceId) async => const [];
+
+  @override
+  Stream<List<Channel>> watchChannels({required String categoryId}) =>
+      const Stream.empty();
+
+  @override
+  Future<int> countBySource(String sourceId) async =>
+      importedChannels.length;
+
+  @override
+  Future<int> purgeOrphanTombstones({required DateTime deletedBefore}) async =>
+      0;
+}
+
+/// [ImportChannelSource] con stream/informe fijos, inyectable por test —
+/// evita red/isolate real y permite forzar tanto el camino de éxito como
+/// un stream que falla a mitad de emisión.
+final class FakeImportChannelSource implements ImportChannelSource {
+  FakeImportChannelSource({required this.channels, ImportSummary? summary})
+    : summary = summary ?? const M3uImportSummary(ImportReport(parsed: 0, discarded: []));
+
+  final Stream<Channel> channels;
+  final ImportSummary summary;
+
+  Source? lastSource;
+  String? lastPassword;
+
+  @override
+  ImportChannels channelsFor(Source source, {String? password}) {
+    lastSource = source;
+    lastPassword = password;
+    return ImportChannels(channels: channels, summary: Future.value(summary));
   }
 }

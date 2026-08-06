@@ -4,6 +4,7 @@ import 'package:iptv_data/iptv_data.dart';
 import 'package:iptv_protocols/iptv_protocols.dart';
 
 import 'delete_source.dart';
+import 'import_controller.dart';
 import 'm3u_probe.dart';
 import 'save_source.dart';
 import 'xtream_probe.dart';
@@ -55,5 +56,30 @@ final deleteSourceProvider = Provider<DeleteSource>((ref) {
     sources: ref.watch(sourceRepositoryProvider),
     secureStore: ref.watch(secureCredentialStoreProvider),
     clock: ref.watch(clockProvider),
+  );
+});
+
+/// UI de importación (S4 · Ola 3, ui-spec §2.14).
+final channelRepositoryProvider = Provider<ChannelRepository>((ref) {
+  return DriftChannelRepository(ref.watch(iptvDatabaseProvider));
+});
+
+final manageSourcesProvider = Provider<ManageSources>((ref) {
+  return DefaultManageSources(
+    ref.watch(sourceRepositoryProvider),
+    ref.watch(channelRepositoryProvider),
+    ref.watch(clockProvider),
+  );
+});
+
+final m3uImportChannelSourceProvider = Provider<ImportChannelSource>((ref) {
+  return M3uImportChannelSource();
+});
+
+/// Mismo par de transporte que [xtreamProbeProvider] — ver su docstring:
+/// se construye de nuevo en cada import, nunca compartido.
+final xtreamImportChannelSourceProvider = Provider<ImportChannelSource>((ref) {
+  return XtreamImportChannelSource(
+    transportFactory: () => RetryingXtreamTransport(HttpXtreamTransport()),
   );
 });
