@@ -124,6 +124,53 @@ jobs:
         working-directory: apps/app
         run: flutter build apk --debug
 
+  # S4 · Ola 3: gap de cobertura de CI detectado en Ola 2 — el job
+  # "Analyze + test (windows-latest)" de arriba solo corre analyze/test en
+  # modo host, nunca compila el ejecutable nativo de Windows. Por eso el
+  # fallo real de `flutter_secure_storage_windows` (falta el componente
+  # "C++ ATL for latest build tools" de Visual Studio Build Tools) no lo
+  # detectó CI en la sesión de Ola 2 — solo apareció al intentar
+  # `flutter build windows`/`flutter run -d windows` en local. Este job
+  # cierra ese hueco para cualquier dependencia con código C++ nativo
+  # (flutter_secure_storage_windows hoy, media_kit en S6). Job aparte, sin
+  # `needs:` — no comparte artefactos con los otros, mismo criterio que
+  # "Android integration" de abajo.
+  windows-build:
+    name: Windows debug build
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          cache: true
+
+      - name: Activar Melos
+        run: dart pub global activate melos
+
+      - name: melos bootstrap
+        run: melos bootstrap
+
+      # Mismo motivo que en "Android debug build": iptv_data pasó a
+      # dependency real de apps/app en S4 · Ola 2, así que compilar la app
+      # entera necesita database.g.dart generado.
+      - name: packages/data — pub get
+        working-directory: packages/data
+        run: flutter pub get
+
+      - name: packages/data — codegen (drift)
+        working-directory: packages/data
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: apps/app — codegen (flutter gen-l10n)
+        working-directory: apps/app
+        run: flutter gen-l10n
+
+      - name: Build Windows (debug)
+        working-directory: apps/app
+        run: flutter build windows --debug
+
   # ADR-007: verificación de migraciones drift en runtime Android real
   # (emulador, no host) — cierra la deuda residual de T1.5a. Cinco
   # parámetros fijados por el ADR: alcance A+B, API 33/google_apis/x86_64,
