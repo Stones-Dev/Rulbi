@@ -3,6 +3,7 @@ import 'package:iptv_core/iptv_core.dart';
 import 'package:iptv_data/iptv_data.dart';
 import 'package:iptv_protocols/iptv_protocols.dart';
 
+import 'delete_source.dart';
 import 'm3u_probe.dart';
 import 'save_source.dart';
 import 'xtream_probe.dart';
@@ -43,6 +44,14 @@ final xtreamProbeProvider = Provider<XtreamProbe>((ref) {
 
 final saveSourceProvider = Provider<SaveSource>((ref) {
   return SaveSource(
+    sources: ref.watch(sourceRepositoryProvider),
+    secureStore: ref.watch(secureCredentialStoreProvider),
+    clock: ref.watch(clockProvider),
+  );
+});
+
+final deleteSourceProvider = Provider<DeleteSource>((ref) {
+  return DeleteSource(
     sources: ref.watch(sourceRepositoryProvider),
     secureStore: ref.watch(secureCredentialStoreProvider),
     clock: ref.watch(clockProvider),

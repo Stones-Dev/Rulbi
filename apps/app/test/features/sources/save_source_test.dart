@@ -158,4 +158,157 @@ void main() {
       expect(result, isA<SaveSourceOk>());
     });
   });
+
+  group('edición (Gestión de fuentes, S4 · Ola 3)', () {
+    final existing = Source(
+      id: 'existente-id',
+      config: M3uUrlSourceConfig(url: Uri.parse('http://host/vieja.m3u')),
+      name: 'Nombre viejo',
+      updatedAt: DateTime.utc(2026, 8, 1),
+      enabled: false,
+      lastRefresh: DateTime.utc(2026, 8, 2),
+      refreshPolicy: SourceRefreshPolicy.daily,
+    );
+
+    test('conserva id, enabled y lastRefresh; actualiza el resto', () async {
+      await sources.upsert(existing);
+      final saveSource = makeSaveSource(id: 'id-que-no-debería-usarse');
+
+      final result = await saveSource(
+        name: 'Nombre nuevo',
+        config: M3uUrlSourceConfig(url: Uri.parse('http://host/nueva.m3u')),
+        refreshPolicy: SourceRefreshPolicy.manual,
+        existing: existing,
+      );
+
+      expect(result, isA<SaveSourceOk>());
+      final source = (result as SaveSourceOk).source;
+      expect(source.id, 'existente-id');
+      expect(source.name, 'Nombre nuevo');
+      expect(source.enabled, isFalse);
+      expect(source.lastRefresh, DateTime.utc(2026, 8, 2));
+      expect(source.refreshPolicy, SourceRefreshPolicy.manual);
+      expect(source.updatedAt, now);
+      expect(
+        (source.config as M3uUrlSourceConfig).url,
+        Uri.parse('http://host/nueva.m3u'),
+      );
+    });
+
+    test(
+      'nombre duplicado excluye la propia fuente (guardar sin cambiar el '
+      'nombre no se rechaza a sí misma)',
+      () async {
+        await sources.upsert(existing);
+        final saveSource = makeSaveSource();
+
+        final result = await saveSource(
+          name: existing.name,
+          config: existing.config,
+          refreshPolicy: existing.refreshPolicy,
+          existing: existing,
+        );
+
+        expect(result, isA<SaveSourceOk>());
+      },
+    );
+
+    test(
+      'nombre duplicado sí se rechaza si coincide con OTRA fuente viva',
+      () async {
+        await sources.upsert(existing);
+        await sources.upsert(
+          Source(
+            id: 'otra',
+            config: M3uUrlSourceConfig(url: Uri.parse('http://host/otra.m3u')),
+            name: 'Ya en uso',
+            updatedAt: now,
+          ),
+        );
+        final saveSource = makeSaveSource();
+
+        final result = await saveSource(
+          name: 'Ya en uso',
+          config: existing.config,
+          refreshPolicy: existing.refreshPolicy,
+          existing: existing,
+        );
+
+        expect(
+          (result as SaveSourceFailed).reason,
+          SaveSourceFailureReason.duplicateName,
+        );
+      },
+    );
+
+    group('P5 — secreto en edición Xtream', () {
+      final existingXtream = Source(
+        id: 'xtream-existente',
+        config: XtreamSourceConfig(
+          host: Uri.parse('http://panel.example:8080'),
+          username: 'demo',
+        ),
+        name: 'Mi panel',
+        updatedAt: DateTime.utc(2026, 8, 1),
+      );
+
+      test('secret: null no toca el almacén seguro (sin cambios)', () async {
+        await sources.upsert(existingXtream);
+        await secureStore.save('xtream-existente', 'contraseña-vieja');
+        final saveSource = makeSaveSource();
+
+        final result = await saveSource(
+          name: 'Mi panel renombrado',
+          config: existingXtream.config,
+          refreshPolicy: SourceRefreshPolicy.manual,
+          existing: existingXtream,
+        );
+
+        expect(result, isA<SaveSourceOk>());
+        expect(secureStore.secrets['xtream-existente'], 'contraseña-vieja');
+      });
+
+      test('secret no nulo reemplaza la contraseña anterior', () async {
+        await sources.upsert(existingXtream);
+        await secureStore.save('xtream-existente', 'contraseña-vieja');
+        final saveSource = makeSaveSource();
+
+        final result = await saveSource(
+          name: existingXtream.name,
+          config: existingXtream.config,
+          refreshPolicy: SourceRefreshPolicy.manual,
+          secret: 'contraseña-nueva',
+          existing: existingXtream,
+        );
+
+        expect(result, isA<SaveSourceOk>());
+        expect(secureStore.secrets['xtream-existente'], 'contraseña-nueva');
+      });
+
+      test(
+        'si el upsert falla tras reemplazar el secreto, restaura el anterior '
+        '(no lo borra: había uno legítimo antes)',
+        () async {
+          await sources.upsert(existingXtream);
+          await secureStore.save('xtream-existente', 'contraseña-vieja');
+          sources.failUpsert = true;
+          final saveSource = makeSaveSource();
+
+          final result = await saveSource(
+            name: existingXtream.name,
+            config: existingXtream.config,
+            refreshPolicy: SourceRefreshPolicy.manual,
+            secret: 'contraseña-nueva',
+            existing: existingXtream,
+          );
+
+          expect(
+            (result as SaveSourceFailed).reason,
+            SaveSourceFailureReason.persistFailed,
+          );
+          expect(secureStore.secrets['xtream-existente'], 'contraseña-vieja');
+        },
+      );
+    });
+  });
 }

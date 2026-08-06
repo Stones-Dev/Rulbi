@@ -20,19 +20,31 @@ final class SaveSourceFailed extends SaveSourceResult {
   final SaveSourceFailureReason reason;
 }
 
-/// Orquesta el alta de una fuente nueva (S4 · Ola 2: Formularios M3U y
-/// Xtream). Deliberadamente **no** llama a `ManageSources.addSource` — ese
-/// caso de uso exige un `Stream<Channel>` real, que es la importación
-/// completa (Ola 3, "UI de importación"). Aquí solo se registra la fuente
-/// con `lastRefresh == null` ("nunca actualizada"), el estado exacto que
-/// la pantalla de Ola 3 usará para saber que toca importar.
+/// Orquesta el alta **y la edición** de una fuente (alta: S4 · Ola 2;
+/// edición: S4 · Ola 3, Gestión de fuentes). Deliberadamente **no** llama
+/// a `ManageSources.addSource`/`refreshSource` — esos casos de uso exigen
+/// un `Stream<Channel>` real, que es la importación completa (Ola 3, "UI
+/// de importación", `ImportController`). Aquí solo se registra la fuente;
+/// en alta queda con `lastRefresh == null` ("nunca actualizada"), el
+/// estado exacto que la UI de importación usa para saber que toca
+/// importar.
 ///
 /// Orden de escritura para Xtream (con [secret] no nulo): el secreto va al
 /// almacén seguro **antes** que el upsert de la fuente — si el upsert
-/// falla después, se compensa borrando el secreto recién guardado, para
-/// no dejar contraseñas huérfanas sin ninguna fuente que las referencie
-/// (P5). La contraseña nunca entra en [Source]/`XtreamSourceConfig`
-/// (ADR-006) — solo se recibe aquí para pasarla al almacén seguro.
+/// falla después, se compensa (en alta, borrando el secreto recién
+/// guardado; en edición, restaurando el que había antes) para no dejar
+/// contraseñas huérfanas ni corrompidas (P5). La contraseña nunca entra en
+/// [Source]/`XtreamSourceConfig` (ADR-006) — solo se recibe aquí para
+/// pasarla al almacén seguro.
+///
+/// **Edición, P5**: se pasa [existing] para editar una fuente ya creada.
+/// `secret == null` en modo edición significa "sin cambios" — el almacén
+/// seguro **no se toca**, igual que el patrón estándar de "campo de
+/// contraseña vacío = no reemplazar" que usa `XtreamSourceForm` (nunca se
+/// lee la contraseña del almacén para precargarla en el campo). `id`,
+/// `enabled` y `lastRefresh` de [existing] se conservan; solo cambian
+/// `config`/`name`/`refreshPolicy` (los campos que el formulario edita) y
+/// `updatedAt` (el reloj de esta escritura).
 final class SaveSource {
   SaveSource({
     required this.sources,
@@ -54,14 +66,22 @@ final class SaveSource {
     required SourceConfig config,
     required SourceRefreshPolicy refreshPolicy,
     String? secret,
+    Source? existing,
   }) async {
-    if (await _hasDuplicateName(name)) {
+    if (await _hasDuplicateName(name, excludingId: existing?.id)) {
       return const SaveSourceFailed(SaveSourceFailureReason.duplicateName);
     }
 
-    final id = _generateId();
+    final id = existing?.id ?? _generateId();
 
+    // Solo en edición hace falta poder restaurar: en alta no había nada
+    // que perder si el upsert falla (la compensación es simplemente
+    // borrar lo recién escrito).
+    String? previousSecret;
     if (secret != null) {
+      if (existing != null) {
+        previousSecret = await secureStore.read(id);
+      }
       try {
         await secureStore.save(id, secret);
       } catch (_) {
@@ -74,6 +94,8 @@ final class SaveSource {
       config: config,
       name: name,
       updatedAt: clock.now(),
+      enabled: existing?.enabled ?? true,
+      lastRefresh: existing?.lastRefresh,
       refreshPolicy: refreshPolicy,
     );
 
@@ -81,7 +103,11 @@ final class SaveSource {
       await sources.upsert(source);
     } catch (_) {
       if (secret != null) {
-        await secureStore.delete(id);
+        if (existing != null && previousSecret != null) {
+          await secureStore.save(id, previousSecret);
+        } else {
+          await secureStore.delete(id);
+        }
       }
       return const SaveSourceFailed(SaveSourceFailureReason.persistFailed);
     }
@@ -89,11 +115,14 @@ final class SaveSource {
     return SaveSourceOk(source);
   }
 
-  Future<bool> _hasDuplicateName(String name) async {
+  Future<bool> _hasDuplicateName(String name, {String? excludingId}) async {
     final normalized = normalizeForMatching(name);
     final existing = await sources.getAll();
     return existing.any(
-      (s) => !s.isDeleted && normalizeForMatching(s.name) == normalized,
+      (s) =>
+          !s.isDeleted &&
+          s.id != excludingId &&
+          normalizeForMatching(s.name) == normalized,
     );
   }
 }
