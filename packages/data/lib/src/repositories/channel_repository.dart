@@ -270,6 +270,20 @@ final class DriftChannelRepository
     return rows.map(_categoryToEntity).toList();
   }
 
+  /// Gestión de fuentes (ui-spec §2.10): nº de canales vivos por fuente.
+  /// Agregado `COUNT(*)` sobre el motor — nunca trae las filas a Dart.
+  @override
+  Future<int> countBySource(String sourceId) async {
+    final countExp = _db.channels.id.count();
+    final query = _db.selectOnly(_db.channels)
+      ..addColumns([countExp])
+      ..where(
+        _db.channels.sourceId.equals(sourceId) & _db.channels.deletedAt.isNull(),
+      );
+    final row = await query.getSingle();
+    return row.read(countExp) ?? 0;
+  }
+
   @override
   Stream<List<Channel>> watchChannels({required String categoryId}) {
     return (_db.select(_db.channels)..where(

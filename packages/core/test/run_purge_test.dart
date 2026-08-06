@@ -122,6 +122,9 @@ final class _FakeChannelRepository implements ChannelRepository {
   @override
   Stream<List<Channel>> watchChannels({required String categoryId}) =>
       const Stream.empty();
+
+  @override
+  Future<int> countBySource(String sourceId) async => 0;
 }
 
 /// Fake de `RunPurge` para los tests de `PurgeScheduler`: aísla al

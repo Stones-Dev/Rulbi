@@ -24,6 +24,11 @@ abstract interface class ChannelRepository {
 
   Future<List<Category>> categoriesFor(String sourceId);
 
+  /// Nº de canales vivos de una fuente (`deletedAt IS NULL`) — los
+  /// tombstones de [importSourceContent] no son canales del usuario
+  /// (Gestión de fuentes, ui-spec §2.10). No trae filas, solo cuenta.
+  Future<int> countBySource(String sourceId);
+
   Stream<List<Channel>> watchChannels({required String categoryId});
 
   /// Purga de tombstones huérfanos ("Tombstones huérfanos (purga)", S2):

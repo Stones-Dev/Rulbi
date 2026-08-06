@@ -475,6 +475,74 @@ void main() {
     );
   });
 
+  group('countBySource (Gestión de fuentes, S4 · Ola 3, ui-spec §2.10)', () {
+    test('fuente sin canales devuelve 0', () async {
+      expect(await repository.countBySource('inexistente'), 0);
+    });
+
+    test('cuenta solo los canales vivos tras un import', () async {
+      await repository.importSourceContent(
+        's1',
+        Stream.fromIterable([
+          channel(sourceId: 's1', refKey: 'a'),
+          channel(sourceId: 's1', refKey: 'b'),
+          channel(sourceId: 's1', refKey: 'c'),
+        ]),
+        now: DateTime(2026, 1, 1),
+      );
+
+      expect(await repository.countBySource('s1'), 3);
+    });
+
+    test(
+      'un segundo import que tumba la mitad de los canales reduce el '
+      'recuento (los tombstones no cuentan)',
+      () async {
+        await repository.importSourceContent(
+          's1',
+          Stream.fromIterable([
+            channel(sourceId: 's1', refKey: 'a'),
+            channel(sourceId: 's1', refKey: 'b'),
+            channel(sourceId: 's1', refKey: 'c'),
+            channel(sourceId: 's1', refKey: 'd'),
+          ]),
+          now: DateTime(2026, 1, 1),
+        );
+
+        // Solo 'a' y 'b' reaparecen -> 'c' y 'd' se tumban.
+        await repository.importSourceContent(
+          's1',
+          Stream.fromIterable([
+            channel(sourceId: 's1', refKey: 'a'),
+            channel(sourceId: 's1', refKey: 'b'),
+          ]),
+          now: DateTime(2026, 1, 2),
+        );
+
+        expect(await repository.countBySource('s1'), 2);
+      },
+    );
+
+    test('no mezcla canales de otra fuente', () async {
+      await repository.importSourceContent(
+        's1',
+        Stream.fromIterable([channel(sourceId: 's1', refKey: 'a')]),
+        now: DateTime(2026, 1, 1),
+      );
+      await repository.importSourceContent(
+        's2',
+        Stream.fromIterable([
+          channel(sourceId: 's2', refKey: 'x'),
+          channel(sourceId: 's2', refKey: 'y'),
+        ]),
+        now: DateTime(2026, 1, 1),
+      );
+
+      expect(await repository.countBySource('s1'), 1);
+      expect(await repository.countBySource('s2'), 2);
+    });
+  });
+
   group('migración v1 -> v2', () {
     test(
       'una BD creada con el esquema v1 abre en v2 sin perder filas de '
