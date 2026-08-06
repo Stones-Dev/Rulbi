@@ -31,6 +31,24 @@ import 'package:iptv_data/iptv_data.dart';
 /// laxo que los 32 ms de RNF-01 para import — este es un chequeo de
 /// sanity de una operación de mantenimiento en segundo plano, no un path
 /// interactivo).
+///
+/// **Margen distinto en CI (S4 · Ola 3, flake documentado en S2/S3/S4)**:
+/// el runner compartido `windows-latest` de Actions ha hecho saltar este
+/// gate cuatro+ veces sin que el código de purga cambiara (S2, S3, Ola 1
+/// de S4, y 473 ms / 132 ms / 112 ms en tres commits distintos de la Ola
+/// 2) — jitter de I/O de un runner compartido bajo carga variable, no una
+/// regresión real de rendimiento (el propio `DefaultRunPurge` no se tocó
+/// en ninguna de esas sesiones). El presupuesto local se queda en 100 ms
+/// (sigue siendo la señal fina de "medir antes de suponer" de T1.4); en
+/// CI sube a 600 ms — sigue cazando lo que este test existe para cazar
+/// (un bloque síncrono de cientos de ms a segundos por un tamaño de lote
+/// mal elegido), simplemente deja de reventar por 100-500 ms de ruido de
+/// scheduling del host. Deliberadamente **no** se resuelve con retry
+/// automático (normalizaría el flake sin explicarlo) ni con runner
+/// dedicado (coste que esta fase del proyecto no justifica).
+int get _jankBudgetMs =>
+    Platform.environment['CI'] == 'true' ? 600 : 100;
+
 void main() {
   test(
     '50k canales (40k tumbados) + 100k programas EPG: purga sin jank grave',
@@ -195,7 +213,9 @@ void main() {
         '  Tombstones purgados: ${stats.channelTombstones} (esperado '
         '${totalChannels - aliveChannels - favoriteProtected - watchStateProtected})\n'
         '  Jank: gaps=${jank.gapsMs.length}, máx=${jank.jankMaxMs} ms, '
-        'ticks > 100 ms: ${jank.gapsMs.where((g) => g > 100).length}\n',
+        'ticks > 100 ms: ${jank.gapsMs.where((g) => g > 100).length}, '
+        'presupuesto aplicado: $_jankBudgetMs ms '
+        '(${Platform.environment['CI'] == 'true' ? 'CI' : 'local'})\n',
       );
 
       // Verificación semántica: no solo "no hubo jank", también que la
@@ -208,13 +228,13 @@ void main() {
 
       expect(
         jank.jankMaxMs,
-        lessThan(100),
+        lessThan(_jankBudgetMs),
         reason:
             'Sanity de S2: gap máximo del event loop durante la purga de '
-            '50k canales/100k programas EPG. Gap real: ${jank.jankMaxMs} ms '
-            '— si esto salta, hay que revisar el tamaño de lote antes de '
-            'cerrar la sesión (lección de T1.4: los 149 ms de jank del '
-            'jsonDecode síncrono).',
+            '50k canales/100k programas EPG. Gap real: ${jank.jankMaxMs} ms, '
+            'presupuesto: $_jankBudgetMs ms — si esto salta, hay que '
+            'revisar el tamaño de lote antes de cerrar la sesión (lección '
+            'de T1.4: los 149 ms de jank del jsonDecode síncrono).',
       );
     },
     timeout: const Timeout(Duration(minutes: 5)),
