@@ -101,3 +101,30 @@ final sourcesStreamProvider = StreamProvider<List<Source>>((ref) {
 final channelCountProvider = FutureProvider.family<int, String>((ref, sourceId) {
   return ref.watch(channelRepositoryProvider).countBySource(sourceId);
 });
+
+/// Búsqueda global (S5 · Ola 1, ui-spec §2.11). `DriftChannelRepository`
+/// implementa `ChannelRepository` y `ChannelSearchPort` sobre la misma
+/// instancia — un cast, no una segunda instancia, para no duplicar el
+/// wrapper sobre `_db`.
+final channelSearchPortProvider = Provider<ChannelSearchPort>((ref) {
+  return ref.watch(channelRepositoryProvider) as ChannelSearchPort;
+});
+
+/// Home desktop — fila "Continuar viendo" (S5 · Ola 1, ui-spec §2.2).
+final watchStateRepositoryProvider = Provider<WatchStateRepository>((ref) {
+  return DriftWatchStateRepository(ref.watch(iptvDatabaseProvider));
+});
+
+final trackWatchProgressProvider = Provider<TrackWatchProgress>((ref) {
+  return TrackWatchProgress(
+    ref.watch(watchStateRepositoryProvider),
+    ref.watch(clockProvider),
+  );
+});
+
+final getContinueWatchingProvider = Provider<GetContinueWatching>((ref) {
+  return GetContinueWatching(
+    ref.watch(trackWatchProgressProvider),
+    ref.watch(channelRepositoryProvider),
+  );
+});

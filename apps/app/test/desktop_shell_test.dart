@@ -6,6 +6,8 @@ import 'package:iptv_app/features/sources/source_providers.dart';
 import 'package:iptv_app/l10n/app_localizations.dart';
 import 'package:iptv_app/shell/desktop_shell.dart';
 
+import 'features/channels/_helpers/fake_channel_repository.dart';
+import 'features/home/_helpers/fake_watch_state_repository.dart';
 import 'features/sources/_helpers/fakes.dart';
 
 /// DesktopShell navegable (S4 · Desktop I, Ola 1). Escrito ANTES de la
@@ -15,13 +17,21 @@ import 'features/sources/_helpers/fakes.dart';
 void main() {
   Widget wrap(Widget child, {Locale locale = const Locale('en')}) {
     return ProviderScope(
-      // La sección Fuentes (S4 · Ola 3) está cableada a persistencia real
-      // (sourceRepositoryProvider -> iptvDatabaseProvider -> SQLite real)
-      // — sin este override, cualquier test que monte DesktopShell entero
-      // intenta abrir una BD real y pumpAndSettle() nunca termina
-      // (CircularProgressIndicator indeterminado mientras carga).
+      // `IndexedStack` construye TODAS las secciones a la vez, no solo la
+      // seleccionada (S5 · Ola 1: Inicio/TV en directo cablean pantallas
+      // reales) — sin estos overrides, cualquier test que monte
+      // DesktopShell entero dispara `iptvDatabaseProvider` e intenta abrir
+      // una BD real, y `pumpAndSettle()` nunca termina (mismo gotcha
+      // documentado en S4 · Ola 3 para Fuentes, ahora también para
+      // Canales/Continuar viendo).
       overrides: [
         sourceRepositoryProvider.overrideWithValue(FakeSourceRepository()),
+        channelRepositoryProvider.overrideWithValue(
+          FakeChannelListRepository(),
+        ),
+        watchStateRepositoryProvider.overrideWithValue(
+          FakeWatchStateRepository(),
+        ),
       ],
       child: MaterialApp(
         locale: locale,

@@ -23,17 +23,37 @@ final class SearchChannels {
   /// compartido, un tipo con muchos aciertos (p. ej. "la 1" entre miles de
   /// canales en directo) dejaría sin resultados a Películas/Series aunque
   /// también los tuvieran.
+  ///
+  /// [sourceIds], si no es null, restringe la búsqueda a esas fuentes —
+  /// mismo criterio de "fuente desactivada (oculta)" que el listado
+  /// (ui-spec §2.3): quien llama pasa las fuentes activas, no todas.
   Future<GroupedSearchResults> grouped(
     String query, {
     int limitPerType = 20,
+    Set<String>? sourceIds,
   }) async {
     final trimmed = query.trim();
     if (trimmed.isEmpty) return const GroupedSearchResults.empty();
 
     final results = await Future.wait([
-      _port.search(trimmed, type: ContentType.live, limit: limitPerType),
-      _port.search(trimmed, type: ContentType.vod, limit: limitPerType),
-      _port.search(trimmed, type: ContentType.series, limit: limitPerType),
+      _port.search(
+        trimmed,
+        type: ContentType.live,
+        sourceIds: sourceIds,
+        limit: limitPerType,
+      ),
+      _port.search(
+        trimmed,
+        type: ContentType.vod,
+        sourceIds: sourceIds,
+        limit: limitPerType,
+      ),
+      _port.search(
+        trimmed,
+        type: ContentType.series,
+        sourceIds: sourceIds,
+        limit: limitPerType,
+      ),
     ]);
 
     return GroupedSearchResults(

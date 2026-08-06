@@ -116,5 +116,22 @@
   "sourceTypeM3u": "M3U",
   "sourceTypeXtream": "Xtream",
 
-  "xtreamPasswordKeepHint": "Déjalo en blanco para mantener la contraseña actual"
+  "xtreamPasswordKeepHint": "Déjalo en blanco para mantener la contraseña actual",
+
+  "categoryAllLabel": "Todas",
+  "channelListEmptyTitle": "Aún no hay canales",
+  "channelListEmptyHint": "Añade o actualiza una fuente para ver canales aquí.",
+
+  "searchFieldHint": "Buscar canales, películas, series",
+  "searchGroupChannels": "Canales",
+  "searchGroupMovies": "Películas",
+  "searchGroupSeries": "Series",
+  "searchNoResults": "Sin resultados para \"{query}\"",
+
+  "homeContinueWatchingTitle": "Continuar viendo",
+  "homeEmptyLibraryTitle": "Tu biblioteca está vacía",
+  "homeEmptyLibraryHint": "Añade una fuente para empezar a construir tu biblioteca.",
+  "homeGoToSourcesButton": "Ir a Fuentes",
+  "homeRemainingMinutes": "{count, plural, =1{Queda 1 min} other{Quedan {count} min}}",
+  "homeRemainingHoursMinutes": "Quedan {hours} h {minutes} min"
 }

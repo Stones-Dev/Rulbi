@@ -3,6 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iptv_tokens/iptv_tokens.dart';
 
+import '../features/channels/channel_list_screen.dart';
+import '../features/home/home_screen.dart';
+import '../features/search/search_screen.dart';
 import '../features/sources/import_status_bar.dart';
 import '../features/sources/sources_screen.dart';
 import '../l10n/app_localizations.dart';
@@ -12,8 +15,15 @@ import '../l10n/app_localizations.dart';
 /// · Series · Buscar · Guía · Favoritos · Fuentes · Ajustes) + atajos de
 /// teclado `Ctrl+1`…`Ctrl+9` + [ImportStatusBar] (ui-spec §2.14, S4 · Ola
 /// 3: indicador global de import en segundo plano, visible desde
-/// cualquier sección). Todas las secciones salvo Fuentes son placeholder
-/// hoy — las pantallas reales llegan en sprints posteriores.
+/// cualquier sección).
+///
+/// S5 · Ola 1 cablea tres secciones más con pantalla real: Inicio
+/// (`HomeScreen`, ui-spec §2.2 — solo "Continuar viendo"), TV en directo
+/// (`ChannelListScreen`, ui-spec §2.3) y Buscar (`SearchScreen`, ui-spec
+/// §2.11). Películas/Series siguen sin pantalla: ui-spec solo define
+/// detalle con póster (§2.6/§2.7), no una pantalla de listado/navegación
+/// para esa sección — hueco de spec, no de esta ola (ver handoff de
+/// cierre). Guía/Favoritos/Ajustes llegan en sprints posteriores.
 class DesktopShell extends ConsumerStatefulWidget {
   const DesktopShell({super.key});
 
@@ -25,11 +35,15 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
   int _selectedIndex = 0;
   final FocusNode _focusNode = FocusNode();
 
-  /// Posición de "Fuentes" en `_labels`/`_iconsByDestination` (ui-spec §1,
-  /// orden: Inicio·TV·Películas·Series·Buscar·Guía·Favoritos·**Fuentes**
-  /// ·Ajustes). Única sección con pantalla real desde S4 · Ola 2
-  /// (`SourcesScreen`, gestión de fuentes desde Ola 3) — el resto sigue
-  /// siendo placeholder.
+  /// Posiciones en `_labels`/`_iconsByDestination` (ui-spec §1, orden:
+  /// **Inicio**·**TV**·Películas·Series·**Buscar**·Guía·Favoritos·
+  /// **Fuentes**·Ajustes). Guía/Favoritos/Ajustes siguen siendo
+  /// placeholder; Películas/Series también, pero por hueco de ui-spec
+  /// (§2.6/§2.7 son detalle con póster, no listado) — no por pendiente
+  /// de esta ola.
+  static const _homeIndex = 0;
+  static const _liveTvIndex = 1;
+  static const _searchIndex = 4;
   static const _sourcesIndex = 7;
 
   static const _iconsByDestination = [
@@ -161,10 +175,15 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
             index: _selectedIndex,
             children: [
               for (var i = 0; i < labels.length; i++)
-                if (i == _sourcesIndex)
-                  const SourcesScreen()
-                else
-                  _SectionPlaceholder(label: labels[i]),
+                switch (i) {
+                  _homeIndex => HomeScreen(
+                    onGoToSources: () => _selectIndex(_sourcesIndex),
+                  ),
+                  _liveTvIndex => const ChannelListScreen(),
+                  _searchIndex => const SearchScreen(),
+                  _sourcesIndex => const SourcesScreen(),
+                  _ => _SectionPlaceholder(label: labels[i]),
+                },
             ],
           ),
         ),

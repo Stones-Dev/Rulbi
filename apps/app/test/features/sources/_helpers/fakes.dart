@@ -179,6 +179,24 @@ final class FakeChannelRepository implements ChannelRepository {
   @override
   Future<int> purgeOrphanTombstones({required DateTime deletedBefore}) async =>
       0;
+
+  @override
+  Future<int> countChannels(ChannelQuery query) async => 0;
+
+  @override
+  Future<List<Channel>> channelsPage(
+    ChannelQuery query, {
+    required int offset,
+    required int limit,
+  }) async => const [];
+
+  @override
+  Future<List<CategoryWithCount>> categoriesWithCount(
+    ChannelQuery query,
+  ) async => const [];
+
+  @override
+  Future<List<Channel>> findByRefs(List<ChannelRef> refs) async => const [];
 }
 
 /// [ImportChannelSource] con stream/informe fijos, inyectable por test —

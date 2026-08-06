@@ -530,5 +530,82 @@
   "xtreamPasswordKeepHint": "Leave blank to keep the current password",
   "@xtreamPasswordKeepHint": {
     "description": "Helper text on the Xtream password field when editing an existing source (P5): the password is never reloaded from the secure store to display it — an empty field means \"no change\"."
+  },
+
+  "categoryAllLabel": "All",
+  "@categoryAllLabel": {
+    "description": "Pseudo-category shown first in the category panel of the channel list (ui-spec §2.3), S5 · Ola 1 — aggregates every category of the current section."
+  },
+  "channelListEmptyTitle": "No channels yet",
+  "@channelListEmptyTitle": {
+    "description": "Headline shown in the channel list (ui-spec §2.3) when the current section has zero live channels — not specified by ui-spec, a minimal fallback so the list is never a blank screen (S5 · Ola 1)."
+  },
+  "channelListEmptyHint": "Add or refresh a source to see channels here.",
+  "@channelListEmptyHint": {
+    "description": "Subtitle of the empty channel list state, S5 · Ola 1."
+  },
+
+  "searchFieldHint": "Search channels, movies, series",
+  "@searchFieldHint": {
+    "description": "Placeholder text of the global search field (ui-spec §2.11), S5 · Ola 1."
+  },
+  "searchGroupChannels": "Channels",
+  "@searchGroupChannels": {
+    "description": "Search results group header for live channels (ui-spec §2.11: \"Canales / Películas / Series\"), S5 · Ola 1."
+  },
+  "searchGroupMovies": "Movies",
+  "@searchGroupMovies": {
+    "description": "Search results group header for VOD (ui-spec §2.11), S5 · Ola 1."
+  },
+  "searchGroupSeries": "Series",
+  "@searchGroupSeries": {
+    "description": "Search results group header for series (ui-spec §2.11), S5 · Ola 1."
+  },
+  "searchNoResults": "No results for \"{query}\"",
+  "@searchNoResults": {
+    "description": "Shown when a non-empty search query returns zero results in all three groups (ui-spec §2.11 doesn't specify this state — minimal fallback, S5 · Ola 1).",
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+
+  "homeContinueWatchingTitle": "Continue watching",
+  "@homeContinueWatchingTitle": {
+    "description": "Home desktop row header (ui-spec §2.2), S5 · Ola 1 — Favoritos/Ahora en tus canales rows are Ola 2."
+  },
+  "homeEmptyLibraryTitle": "Your library is empty",
+  "@homeEmptyLibraryTitle": {
+    "description": "Home desktop headline when there are no sources at all (ui-spec §2.2: \"vacío → CTA a Fuentes\"), S5 · Ola 1."
+  },
+  "homeEmptyLibraryHint": "Add a source to start building your library.",
+  "@homeEmptyLibraryHint": {
+    "description": "Home desktop subtitle for the empty-library state, S5 · Ola 1."
+  },
+  "homeGoToSourcesButton": "Go to Sources",
+  "@homeGoToSourcesButton": {
+    "description": "CTA button of the empty-library state that switches DesktopShell to the Sources section (ui-spec §2.2), S5 · Ola 1."
+  },
+  "homeRemainingMinutes": "{count, plural, =1{1 min left} other{{count} min left}}",
+  "@homeRemainingMinutes": {
+    "description": "Continue-watching card remaining time, under one hour (Figma TV Shell, node Row/ContinuarViendo: \"Quedan 26 min\"), S5 · Ola 1.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "homeRemainingHoursMinutes": "{hours}h {minutes}m left",
+  "@homeRemainingHoursMinutes": {
+    "description": "Continue-watching card remaining time, one hour or more (Figma TV Shell: \"Quedan 1 h 57 min\") — hours aren't pluralized (common practice for compact timestamps), S5 · Ola 1.",
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
   }
 }

@@ -661,6 +661,15 @@ void main() {
         expect(result.live, hasLength(20));
         expect(result.vod, hasLength(1));
       });
+
+      test('pasa sourceIds al puerto en las tres llamadas', () async {
+        final port = _FakeChannelSearchPort();
+        final useCase = SearchChannels(port);
+
+        await useCase.grouped('la 1', sourceIds: {'s1', 's2'});
+
+        expect(port.lastSourceIds, {'s1', 's2'});
+      });
     });
   });
 
