@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../l10n/app_localizations.dart';
 import 'm3u_source_form.dart';
+import 'xtream_source_form.dart';
 
 /// Sección *Fuentes* del `DesktopShell` (ui-spec §2.10), S4 · Ola 2:
 /// deliberadamente sin lista de fuentes todavía — eso es *Gestión de
@@ -23,6 +24,14 @@ class SourcesEntryScreen extends StatelessWidget {
             label: Text(l10n.sourcesAddM3uButton),
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute<void>(builder: (_) => const M3uSourceForm()),
+            ),
+          ),
+          const SizedBox(height: 12),
+          FilledButton.icon(
+            icon: const Icon(Icons.dns_outlined),
+            label: Text(l10n.sourcesAddXtreamButton),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const XtreamSourceForm()),
             ),
           ),
         ],

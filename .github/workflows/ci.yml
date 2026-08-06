@@ -103,6 +103,19 @@ jobs:
       - name: melos bootstrap
         run: melos bootstrap
 
+      # S4 · Ola 2: iptv_data pasó de dev-only a dependency real de
+      # apps/app (Formulario Xtream persiste de verdad) — este job compila
+      # la app entera, así que ahora también necesita database.g.dart
+      # generado, igual que ya hacían los otros dos jobs (mismo motivo que
+      # ADR-007 documentó para "Android integration").
+      - name: packages/data — pub get
+        working-directory: packages/data
+        run: flutter pub get
+
+      - name: packages/data — codegen (drift)
+        working-directory: packages/data
+        run: dart run build_runner build --delete-conflicting-outputs
+
       - name: apps/app — codegen (flutter gen-l10n)
         working-directory: apps/app
         run: flutter gen-l10n

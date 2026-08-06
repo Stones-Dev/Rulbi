@@ -67,8 +67,14 @@ dependencies:
     path: ../../packages/data
 
   # Selector de archivo nativo (ui-spec §2.8, origen "Archivo" del
-  # Formulario M3U): soporta Windows/Linux/Android. MIT (P8 ok).
-  file_picker: ^8.1.7
+  # Formulario M3U): soporta Windows/Linux/Android. MIT (P8 ok). >=10.3.3
+  # a propósito: versiones anteriores (incl. 8.x) fijan `compileSdk 34` a
+  # mano en su propio `android/build.gradle`, en vez de delegar a
+  # `flutter.compileSdkVersion` (36 en el Flutter SDK 3.44.8 en uso) —
+  # choca con `flutter_plugin_android_lifecycle` 2.0.35 (exige >=36).
+  # 10.3.3 lo corrigió (file_picker#1842). Verificado con
+  # `flutter build apk --debug` local tras el bump.
+  file_picker: ^10.3.3
 
   # Id de `Source` al crearla. Ya resolvía como transitiva (pubspec.lock
   # raíz) — declararla aquí no mueve ninguna versión. MIT (P8 ok).

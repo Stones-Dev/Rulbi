@@ -240,5 +240,95 @@
         "type": "int"
       }
     }
+  },
+
+  "sourcesAddXtreamButton": "Add Xtream source",
+  "@sourcesAddXtreamButton": {
+    "description": "Entry point in the Sources section (DesktopShell) that opens the Xtream source form (ui-spec §2.10 approach for Ola 2)."
+  },
+
+  "xtreamFormTitle": "Xtream source",
+  "@xtreamFormTitle": {
+    "description": "AppBar title of the Xtream source form (ui-spec §2.9)."
+  },
+  "xtreamHostLabel": "Server URL (host:port)",
+  "@xtreamHostLabel": {
+    "description": "Xtream form field label (ui-spec §2.9)."
+  },
+  "xtreamHostRequiredError": "Enter the server URL",
+  "@xtreamHostRequiredError": {
+    "description": "Validation error when the Xtream host field is left empty."
+  },
+  "xtreamHostInvalidError": "Enter a valid http(s) host, e.g. host:port",
+  "@xtreamHostInvalidError": {
+    "description": "Validation error when normalizeXtreamPanelHost returns XtreamHostInvalidReason.malformed."
+  },
+  "xtreamHostCredentialsError": "Don't include the username or password in the URL — use the fields below",
+  "@xtreamHostCredentialsError": {
+    "description": "Validation error when normalizeXtreamPanelHost returns XtreamHostInvalidReason.embeddedCredentials (ADR-006/P5): the panel URL must never carry credentials."
+  },
+  "xtreamUsernameLabel": "Username",
+  "@xtreamUsernameLabel": {
+    "description": "Xtream form field label (ui-spec §2.9)."
+  },
+  "xtreamUsernameRequiredError": "Enter the username",
+  "@xtreamUsernameRequiredError": {
+    "description": "Validation error when the Xtream username field is left empty."
+  },
+  "xtreamPasswordLabel": "Password",
+  "@xtreamPasswordLabel": {
+    "description": "Xtream form field label (ui-spec §2.9), hidden with a show/hide toggle."
+  },
+  "xtreamPasswordRequiredError": "Enter the password",
+  "@xtreamPasswordRequiredError": {
+    "description": "Validation error when the Xtream password field is left empty."
+  },
+  "xtreamPasswordShowTooltip": "Show password",
+  "@xtreamPasswordShowTooltip": {
+    "description": "Semantic tooltip/label for the toggle icon button when the password is currently hidden."
+  },
+  "xtreamPasswordHideTooltip": "Hide password",
+  "@xtreamPasswordHideTooltip": {
+    "description": "Semantic tooltip/label for the toggle icon button when the password is currently visible."
+  },
+  "xtreamProbeAction": "Test connection",
+  "@xtreamProbeAction": {
+    "description": "Xtream form probe button label (ui-spec §2.9: \"Probar conexión\")."
+  },
+  "xtreamProbeStatusLabel": "Status: {status}",
+  "@xtreamProbeStatusLabel": {
+    "description": "Xtream probe success summary: raw XtreamAccount.status as reported by the panel (not normalized to a closed enum, per xtream_client.dart).",
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "xtreamProbeExpiresLabel": "Expires {date}",
+  "@xtreamProbeExpiresLabel": {
+    "description": "Xtream probe success summary: account expiration date, when the panel reports one.",
+    "placeholders": {
+      "date": {
+        "type": "DateTime",
+        "format": "yMMMd"
+      }
+    }
+  },
+  "xtreamProbeNoExpiry": "No expiration date",
+  "@xtreamProbeNoExpiry": {
+    "description": "Xtream probe success summary: shown instead of xtreamProbeExpiresLabel when XtreamAccount.expiresAt is null (not an error — some panels never report one)."
+  },
+  "xtreamProbeStreamCount": "{count, plural, =0{No live channels} =1{1 live channel} other{{count} live channels}}",
+  "@xtreamProbeStreamCount": {
+    "description": "Xtream probe success summary: live stream count, when get_live_streams succeeded.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "xtreamProbeStreamCountUnavailable": "Live channel count unavailable",
+  "@xtreamProbeStreamCountUnavailable": {
+    "description": "Xtream probe success summary: shown instead of xtreamProbeStreamCount when XtreamProbeSummary.liveStreamCount is null — best-effort failure of get_live_streams after a successful authentication, not a probe failure (ui-spec §2.9 only promises account status/expiry before saving)."
   }
 }

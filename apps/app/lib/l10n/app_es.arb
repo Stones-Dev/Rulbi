@@ -58,5 +58,25 @@
 
   "m3uProbeAction": "Probar",
   "m3uProbeSuccessTitle": "{count, plural, =0{Sin canales encontrados en la muestra} =1{1 canal encontrado en la muestra} other{{count} canales encontrados en la muestra}}",
-  "m3uProbeDiscardedNote": "{count, plural, =1{1 entrada ignorada} other{{count} entradas ignoradas}}"
+  "m3uProbeDiscardedNote": "{count, plural, =1{1 entrada ignorada} other{{count} entradas ignoradas}}",
+
+  "sourcesAddXtreamButton": "Añadir fuente Xtream",
+
+  "xtreamFormTitle": "Fuente Xtream",
+  "xtreamHostLabel": "URL del servidor (host:puerto)",
+  "xtreamHostRequiredError": "Introduce la URL del servidor",
+  "xtreamHostInvalidError": "Introduce un host http(s) válido, p. ej. host:puerto",
+  "xtreamHostCredentialsError": "No incluyas el usuario ni la contraseña en la URL — usa los campos de abajo",
+  "xtreamUsernameLabel": "Usuario",
+  "xtreamUsernameRequiredError": "Introduce el usuario",
+  "xtreamPasswordLabel": "Contraseña",
+  "xtreamPasswordRequiredError": "Introduce la contraseña",
+  "xtreamPasswordShowTooltip": "Mostrar contraseña",
+  "xtreamPasswordHideTooltip": "Ocultar contraseña",
+  "xtreamProbeAction": "Probar conexión",
+  "xtreamProbeStatusLabel": "Estado: {status}",
+  "xtreamProbeExpiresLabel": "Caduca {date}",
+  "xtreamProbeNoExpiry": "Sin fecha de caducidad",
+  "xtreamProbeStreamCount": "{count, plural, =0{Sin canales en directo} =1{1 canal en directo} other{{count} canales en directo}}",
+  "xtreamProbeStreamCountUnavailable": "Nº de canales en directo no disponible"
 }
