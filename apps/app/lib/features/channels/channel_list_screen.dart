@@ -5,6 +5,8 @@ import 'package:iptv_tokens/iptv_tokens.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../epg/epg_providers.dart';
+import '../player/open_player.dart';
+import '../player/playback_request.dart';
 import '../sources/import_controller.dart';
 import '../sources/source_providers.dart';
 import 'category_panel.dart';
@@ -132,7 +134,7 @@ class _ChannelListScreenState extends ConsumerState<ChannelListScreen> {
   }
 }
 
-class _ChannelListBody extends StatelessWidget {
+class _ChannelListBody extends ConsumerWidget {
   const _ChannelListBody({
     required this.cache,
     required this.l10n,
@@ -144,7 +146,7 @@ class _ChannelListBody extends StatelessWidget {
   final EpgNowController epgController;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (!cache.isInitialized) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -157,9 +159,27 @@ class _ChannelListBody extends StatelessWidget {
       itemCount: cache.totalCount,
       itemBuilder: (context, index) {
         final channel = cache.itemAt(index);
-        return channel == null
-            ? const ChannelRowSkeleton()
-            : ChannelRow(channel: channel, epgController: epgController);
+        if (channel == null) return const ChannelRowSkeleton();
+        return ChannelRow(
+          channel: channel,
+          epgController: epgController,
+          // Zapping ↑/↓ del reproductor sobre la ventana de páginas ya
+          // cargadas de esta caché (S6, Bloque E, D3 del plan de la ola)
+          // — nunca dispara una carga nueva, ver `loadedWindowAround`.
+          onTap: () {
+            final window = cache.loadedWindowAround(index);
+            openPlayer(
+              context,
+              ref,
+              PlaybackRequest(
+                channel: channel,
+                queue: window == null
+                    ? null
+                    : PlaybackQueue(items: window.items, index: window.index),
+              ),
+            );
+          },
+        );
       },
     );
   }

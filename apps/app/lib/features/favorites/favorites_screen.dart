@@ -8,6 +8,8 @@ import 'package:iptv_tokens/iptv_tokens.dart';
 import '../../l10n/app_localizations.dart';
 import '../channels/channel_row.dart';
 import '../epg/epg_providers.dart';
+import '../player/open_channel.dart';
+import '../player/playback_request.dart';
 import '../sources/source_providers.dart';
 import 'favorites_providers.dart';
 
@@ -96,6 +98,22 @@ class _FavoritesList extends ConsumerWidget {
           key: Key('channelRow.${channel.ref.serialized}'),
           channel: channel,
           epgController: epgController,
+          // S6, Bloque E: Favoritos mezcla directo/VOD/series (a
+          // diferencia de CatalogScreen) — `openChannel` despacha por
+          // tipo. Zapping ↑/↓ solo entre los favoritos en directo: no
+          // tiene sentido "siguiente canal" saltando a una película.
+          onTap: () {
+            final liveChannels = channels.where((c) => c.type == ContentType.live).toList();
+            final liveIndex = liveChannels.indexOf(channel);
+            openChannel(
+              context,
+              ref,
+              channel,
+              queue: liveIndex < 0
+                  ? null
+                  : PlaybackQueue(items: liveChannels, index: liveIndex),
+            );
+          },
         );
       },
     );

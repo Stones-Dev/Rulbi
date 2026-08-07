@@ -27,6 +27,7 @@ class ChannelRow extends ConsumerStatefulWidget {
     required this.channel,
     this.highlightQuery,
     this.epgController,
+    this.onTap,
   });
 
   final Channel channel;
@@ -41,6 +42,12 @@ class ChannelRow extends ConsumerStatefulWidget {
   /// búsqueda, S5 · Ola 1) — sin controller, la fila no pinta subtítulo ni
   /// barra, el mismo estado "sin EPG" que un canal sin guía (S5 · Ola 2).
   final EpgNowController? epgController;
+
+  /// Abre el canal (S6, Bloque E) — `null` no pinta ningún gesto de tap
+  /// (ninguna pantalla actual deja esto sin cablear, pero el widget no
+  /// debe asumirlo). El botón de favorito, dentro de la fila, sigue
+  /// respondiendo a su propio tap sin activar este.
+  final VoidCallback? onTap;
 
   @override
   ConsumerState<ChannelRow> createState() => _ChannelRowState();
@@ -78,8 +85,16 @@ class _ChannelRowState extends ConsumerState<ChannelRow> {
     final isFavorite =
         favoriteRefsAsync.valueOrNull?.contains(channel.ref) ?? false;
 
-    return Focus(
+    // `InkWell` ya envuelve internamente un `Focus` propio — pasarle
+    // `focusNode: _focusNode` en vez de anidar otro `Focus` explícito por
+    // fuera (como antes de S6, Bloque E) evita dos `Focus` ancestros para
+    // el mismo `Container`: con dos, `find.ancestor(matching:
+    // find.byType(Focus)).first` de channel_list_screen_test.dart
+    // encontraba el interno de `InkWell` (sin `_focusNode`, así que el
+    // anillo nunca aparecía) en vez del que de verdad controla `_focused`.
+    return InkWell(
       focusNode: _focusNode,
+      onTap: widget.onTap,
       child: Container(
         key: Key('channelRow.${channel.ref.serialized}'),
         height: channelRowExtent,
@@ -129,7 +144,9 @@ class _ChannelRowState extends ConsumerState<ChannelRow> {
                   : l10n.favoriteAddTooltip,
               icon: Icon(
                 isFavorite ? Icons.favorite : Icons.favorite_border,
-                color: isFavorite ? IptvColors.accent : IptvColors.textSecondary,
+                color: isFavorite
+                    ? IptvColors.accent
+                    : IptvColors.textSecondary,
               ),
               onPressed: () =>
                   ref.read(manageFavoritesProvider).toggle(channel.ref),
@@ -160,9 +177,7 @@ class ChannelRowSkeleton extends StatelessWidget {
           children: [
             const _LogoPlaceholder(),
             const SizedBox(width: IptvSpacing.md),
-            Expanded(
-              child: Container(height: 14, color: IptvColors.surface),
-            ),
+            Expanded(child: Container(height: 14, color: IptvColors.surface)),
           ],
         ),
       ),

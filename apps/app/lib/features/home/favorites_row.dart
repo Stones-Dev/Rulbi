@@ -13,9 +13,14 @@ import '../../widgets/poster_fallback.dart';
 /// `ContinueWatchingRow` (Figma TV Shell), sin barra de progreso — un
 /// favorito no tiene "cuánto queda".
 class FavoritesRow extends StatelessWidget {
-  const FavoritesRow({super.key, required this.channels});
+  const FavoritesRow({super.key, required this.channels, this.onTap});
 
   final List<Channel> channels;
+
+  /// S6, Bloque E: mismo despacho por tipo que la sección Favoritos
+  /// (`FavoritesScreen`, vía `openChannel`) — esta fila solo pinta, quien
+  /// la construye decide qué hacer con el tap.
+  final ValueChanged<Channel>? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -37,6 +42,7 @@ class FavoritesRow extends StatelessWidget {
             separatorBuilder: (_, _) => const SizedBox(width: IptvSpacing.lg),
             itemBuilder: (context, index) => _FavoriteCard(
               channel: channels[index],
+              onTap: onTap == null ? null : () => onTap!(channels[index]),
             ),
           ),
         ),
@@ -46,30 +52,36 @@ class FavoritesRow extends StatelessWidget {
 }
 
 class _FavoriteCard extends StatelessWidget {
-  const _FavoriteCard({required this.channel});
+  const _FavoriteCard({required this.channel, this.onTap});
 
   final Channel channel;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final logo = channel.logo;
 
-    return SizedBox(
+    return InkWell(
       key: Key('favoritesRow.${channel.ref.serialized}'),
-      width: 174,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(IptvSpacing.radius),
-        child: logo == null
-            ? PosterFallback(name: channel.name, size: 174)
-            : CachedNetworkImage(
-                imageUrl: logo.toString(),
-                width: 174,
-                height: 174,
-                fit: BoxFit.cover,
-                memCacheWidth: 348,
-                placeholder: (_, _) => PosterFallback(name: channel.name, size: 174),
-                errorWidget: (_, _, _) => PosterFallback(name: channel.name, size: 174),
-              ),
+      onTap: onTap,
+      child: SizedBox(
+        width: 174,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(IptvSpacing.radius),
+          child: logo == null
+              ? PosterFallback(name: channel.name, size: 174)
+              : CachedNetworkImage(
+                  imageUrl: logo.toString(),
+                  width: 174,
+                  height: 174,
+                  fit: BoxFit.cover,
+                  memCacheWidth: 348,
+                  placeholder: (_, _) =>
+                      PosterFallback(name: channel.name, size: 174),
+                  errorWidget: (_, _, _) =>
+                      PosterFallback(name: channel.name, size: 174),
+                ),
+        ),
       ),
     );
   }

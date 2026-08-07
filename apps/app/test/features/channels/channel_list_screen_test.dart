@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:iptv_app/features/channels/channel_list_screen.dart';
 import 'package:iptv_app/features/channels/channel_row.dart';
+import 'package:iptv_app/features/player/player_screen.dart';
 import 'package:iptv_app/features/sources/source_providers.dart';
 import 'package:iptv_app/l10n/app_localizations.dart';
 import 'package:iptv_core/iptv_core.dart';
@@ -38,6 +39,7 @@ void main() {
   Future<FakeChannelListRepository> pumpScreen(
     WidgetTester tester, {
     required List<Channel> channels,
+    List<NavigatorObserver> navigatorObservers = const [],
   }) async {
     final sources = FakeSourceRepository();
     await sources.upsert(activeSource());
@@ -53,10 +55,11 @@ void main() {
           ),
           epgRepositoryProvider.overrideWithValue(FakeEpgRepository()),
         ],
-        child: const MaterialApp(
+        child: MaterialApp(
+          navigatorObservers: navigatorObservers,
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(body: ChannelListScreen()),
+          home: const Scaffold(body: ChannelListScreen()),
         ),
       ),
     );
@@ -197,4 +200,44 @@ void main() {
 
     expect(find.text('No channels yet'), findsOneWidget);
   });
+
+  testWidgets(
+    'tocar una fila navega de verdad al reproductor (S6, wiring real — no basta con que '
+    'los tests unitarios de PlayerController pasen, CLAUDE.md commit 0ddc345)',
+    (tester) async {
+      final observer = _RecordingNavigatorObserver();
+      final channel = channelAt(0);
+      await pumpScreen(
+        tester,
+        channels: [channel],
+        navigatorObservers: [observer],
+      );
+
+      // Nunca se llega a `pump()` tras el tap a propósito: montar la
+      // página real de PlayerScreen construiría un MediaKitPlayer real,
+      // que exige libmpv nativo (ausente en el runner de CI, ver
+      // docstring de MediaKitPlayer) — este test verifica la navegación
+      // en sí (D4 del plan de S6: `openPlayer` es la única ruta), no el
+      // reproductor. Ese sí se verifica, con un `FakePlayerPort`
+      // inyectado, en `player_screen_test.dart`.
+      await tester.tap(find.byKey(Key('channelRow.${channel.ref.serialized}')));
+
+      final route = observer.lastPushed;
+      expect(route, isA<MaterialPageRoute<void>>());
+      final widget = (route! as MaterialPageRoute<void>).builder(
+        tester.element(find.byType(ChannelListScreen)),
+      );
+      expect(widget, isA<PlayerScreen>());
+      expect((widget as PlayerScreen).request.channel, channel);
+    },
+  );
+}
+
+class _RecordingNavigatorObserver extends NavigatorObserver {
+  Route<dynamic>? lastPushed;
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    lastPushed = route;
+  }
 }

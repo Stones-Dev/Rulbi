@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:iptv_core/iptv_core.dart';
 import 'package:iptv_tokens/iptv_tokens.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../epg/epg_providers.dart';
 import '../favorites/favorites_providers.dart';
+import '../player/open_channel.dart';
+import '../player/open_player.dart';
+import '../player/playback_request.dart';
 import '../sources/source_providers.dart';
 import 'continue_watching_row.dart';
 import 'favorites_row.dart';
@@ -76,7 +80,16 @@ class _HomeContentState extends ConsumerState<_HomeContent> {
           continueWatchingAsync.when(
             data: (items) => items.isEmpty
                 ? const SizedBox.shrink()
-                : ContinueWatchingRow(items: items),
+                : ContinueWatchingRow(
+                    items: items,
+                    // S6, Bloque E: siempre reanuda directo (ver
+                    // docstring de ContinueWatchingRow.onTap).
+                    onTap: (item) => openPlayer(
+                      context,
+                      ref,
+                      PlaybackRequest(channel: item.channel, startAt: item.position),
+                    ),
+                  ),
             loading: () => const SizedBox(
               height: 48,
               child: Center(child: CircularProgressIndicator()),
@@ -88,7 +101,25 @@ class _HomeContentState extends ConsumerState<_HomeContent> {
                 ? const SizedBox.shrink()
                 : Padding(
                     padding: const EdgeInsets.only(top: IptvSpacing.lg),
-                    child: FavoritesRow(channels: channels),
+                    child: FavoritesRow(
+                      channels: channels,
+                      // S6, Bloque E: mismo despacho por tipo que la
+                      // sección Favoritos (favorites_screen.dart).
+                      onTap: (channel) {
+                        final liveChannels = channels
+                            .where((c) => c.type == ContentType.live)
+                            .toList();
+                        final liveIndex = liveChannels.indexOf(channel);
+                        openChannel(
+                          context,
+                          ref,
+                          channel,
+                          queue: liveIndex < 0
+                              ? null
+                              : PlaybackQueue(items: liveChannels, index: liveIndex),
+                        );
+                      },
+                    ),
                   ),
             loading: () => const SizedBox.shrink(),
             error: (_, _) => const SizedBox.shrink(),

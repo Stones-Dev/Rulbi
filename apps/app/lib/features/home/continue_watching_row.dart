@@ -10,9 +10,16 @@ import '../../l10n/app_localizations.dart';
 /// *TV Shell*): tarjetas 310×236 a densidad TV, con póster 310×174, barra
 /// de progreso de 6 px al pie, título y tiempo restante.
 class ContinueWatchingRow extends StatelessWidget {
-  const ContinueWatchingRow({super.key, required this.items});
+  const ContinueWatchingRow({super.key, required this.items, this.onTap});
 
   final List<ContinueWatchingItem> items;
+
+  /// S6, Bloque E: siempre reanuda directo en el reproductor (nunca una
+  /// ficha) — a diferencia de `FavoritesRow`, todo lo que aparece aquí es
+  /// por definición ya reproducible (tiene `WatchState` real), incluido
+  /// un episodio de serie (`Channel.type == series` pero apuntando al
+  /// episodio, no al catálogo de la serie).
+  final ValueChanged<ContinueWatchingItem>? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -32,8 +39,10 @@ class ContinueWatchingRow extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             itemCount: items.length,
             separatorBuilder: (_, _) => const SizedBox(width: IptvSpacing.lg),
-            itemBuilder: (context, index) =>
-                _ContinueWatchingCard(item: items[index]),
+            itemBuilder: (context, index) => _ContinueWatchingCard(
+              item: items[index],
+              onTap: onTap == null ? null : () => onTap!(items[index]),
+            ),
           ),
         ),
       ],
@@ -42,9 +51,10 @@ class ContinueWatchingRow extends StatelessWidget {
 }
 
 class _ContinueWatchingCard extends StatelessWidget {
-  const _ContinueWatchingCard({required this.item});
+  const _ContinueWatchingCard({required this.item, this.onTap});
 
   final ContinueWatchingItem item;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -52,30 +62,33 @@ class _ContinueWatchingCard extends StatelessWidget {
     final channel = item.channel;
     final isLive = item.duration == Duration.zero;
 
-    return SizedBox(
+    return InkWell(
       key: Key('continueWatching.${channel.ref.serialized}'),
-      width: 310,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _Poster(channel: channel, fraction: isLive ? null : item.fraction),
-          const SizedBox(height: IptvSpacing.sm),
-          Text(
-            channel.name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          if (!isLive) ...[
-            const SizedBox(height: 4),
+      onTap: onTap,
+      child: SizedBox(
+        width: 310,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _Poster(channel: channel, fraction: isLive ? null : item.fraction),
+            const SizedBox(height: IptvSpacing.sm),
             Text(
-              _remainingLabel(l10n, item.remaining),
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: IptvColors.textSecondary),
+              channel.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.titleMedium,
             ),
+            if (!isLive) ...[
+              const SizedBox(height: 4),
+              Text(
+                _remainingLabel(l10n, item.remaining),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: IptvColors.textSecondary,
+                ),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

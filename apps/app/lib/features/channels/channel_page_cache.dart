@@ -80,6 +80,23 @@ class ChannelPageCache extends ChangeNotifier {
     return null;
   }
 
+  /// La página cargada que contiene [index], como ventana ordenada para
+  /// zapear (S6, Bloque E — D3 del plan de la ola: "cola explícita del
+  /// llamador" para el reproductor). A diferencia de [itemAt], **nunca**
+  /// dispara una carga nueva — solo sirve lo que ya está en memoria; se
+  /// llama al tocar una fila que ya está en pantalla, así que su página ya
+  /// tiene que estar cargada. `null` si por lo que sea no lo está (no
+  /// debería ocurrir en el flujo normal, pero no es motivo para lanzar).
+  ({List<Channel> items, int index})? loadedWindowAround(int index) {
+    if (index < 0 || index >= _totalCount) return null;
+    final pageIndex = index ~/ pageSize;
+    final page = _pages[pageIndex];
+    if (page == null) return null;
+    final withinPage = index % pageSize;
+    if (withinPage >= page.length) return null;
+    return (items: page, index: withinPage);
+  }
+
   void _requestPage(int pageIndex) {
     if (_pending.contains(pageIndex)) return;
     _pending.add(pageIndex);

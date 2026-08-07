@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:iptv_playback/iptv_playback.dart';
 import 'package:iptv_tokens/iptv_tokens.dart';
 
 import 'features/epg/epg_providers.dart';
@@ -14,7 +15,26 @@ import 'shell/mobile_shell.dart';
 import 'shell/tv_shell.dart';
 
 void main() {
+  initializePlayback();
   runApp(const ProviderScope(child: IptvApp()));
+}
+
+/// Arranque único de media_kit (S6, ADR-009) — antes de `runApp`, una sola
+/// vez por proceso. `apps/app` nunca importa `media_kit` directamente (P6):
+/// solo `iptv_playback`, que lo encapsula.
+///
+/// Extraído de `main()` (en vez de llamar a `IptvPlayback.ensureInitialized`
+/// inline) para que el wiring sea verificable en test (política de
+/// CLAUDE.md, commit `0ddc345`: un servicio arrancado sin verificar que
+/// algo lo invoca de verdad es el mismo fallo que dejó `PurgeScheduler`
+/// inerte en S2-S5) sin invocar el `MediaKit.ensureInitialized()` real —
+/// exige libmpv nativo, ausente en el runner de CI (mismo límite que
+/// `MediaKitPlayer`, ver su docstring). [ensureInitialized] es
+/// [IptvPlayback.ensureInitialized] por defecto; `main_test.dart` lo
+/// sustituye por un espía.
+@visibleForTesting
+void initializePlayback({void Function() ensureInitialized = IptvPlayback.ensureInitialized}) {
+  ensureInitialized();
 }
 
 /// `ConsumerStatefulWidget` en vez de `StatelessWidget` (S5.5, Bloque B4)

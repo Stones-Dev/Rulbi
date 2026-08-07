@@ -5,6 +5,8 @@ import 'package:iptv_tokens/iptv_tokens.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../channels/channel_row.dart';
+import '../player/open_channel.dart';
+import '../player/playback_request.dart';
 import 'search_controller.dart';
 
 /// Búsqueda global (ui-spec §2.11, S5 · Ola 1): campo de texto + grupos
@@ -76,32 +78,53 @@ class _SearchBody extends StatelessWidget {
   }
 }
 
-class _SearchResultsList extends StatelessWidget {
+class _SearchResultsList extends ConsumerWidget {
   const _SearchResultsList({required this.query, required this.results});
 
   final String query;
   final GroupedSearchResults results;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
 
     return ListView(
       children: [
         if (results.live.isNotEmpty) ...[
           _SearchGroupHeader(title: l10n.searchGroupChannels),
-          for (final channel in results.live)
-            ChannelRow(channel: channel, highlightQuery: query),
+          for (var i = 0; i < results.live.length; i++)
+            ChannelRow(
+              channel: results.live[i],
+              highlightQuery: query,
+              // S6, Bloque E: zapping ↑/↓ dentro de este mismo grupo de
+              // resultados (ui-spec §2.11 → §2.13, D3 del plan de la ola).
+              onTap: () => openChannel(
+                context,
+                ref,
+                results.live[i],
+                queue: PlaybackQueue(items: results.live, index: i),
+              ),
+            ),
         ],
         if (results.vod.isNotEmpty) ...[
           _SearchGroupHeader(title: l10n.searchGroupMovies),
           for (final channel in results.vod)
-            ChannelRow(channel: channel, highlightQuery: query),
+            ChannelRow(
+              channel: channel,
+              highlightQuery: query,
+              // Abre la ficha VOD (§2.6) — sin cola: no es un contexto de
+              // reproducción secuencial.
+              onTap: () => openChannel(context, ref, channel),
+            ),
         ],
         if (results.series.isNotEmpty) ...[
           _SearchGroupHeader(title: l10n.searchGroupSeries),
           for (final channel in results.series)
-            ChannelRow(channel: channel, highlightQuery: query),
+            ChannelRow(
+              channel: channel,
+              highlightQuery: query,
+              onTap: () => openChannel(context, ref, channel),
+            ),
         ],
       ],
     );
