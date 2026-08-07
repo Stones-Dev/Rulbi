@@ -9,8 +9,9 @@ import '../channels/channel_page_cache.dart';
 import '../channels/channel_providers.dart';
 import '../sources/import_controller.dart';
 import '../sources/source_providers.dart';
-import 'content_detail_screen.dart';
 import 'poster_card.dart';
+import 'series_detail_screen.dart';
+import 'vod_detail_screen.dart';
 
 /// Rejilla de Películas/Series (ui-spec §2.3.1, S5.5) — mismo patrón que
 /// `ChannelListScreen` (categorías + `ChannelPageCache` + reconstrucción
@@ -71,8 +72,18 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
     _rebuildCache();
   }
 
+  /// Despacha por [Channel.type] (D6, S6): §2.6 Detalle VOD / §2.7 Detalle
+  /// de serie son pantallas distintas — el selector de temporada y la
+  /// lista de episodios no tienen equivalente en VOD.
   void _openDetail(Channel channel) {
-    Navigator.of(context).push<void>(MaterialPageRoute(builder: (_) => ContentDetailScreen(channel: channel)));
+    Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => switch (channel.type) {
+          ContentType.series => SeriesDetailScreen(channel: channel),
+          ContentType.vod || ContentType.live => VodDetailScreen(channel: channel),
+        },
+      ),
+    );
   }
 
   @override

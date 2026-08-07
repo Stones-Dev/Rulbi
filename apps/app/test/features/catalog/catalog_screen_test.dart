@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:iptv_app/features/catalog/catalog_screen.dart';
-import 'package:iptv_app/features/catalog/content_detail_screen.dart';
 import 'package:iptv_app/features/catalog/poster_card.dart';
+import 'package:iptv_app/features/catalog/series_detail_screen.dart';
+import 'package:iptv_app/features/catalog/vod_detail_screen.dart';
 import 'package:iptv_app/features/sources/source_providers.dart';
 import 'package:iptv_app/l10n/app_localizations.dart';
 import 'package:iptv_core/iptv_core.dart';
@@ -11,6 +12,7 @@ import 'package:iptv_core/iptv_core.dart';
 import '../../_helpers/fake_epg_repository.dart';
 import '../../_helpers/fake_favorites_repository.dart';
 import '../channels/_helpers/fake_channel_repository.dart';
+import '../home/_helpers/fake_watch_state_repository.dart';
 import '../sources/_helpers/fakes.dart';
 
 /// `CatalogScreen` (ui-spec §2.3.1, S5.5 Bloque D) — mismo patrón que
@@ -63,6 +65,11 @@ void main() {
           channelRepositoryProvider.overrideWithValue(channelRepository),
           favoritesRepositoryProvider.overrideWithValue(favorites ?? FakeFavoritesRepository()),
           epgRepositoryProvider.overrideWithValue(FakeEpgRepository()),
+          // VodDetailScreen/SeriesDetailScreen (S6, Bloque D) — sin estos,
+          // tocar un póster dispara `iptvDatabaseProvider`/almacén seguro
+          // reales (mismo gotcha ya documentado en desktop_shell_test.dart).
+          secureCredentialStoreProvider.overrideWithValue(FakeSecureCredentialStore()),
+          watchStateRepositoryProvider.overrideWithValue(FakeWatchStateRepository()),
         ],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -178,7 +185,7 @@ void main() {
     );
   });
 
-  testWidgets('tocar un póster abre ContentDetailScreen con el canal', (tester) async {
+  testWidgets('tocar un póster de Película abre VodDetailScreen con el canal (D6)', (tester) async {
     final channel = movieAt(1);
     await pumpScreen(tester, type: ContentType.vod, channels: [channel]);
 
@@ -187,9 +194,23 @@ void main() {
     await tester.tap(find.byType(PosterCard));
     await tester.pumpAndSettle();
 
-    expect(find.byType(ContentDetailScreen), findsOneWidget);
+    expect(find.byType(VodDetailScreen), findsOneWidget);
     expect(
       find.descendant(of: find.byType(AppBar), matching: find.text('Pelicula 001')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('tocar un póster de Serie abre SeriesDetailScreen con el canal (D6)', (tester) async {
+    final channel = seriesAt(1);
+    await pumpScreen(tester, type: ContentType.series, channels: [channel]);
+
+    await tester.tap(find.byType(PosterCard));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(SeriesDetailScreen), findsOneWidget);
+    expect(
+      find.descendant(of: find.byType(AppBar), matching: find.text('Serie 001')),
       findsOneWidget,
     );
   });
