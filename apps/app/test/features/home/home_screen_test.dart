@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:iptv_app/features/home/home_screen.dart';
+import 'package:iptv_app/features/player/player_screen.dart';
 import 'package:iptv_app/features/sources/source_providers.dart';
 import 'package:iptv_app/l10n/app_localizations.dart';
 import 'package:iptv_core/iptv_core.dart';
@@ -41,6 +42,7 @@ void main() {
     required FakeChannelListRepository channels,
     required FakeWatchStateRepository watchState,
     VoidCallback? onGoToSources,
+    List<NavigatorObserver> navigatorObservers = const [],
   }) async {
     await tester.pumpWidget(
       ProviderScope(
@@ -54,6 +56,7 @@ void main() {
           epgRepositoryProvider.overrideWithValue(FakeEpgRepository()),
         ],
         child: MaterialApp(
+          navigatorObservers: navigatorObservers,
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
@@ -174,4 +177,90 @@ void main() {
     );
     expect(find.textContaining('left'), findsNothing);
   });
+
+  testWidgets(
+    'tocar Continuar viendo en un directo abre el reproductor SIN startAt (S6: seek sin sentido sobre live)',
+    (tester) async {
+      final sources = FakeSourceRepository();
+      await sources.upsert(activeSource());
+
+      final channel = channelOf('s1', 'dazn1', 'DAZN 1', type: ContentType.live);
+      final channels = FakeChannelListRepository(channels: [channel]);
+      final watchState = FakeWatchStateRepository()
+        ..seed(
+          WatchState(
+            channel: channel.ref,
+            position: const Duration(minutes: 10),
+            duration: Duration.zero,
+            updatedAt: DateTime.utc(2026, 1, 1),
+          ),
+        );
+
+      final observer = _RecordingNavigatorObserver();
+      await pumpScreen(
+        tester,
+        sources: sources,
+        channels: channels,
+        watchState: watchState,
+        navigatorObservers: [observer],
+      );
+
+      await tester.tap(find.byKey(Key('continueWatching.${channel.ref.serialized}')));
+
+      final route = observer.lastPushed;
+      expect(route, isA<MaterialPageRoute<void>>());
+      final widget = (route! as MaterialPageRoute<void>).builder(
+        tester.element(find.byType(HomeScreen)),
+      );
+      expect(widget, isA<PlayerScreen>());
+      expect((widget as PlayerScreen).request.startAt, Duration.zero);
+    },
+  );
+
+  testWidgets(
+    'tocar Continuar viendo en un VOD abre el reproductor con startAt = posición guardada',
+    (tester) async {
+      final sources = FakeSourceRepository();
+      await sources.upsert(activeSource());
+
+      final channel = channelOf('s1', 'oppenheimer', 'Oppenheimer');
+      final channels = FakeChannelListRepository(channels: [channel]);
+      const savedPosition = Duration(minutes: 30);
+      final watchState = FakeWatchStateRepository()
+        ..seed(
+          WatchState(
+            channel: channel.ref,
+            position: savedPosition,
+            duration: const Duration(hours: 2),
+            updatedAt: DateTime.utc(2026, 1, 1),
+          ),
+        );
+
+      final observer = _RecordingNavigatorObserver();
+      await pumpScreen(
+        tester,
+        sources: sources,
+        channels: channels,
+        watchState: watchState,
+        navigatorObservers: [observer],
+      );
+
+      await tester.tap(find.byKey(Key('continueWatching.${channel.ref.serialized}')));
+
+      final route = observer.lastPushed;
+      final widget = (route! as MaterialPageRoute<void>).builder(
+        tester.element(find.byType(HomeScreen)),
+      );
+      expect((widget as PlayerScreen).request.startAt, savedPosition);
+    },
+  );
+}
+
+class _RecordingNavigatorObserver extends NavigatorObserver {
+  Route<dynamic>? lastPushed;
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    lastPushed = route;
+  }
 }

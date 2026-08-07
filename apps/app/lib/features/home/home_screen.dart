@@ -83,11 +83,23 @@ class _HomeContentState extends ConsumerState<_HomeContent> {
                 : ContinueWatchingRow(
                     items: items,
                     // S6, Bloque E: siempre reanuda directo (ver
-                    // docstring de ContinueWatchingRow.onTap).
+                    // docstring de ContinueWatchingRow.onTap). `startAt`
+                    // solo tiene sentido para VOD/episodio — un directo no
+                    // tiene una línea de tiempo estable entre sesiones
+                    // (WatchState.duration == Duration.zero ya documenta
+                    // esto: "no hay progreso que mostrar"); pasar
+                    // `item.position` como startAt ahí solo dispara un
+                    // seek sin sentido sobre el buffer recién abierto
+                    // (verificado a mano en S6: la posición cae en vez de
+                    // continuar, confirmando que el seek no hace lo que
+                    // parece pedir).
                     onTap: (item) => openPlayer(
                       context,
                       ref,
-                      PlaybackRequest(channel: item.channel, startAt: item.position),
+                      PlaybackRequest(
+                        channel: item.channel,
+                        startAt: item.duration == Duration.zero ? Duration.zero : item.position,
+                      ),
                     ),
                   ),
             loading: () => const SizedBox(
