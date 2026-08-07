@@ -3,6 +3,7 @@ import 'dart:async';
 import '../ports/channel_repository.dart';
 import '../ports/clock.dart';
 import '../ports/epg_repository.dart';
+import 'periodic_job_scheduler.dart';
 
 /// Ventanas/gracia de las purgas de S2 ("Ventana y purga EPG" /
 /// "Tombstones huérfanos"), parametrizables a propósito (nunca constantes
@@ -85,13 +86,20 @@ final class PurgeStats {
 
 /// Orquesta las dos purgas de S2 sobre los puertos de `core` (P6: el SQL
 /// vive en `data`, aquí solo se decide cuándo y con qué ventanas).
-abstract interface class RunPurge {
+///
+/// `implements PeriodicJob` (S5.5, Bloque B3): `Future<PurgeStats?>` es un
+/// subtipo válido de `Future<void>` (Dart trata `void` como el tipo de
+/// retorno más permisivo posible), así que `RunPurge` satisface
+/// `PeriodicJob` sin cambiar su firma pública — `PurgeScheduler` sigue
+/// recibiendo un `RunPurge` normal, tipado, con su `PurgeStats` intacto.
+abstract interface class RunPurge implements PeriodicJob {
   /// Corre las dos purgas ahora mismo, sin consultar `minInterval`.
   Future<PurgeStats> runOnce();
 
   /// Corre `runOnce` solo si ha pasado `PurgePolicy.minInterval` desde la
   /// última corrida (de este mismo `RunPurge`, en memoria — no persiste
   /// entre reinicios de la app). Devuelve `null` si no tocaba.
+  @override
   Future<PurgeStats?> runIfDue();
 }
 
@@ -199,36 +207,22 @@ final class DefaultRunPurge implements RunPurge {
 /// de `apps/app`, F2). En producción, `triggers` se compone de
 /// `Stream.periodic(policy.minInterval)` + el final de cada import; en
 /// tests es un `StreamController` bombeado a mano.
+///
+/// Envoltorio fino sobre [PeriodicJobScheduler] (S5.5, Bloque B3): el
+/// mecanismo de disparo se extrajo ahí para que `RunEpgRefresh` lo
+/// reutilice; esta clase se conserva tal cual (mismo constructor
+/// posicional, mismos `start`/`stop`) para que nada que ya dependa de
+/// `PurgeScheduler` tenga que cambiar.
 final class PurgeScheduler {
-  PurgeScheduler(this._runPurge, this._triggers, {this.onError});
+  PurgeScheduler(
+    RunPurge runPurge,
+    Stream<void> triggers, {
+    void Function(Object error, StackTrace stackTrace)? onError,
+  }) : _inner = PeriodicJobScheduler(runPurge, triggers, onError: onError);
 
-  final RunPurge _runPurge;
-  final Stream<void> _triggers;
+  final PeriodicJobScheduler _inner;
 
-  /// Reporta el fallo de una corrida individual. Nunca cancela la
-  /// suscripción: una purga rota una vez no debe impedir que las
-  /// siguientes se intenten.
-  final void Function(Object error, StackTrace stackTrace)? onError;
+  Future<void> start() => _inner.start();
 
-  StreamSubscription<void>? _subscription;
-
-  /// Corre una vez inmediatamente y luego una vez por cada evento de
-  /// `triggers` (sujeto a `PurgePolicy.minInterval` vía `runIfDue`).
-  Future<void> start() async {
-    await _runGuarded();
-    _subscription = _triggers.listen((_) => unawaited(_runGuarded()));
-  }
-
-  Future<void> stop() async {
-    await _subscription?.cancel();
-    _subscription = null;
-  }
-
-  Future<void> _runGuarded() async {
-    try {
-      await _runPurge.runIfDue();
-    } catch (error, stackTrace) {
-      onError?.call(error, stackTrace);
-    }
-  }
+  Future<void> stop() => _inner.stop();
 }

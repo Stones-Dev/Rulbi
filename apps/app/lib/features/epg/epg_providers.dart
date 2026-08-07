@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iptv_core/iptv_core.dart';
 
 import '../sources/source_providers.dart';
+import 'epg_ingest.dart';
 import 'xtream_epg_fallback.dart';
 
 /// Fallback bajo demanda de EPG Xtream por canal (S5.5, Bloque A3) — se
@@ -216,3 +217,45 @@ EpgNowController createEpgNowController(WidgetRef ref) => EpgNowController(
   ensureEpgFor: (channel, at) =>
       ref.read(xtreamEpgFallbackProvider).ensureEpgFor(channel, now: at),
 );
+
+/// Ingesta de guía por fuente (S5.5, Bloque B4) — compone `epgSourceProvider`
+/// (descarga) + `xmltvEpgWriterProvider` (escritura), el puerto que
+/// `RunEpgRefresh` (`core`) necesita sin depender de ninguno de los dos
+/// directamente (P6).
+final epgIngestProvider = Provider<EpgIngestPort>((ref) {
+  return AppEpgIngestPort(
+    epgSource: ref.watch(epgSourceProvider),
+    writer: ref.watch(xmltvEpgWriterProvider),
+  );
+});
+
+/// Intervalo por defecto (S5.5): 6 h, ver docstring de `EpgRefreshPolicy`
+/// en `core`. Provider propio (en vez de `const EpgRefreshPolicy()` inline
+/// en `runEpgRefreshProvider`) para que la futura pantalla de Ajustes
+/// (ui-spec §2.15) tenga un único sitio que overridear cuando exista.
+final epgRefreshPolicyProvider = Provider<EpgRefreshPolicy>((ref) => const EpgRefreshPolicy());
+
+final runEpgRefreshProvider = Provider<RunEpgRefresh>((ref) {
+  return DefaultRunEpgRefresh(
+    ref.watch(sourceRepositoryProvider),
+    ref.watch(epgIngestProvider),
+    ref.watch(clockProvider),
+    policy: ref.watch(epgRefreshPolicyProvider),
+  );
+});
+
+/// Wiring de producción del refresco automático de guía (S5.5) —
+/// `Stream.periodic(policy.minInterval)` como único trigger: sin
+/// infraestructura de background nueva (eso es F6), sujeto de todas
+/// formas a `EpgRefreshPolicy.minInterval` vía `RunEpgRefresh.runIfDue`
+/// (mismo patrón que `PurgeScheduler`, ver `maintenance_providers.dart`).
+/// Arrancado una vez desde `IptvApp.initState` (`main.dart`).
+final epgRefreshSchedulerProvider = Provider<PeriodicJobScheduler>((ref) {
+  final policy = ref.watch(epgRefreshPolicyProvider);
+  final scheduler = PeriodicJobScheduler(
+    ref.watch(runEpgRefreshProvider),
+    Stream<void>.periodic(policy.minInterval),
+  );
+  ref.onDispose(() => unawaited(scheduler.stop()));
+  return scheduler;
+});

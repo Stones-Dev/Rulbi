@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:iptv_app/features/epg/epg_providers.dart';
 import 'package:iptv_app/features/sources/source_providers.dart';
 import 'package:iptv_app/main.dart';
+import 'package:iptv_core/iptv_core.dart';
 
 import '_helpers/fake_epg_repository.dart';
 import '_helpers/fake_favorites_repository.dart';
@@ -16,6 +18,15 @@ void main() {
     // directo/Favoritos están cableadas a persistencia real — sin estos
     // overrides, el smoke test intenta abrir una BD real y
     // pumpAndSettle() nunca termina (ver desktop_shell_test.dart).
+    //
+    // `epgIngestProvider` (S5.5, Bloque B4): `IptvApp.initState` arranca
+    // `epgRefreshSchedulerProvider`, que construye la cadena completa de
+    // `RunEpgRefresh` en cuanto se lee — incluida `epgIngestProvider`, que
+    // sin overridear tira de `xmltvEpgWriterProvider` ->
+    // `iptvDatabaseProvider` -> BD real, aunque `FakeSourceRepository()` no
+    // tenga ninguna fuente y `ingestFor` nunca llegue a invocarse de
+    // verdad. Un fake que nunca hace nada basta: no hay fuentes que
+    // refrescar en este smoke test.
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -30,6 +41,7 @@ void main() {
             FakeFavoritesRepository(),
           ),
           epgRepositoryProvider.overrideWithValue(FakeEpgRepository()),
+          epgIngestProvider.overrideWithValue(_NoopEpgIngestPort()),
         ],
         child: const IptvApp(),
       ),
@@ -38,4 +50,9 @@ void main() {
 
     expect(find.byType(MaterialApp), findsOneWidget);
   });
+}
+
+final class _NoopEpgIngestPort implements EpgIngestPort {
+  @override
+  Future<EpgImportStats?> ingestFor(Source source, {required DateTime now}) async => null;
 }

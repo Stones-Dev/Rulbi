@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iptv_tokens/iptv_tokens.dart';
 
+import 'features/epg/epg_providers.dart';
+import 'features/maintenance/maintenance_providers.dart';
 import 'l10n/app_localizations.dart';
 import 'providers/locale_override_provider.dart';
 import 'shell/desktop_shell.dart';
@@ -13,8 +17,27 @@ void main() {
   runApp(const ProviderScope(child: IptvApp()));
 }
 
-class IptvApp extends StatelessWidget {
+/// `ConsumerStatefulWidget` en vez de `StatelessWidget` (S5.5, Bloque B4)
+/// para tener un `initState` donde arrancar los dos trabajos periódicos de
+/// `core` mientras la app está abierta: la purga (`RunPurge`, S2 — escrita
+/// desde entonces, nunca arrancada hasta ahora) y el refresco automático
+/// de guía (`RunEpgRefresh`, S5.5). Ninguno de los dos necesita
+/// infraestructura de background nueva (eso es F6) — ambos paran solos
+/// cuando la app se cierra, vía `ref.onDispose` en sus providers.
+class IptvApp extends ConsumerStatefulWidget {
   const IptvApp({super.key});
+
+  @override
+  ConsumerState<IptvApp> createState() => _IptvAppState();
+}
+
+class _IptvAppState extends ConsumerState<IptvApp> {
+  @override
+  void initState() {
+    super.initState();
+    unawaited(ref.read(purgeSchedulerProvider).start());
+    unawaited(ref.read(epgRefreshSchedulerProvider).start());
+  }
 
   @override
   Widget build(BuildContext context) {
