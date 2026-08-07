@@ -46,7 +46,9 @@ class ImportStatusBar extends ConsumerWidget {
               ),
               const SizedBox(width: IptvSpacing.sm),
               Text(
-                l10n.importStatusBarRunning(state.sourceName),
+                state.phase == ImportPhase.epg
+                    ? l10n.importEpgPhaseRunning
+                    : l10n.importStatusBarRunning(state.sourceName),
                 style: Theme.of(
                   context,
                 ).textTheme.bodyMedium?.copyWith(color: IptvColors.textPrimary),

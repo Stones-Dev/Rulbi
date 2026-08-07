@@ -5,8 +5,11 @@ import 'package:iptv_app/features/channels/channel_providers.dart';
 import 'package:iptv_app/features/channels/channel_row.dart';
 import 'package:iptv_app/features/search/search_providers.dart';
 import 'package:iptv_app/features/search/search_screen.dart';
+import 'package:iptv_app/features/sources/source_providers.dart';
 import 'package:iptv_app/l10n/app_localizations.dart';
 import 'package:iptv_core/iptv_core.dart';
+
+import '../../_helpers/fake_favorites_repository.dart';
 
 /// Búsqueda global (ui-spec §2.11, S5 · Ola 1): debounce, agrupación por
 /// tipo, resaltado de coincidencia y estado sin-resultados. `pumpWidget`
@@ -43,6 +46,9 @@ void main() {
         overrides: [
           searchChannelsProvider.overrideWithValue(SearchChannels(port)),
           activeSourceIdsProvider.overrideWithValue({'s1'}),
+          favoritesRepositoryProvider.overrideWithValue(
+            FakeFavoritesRepository(),
+          ),
         ],
         child: const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -82,6 +88,9 @@ void main() {
             SearchChannels(_CountingPort(port, onCall: () => searchCalls++)),
           ),
           activeSourceIdsProvider.overrideWithValue({'s1'}),
+          favoritesRepositoryProvider.overrideWithValue(
+            FakeFavoritesRepository(),
+          ),
         ],
         child: const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,

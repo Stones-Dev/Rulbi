@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iptv_core/iptv_core.dart';
+import 'package:iptv_protocols/iptv_protocols.dart';
 
 import '../../l10n/app_localizations.dart';
 import 'import_controller.dart';
@@ -62,13 +63,24 @@ class _ImportScreenState extends ConsumerState<ImportScreen> {
         padding: const EdgeInsets.all(24),
         child: switch (state) {
           ImportIdle() => const _RunningView(channelsSeen: 0),
-          ImportRunning(:final channelsSeen) => _RunningView(
+          ImportRunning(:final channelsSeen, :final phase) => _RunningView(
             channelsSeen: channelsSeen,
+            phase: phase,
           ),
-          ImportDone(:final stats, :final summary) => _DoneView(
-            stats: stats,
-            summary: summary,
-          ),
+          ImportDone(
+            :final stats,
+            :final summary,
+            :final epgStats,
+            :final epgReport,
+            :final epgFailureReason,
+          ) =>
+            _DoneView(
+              stats: stats,
+              summary: summary,
+              epgStats: epgStats,
+              epgReport: epgReport,
+              epgFailureReason: epgFailureReason,
+            ),
           ImportFailed(:final reason) => _FailedView(reason: reason),
           ImportCancelled() => const _CancelledView(),
         },
@@ -78,9 +90,19 @@ class _ImportScreenState extends ConsumerState<ImportScreen> {
 }
 
 class _RunningView extends ConsumerWidget {
-  const _RunningView({required this.channelsSeen});
+  const _RunningView({
+    required this.channelsSeen,
+    this.phase = ImportPhase.channels,
+  });
 
   final int channelsSeen;
+
+  /// S5 · Ola 2: la fase de guía no tiene señal de progreso incremental
+  /// (el escritor no expone avance parcial), así que en vez de mostrar
+  /// `channelsSeen` congelado (que mentiría sobre qué se está importando)
+  /// se sustituye por un texto de fase sin número — RNF-09, sin datos
+  /// inventados.
+  final ImportPhase phase;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -92,7 +114,9 @@ class _RunningView extends ConsumerWidget {
         const LinearProgressIndicator(),
         const SizedBox(height: 24),
         Text(
-          l10n.channelCount(channelsSeen),
+          phase == ImportPhase.epg
+              ? l10n.importEpgPhaseRunning
+              : l10n.channelCount(channelsSeen),
           style: Theme.of(context).textTheme.headlineSmall,
         ),
         const SizedBox(height: 32),
@@ -117,10 +141,19 @@ class _RunningView extends ConsumerWidget {
 }
 
 class _DoneView extends StatelessWidget {
-  const _DoneView({required this.stats, required this.summary});
+  const _DoneView({
+    required this.stats,
+    required this.summary,
+    this.epgStats,
+    this.epgReport,
+    this.epgFailureReason,
+  });
 
   final SourceImportStats stats;
   final ImportSummary summary;
+  final EpgImportStats? epgStats;
+  final XmltvImportReport? epgReport;
+  final ProbeFailureReason? epgFailureReason;
 
   @override
   Widget build(BuildContext context) {
@@ -144,6 +177,35 @@ class _DoneView extends StatelessWidget {
           if (summary.discardedCount > 0) ...[
             const SizedBox(height: 16),
             _DiscardedList(summary: summary),
+          ],
+          // S5 · Ola 2 (ADR-008): solo aparece si la fuente tenía
+          // `epgUrl` — ni éxito ni fallo si sencillamente no tiene guía
+          // (ver docstring de `ImportDone`).
+          if (epgStats != null || epgFailureReason != null) ...[
+            const SizedBox(height: 24),
+            Text(
+              l10n.importEpgSectionTitle,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            if (epgFailureReason != null)
+              Text(
+                l10n.importEpgFailedNote(
+                  probeFailureReasonLabel(l10n, epgFailureReason!),
+                ),
+              )
+            else ...[
+              Text(l10n.importStatsEpgProgrammesInserted(
+                epgStats!.programmesInserted,
+              )),
+              Text(l10n.importStatsEpgProgrammesUpdated(
+                epgStats!.programmesUpdated,
+              )),
+              Text(
+                l10n.importStatsEpgChannelsInserted(epgStats!.channelsInserted),
+              ),
+              Text(l10n.importStatsEpgDuplicates(epgStats!.duplicateKeys)),
+            ],
           ],
           const SizedBox(height: 24),
           FilledButton(

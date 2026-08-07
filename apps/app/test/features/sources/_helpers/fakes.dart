@@ -1,10 +1,12 @@
 import 'dart:async';
 
+import 'package:iptv_app/features/sources/epg_source.dart';
 import 'package:iptv_app/features/sources/import_controller.dart';
 import 'package:iptv_app/features/sources/m3u_probe.dart';
 import 'package:iptv_app/features/sources/probe_result.dart';
 import 'package:iptv_app/features/sources/xtream_probe.dart';
 import 'package:iptv_core/iptv_core.dart';
+import 'package:iptv_data/iptv_data.dart';
 import 'package:iptv_protocols/iptv_protocols.dart';
 
 /// Dobles compartidos entre `save_source_test.dart` y los tests de los dos
@@ -217,5 +219,69 @@ final class FakeImportChannelSource implements ImportChannelSource {
     lastSource = source;
     lastPassword = password;
     return ImportChannels(channels: channels, summary: Future.value(summary));
+  }
+}
+
+/// [EpgSource] con resultado fijo, inyectable por test (S5 · Ola 2) —
+/// `outcome: null` (por defecto) es "la fuente no tiene guía", el mismo
+/// caso que ya cubren todos los tests de `ImportController` anteriores a
+/// esta ola sin tener que tocarlos.
+///
+/// [outcomeBuilder] (en vez de un [outcome] ya construido) para los casos
+/// donde el `XmltvParseOutcome` envuelve un `Future.error`/`Stream.error`:
+/// construidos con antelación en el cuerpo del test, esos futuros/streams
+/// "en caliente" pueden marcarse como error sin manejar antes de que
+/// `_runEpgPhase` llegue a escucharlos (varios `await` después). Construir
+/// el error dentro de `epgFor` — justo antes de que el llamador real
+/// enganche su `.ignore()`/`.catchError` — evita esa ventana.
+final class FakeEpgSource implements EpgSource {
+  FakeEpgSource({this.outcome, this.outcomeBuilder});
+
+  final XmltvParseOutcome? outcome;
+  final XmltvParseOutcome? Function()? outcomeBuilder;
+
+  Source? lastSource;
+  DateTime? lastNow;
+
+  @override
+  XmltvParseOutcome? epgFor(Source source, {required DateTime now}) {
+    lastSource = source;
+    lastNow = now;
+    return outcomeBuilder != null ? outcomeBuilder!() : outcome;
+  }
+}
+
+/// [XmltvEpgWriter] en memoria (S5 · Ola 2): igual que
+/// [FakeChannelRepository] con `Stream<Channel>`, un `await for` real sobre
+/// el `Stream<XmltvEntry>` que le pasa `ImportController._runEpgPhase`, así
+/// que propaga sus errores exactamente igual que `DriftXmltvEpgWriter`.
+final class FakeXmltvEpgWriter implements XmltvEpgWriter {
+  FakeXmltvEpgWriter({EpgImportStats? stats})
+    : stats =
+          stats ??
+          const EpgImportStats(
+            programmesInserted: 0,
+            programmesUpdated: 0,
+            programmesUnchanged: 0,
+            channelsInserted: 0,
+            channelsUpdated: 0,
+            channelsUnchanged: 0,
+            duplicateKeys: 0,
+          );
+
+  final EpgImportStats stats;
+  final List<XmltvEntry> written = [];
+  int writeCalls = 0;
+
+  @override
+  Future<EpgImportStats> write(
+    Stream<XmltvEntry> entries, {
+    required DateTime now,
+  }) async {
+    writeCalls++;
+    await for (final entry in entries) {
+      written.add(entry);
+    }
+    return stats;
   }
 }

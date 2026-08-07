@@ -180,7 +180,7 @@ jobs:
   # ellos (cada uno tiene su propio checkout/caché de Flutter), así que
   # encadenarlos sólo añadiría minutos de reloj de pared sin ahorrar nada.
   android-integration:
-    name: Android integration (drift v1->v2, API 33)
+    name: Android integration (drift v1->v4, API 33)
     runs-on: ubuntu-latest
     # ADR-007 parámetro 4: cada push a main. No en pull_request todavía
     # (revisitar en S6 si el proyecto adopta gate sobre PR).
@@ -266,7 +266,7 @@ jobs:
           disable-linux-hw-accel: false
           script: echo "AVD snapshot generado"
 
-      - name: integration_test (migración drift v1->v2)
+      - name: integration_test (migración drift v1->v4)
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 33

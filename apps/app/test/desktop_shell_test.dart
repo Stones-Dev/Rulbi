@@ -6,6 +6,8 @@ import 'package:iptv_app/features/sources/source_providers.dart';
 import 'package:iptv_app/l10n/app_localizations.dart';
 import 'package:iptv_app/shell/desktop_shell.dart';
 
+import '_helpers/fake_epg_repository.dart';
+import '_helpers/fake_favorites_repository.dart';
 import 'features/channels/_helpers/fake_channel_repository.dart';
 import 'features/home/_helpers/fake_watch_state_repository.dart';
 import 'features/sources/_helpers/fakes.dart';
@@ -18,12 +20,12 @@ void main() {
   Widget wrap(Widget child, {Locale locale = const Locale('en')}) {
     return ProviderScope(
       // `IndexedStack` construye TODAS las secciones a la vez, no solo la
-      // seleccionada (S5 · Ola 1: Inicio/TV en directo cablean pantallas
-      // reales) — sin estos overrides, cualquier test que monte
+      // seleccionada (S5 · Ola 1/2: Inicio/TV en directo/Favoritos cablean
+      // pantallas reales) — sin estos overrides, cualquier test que monte
       // DesktopShell entero dispara `iptvDatabaseProvider` e intenta abrir
       // una BD real, y `pumpAndSettle()` nunca termina (mismo gotcha
       // documentado en S4 · Ola 3 para Fuentes, ahora también para
-      // Canales/Continuar viendo).
+      // Canales/Continuar viendo/Favoritos/EPG).
       overrides: [
         sourceRepositoryProvider.overrideWithValue(FakeSourceRepository()),
         channelRepositoryProvider.overrideWithValue(
@@ -32,6 +34,10 @@ void main() {
         watchStateRepositoryProvider.overrideWithValue(
           FakeWatchStateRepository(),
         ),
+        favoritesRepositoryProvider.overrideWithValue(
+          FakeFavoritesRepository(),
+        ),
+        epgRepositoryProvider.overrideWithValue(FakeEpgRepository()),
       ],
       child: MaterialApp(
         locale: locale,

@@ -1,23 +1,33 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iptv_core/iptv_core.dart';
 import 'package:iptv_tokens/iptv_tokens.dart';
+
+import '../../l10n/app_localizations.dart';
+import '../epg/epg_progress_bar.dart';
+import '../epg/epg_providers.dart';
+import '../favorites/favorites_providers.dart';
+import '../sources/source_providers.dart';
 
 /// Alto fijo de cada fila — `itemExtent` del `ListView.builder` del
 /// listado virtualizado (S5 · Ola 1): con extent constante la barra de
 /// desplazamiento es O(1) y representa los 100k canales reales.
 const double channelRowExtent = 64;
 
-/// Fila de canal (ui-spec §2.3): logo, nombre, y hueco reservado para el
-/// EPG actual + badge de favorito, que llegan en Ola 2 — de momento cada
-/// fila se pinta "sin EPG" (uno de los estados que el propio ui-spec
-/// contempla: "ítem sin subtítulo"), nunca con datos falsos.
+/// Fila de canal (ui-spec §2.3): logo, nombre + EPG actual con barra de
+/// progreso (S5 · Ola 2), y badge de favorito.
 ///
 /// Foco visible (P9): anillo blanco + halo del acento, igual que
 /// `TvShell` — esta fila debe ser navegable con teclado/D-pad desde el
 /// primer commit, no como adaptación posterior.
-class ChannelRow extends StatefulWidget {
-  const ChannelRow({super.key, required this.channel, this.highlightQuery});
+class ChannelRow extends ConsumerStatefulWidget {
+  const ChannelRow({
+    super.key,
+    required this.channel,
+    this.highlightQuery,
+    this.epgController,
+  });
 
   final Channel channel;
 
@@ -27,11 +37,16 @@ class ChannelRow extends StatefulWidget {
   /// de canales, donde no hay una consulta que resaltar.
   final String? highlightQuery;
 
+  /// `null` en contextos que no muestran EPG (p. ej. resultados de
+  /// búsqueda, S5 · Ola 1) — sin controller, la fila no pinta subtítulo ni
+  /// barra, el mismo estado "sin EPG" que un canal sin guía (S5 · Ola 2).
+  final EpgNowController? epgController;
+
   @override
-  State<ChannelRow> createState() => _ChannelRowState();
+  ConsumerState<ChannelRow> createState() => _ChannelRowState();
 }
 
-class _ChannelRowState extends State<ChannelRow> {
+class _ChannelRowState extends ConsumerState<ChannelRow> {
   final FocusNode _focusNode = FocusNode();
   bool _focused = false;
 
@@ -53,9 +68,15 @@ class _ChannelRowState extends State<ChannelRow> {
   @override
   Widget build(BuildContext context) {
     final channel = widget.channel;
+    final l10n = AppLocalizations.of(context);
     final textStyle = Theme.of(
       context,
     ).textTheme.bodyLarge?.copyWith(color: IptvColors.textPrimary);
+    final epgController = widget.epgController;
+
+    final favoriteRefsAsync = ref.watch(favoriteRefsProvider);
+    final isFavorite =
+        favoriteRefsAsync.valueOrNull?.contains(channel.ref) ?? false;
 
     return Focus(
       focusNode: _focusNode,
@@ -72,21 +93,45 @@ class _ChannelRowState extends State<ChannelRow> {
             _ChannelLogo(channel: channel),
             const SizedBox(width: IptvSpacing.md),
             Expanded(
-              child: Text.rich(
-                TextSpan(
-                  children: highlightedSpans(
-                    text: channel.name,
-                    query: widget.highlightQuery,
-                    baseStyle: textStyle,
-                    matchStyle: textStyle?.copyWith(
-                      color: IptvColors.accent,
-                      fontWeight: FontWeight.bold,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text.rich(
+                    TextSpan(
+                      children: highlightedSpans(
+                        text: channel.name,
+                        query: widget.highlightQuery,
+                        baseStyle: textStyle,
+                        matchStyle: textStyle?.copyWith(
+                          color: IptvColors.accent,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                  if (epgController != null)
+                    EpgProgressBar(
+                      tvgId: channel.tvgId,
+                      controller: epgController,
+                    ),
+                ],
               ),
+            ),
+            IconButton(
+              key: Key('channelRow.favorite.${channel.ref.serialized}'),
+              tooltip: isFavorite
+                  ? l10n.favoriteRemoveTooltip
+                  : l10n.favoriteAddTooltip,
+              icon: Icon(
+                isFavorite ? Icons.favorite : Icons.favorite_border,
+                color: isFavorite ? IptvColors.accent : IptvColors.textSecondary,
+              ),
+              onPressed: () =>
+                  ref.read(manageFavoritesProvider).toggle(channel.ref),
             ),
           ],
         ),

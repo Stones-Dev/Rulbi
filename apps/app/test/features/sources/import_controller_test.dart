@@ -33,6 +33,10 @@ void main() {
     FakeSecureCredentialStore? secureStore,
     required ImportChannelSource m3uSource,
     ImportChannelSource? xtreamSource,
+    // Por defecto, "sin guía" (`outcome: null`) — el mismo caso implícito
+    // que ya asumían todos los tests de esta suite anteriores a S5 · Ola 2.
+    FakeEpgSource? epgSource,
+    FakeXmltvEpgWriter? epgWriter,
     int progressEvery = 250,
     Duration progressInterval = const Duration(days: 1),
     DateTime? now,
@@ -47,6 +51,8 @@ void main() {
         clockProvider.overrideWithValue(FixedClock(now ?? DateTime.utc(2026, 8, 6))),
         m3uImportChannelSourceProvider.overrideWithValue(m3uSource),
         xtreamImportChannelSourceProvider.overrideWithValue(xtreamSource ?? m3uSource),
+        epgSourceProvider.overrideWithValue(epgSource ?? FakeEpgSource()),
+        xmltvEpgWriterProvider.overrideWithValue(epgWriter ?? FakeXmltvEpgWriter()),
         importControllerProvider.overrideWith(
           () => ImportController(
             progressEvery: progressEvery,
@@ -244,5 +250,143 @@ void main() {
       expect(done.stats.inserted, 2);
       expect(done.summary.discardedCount, 1);
     });
+  });
+
+  group('fase EPG (S5 · Ola 2, ADR-008)', () {
+    XmltvParseOutcome outcomeOf(List<XmltvEntry> entries) => XmltvParseOutcome(
+      entries: Stream.fromIterable(entries),
+      report: Future.value(
+        const XmltvImportReport(
+          parsedChannels: 0,
+          parsedProgrammes: 1,
+          outOfWindowProgrammes: 0,
+          assumedUtcDates: 0,
+          unknownChannelRefs: {},
+          unknownTags: {},
+          discardedCount: 0,
+          discarded: [],
+          discardedTruncated: false,
+        ),
+      ),
+    );
+
+    test(
+      'fuente sin epgUrl (FakeEpgSource por defecto): una sola fase, '
+      'epgStats/epgReport/epgFailureReason quedan null',
+      () async {
+        final sources = FakeSourceRepository();
+        final channelsRepo = FakeChannelRepository();
+        final importSource = FakeImportChannelSource(
+          channels: Stream.fromIterable([channel('a')]),
+        );
+        final epgWriter = FakeXmltvEpgWriter();
+        final container = buildContainer(
+          sources: sources,
+          channels: channelsRepo,
+          m3uSource: importSource,
+          epgWriter: epgWriter,
+        );
+
+        await container.read(importControllerProvider.notifier).start(newM3uSource());
+
+        final done = container.read(importControllerProvider) as ImportDone;
+        expect(done.epgStats, isNull);
+        expect(done.epgReport, isNull);
+        expect(done.epgFailureReason, isNull);
+        expect(epgWriter.writeCalls, 0);
+      },
+    );
+
+    test(
+      'fuente con guía: segunda fase (ImportPhase.epg) y ImportDone.epgStats '
+      'con el resultado real del escritor',
+      () async {
+        final sources = FakeSourceRepository();
+        final channelsRepo = FakeChannelRepository();
+        final importSource = FakeImportChannelSource(
+          channels: Stream.fromIterable([channel('a')]),
+        );
+        const stats = EpgImportStats(
+          programmesInserted: 12,
+          programmesUpdated: 0,
+          programmesUnchanged: 0,
+          channelsInserted: 3,
+          channelsUpdated: 0,
+          channelsUnchanged: 0,
+          duplicateKeys: 0,
+        );
+        final epgWriter = FakeXmltvEpgWriter(stats: stats);
+        final epgSource = FakeEpgSource(
+          outcome: outcomeOf([
+            XmltvProgrammeEntry(
+              EpgProgramme(
+                tvgId: 'a',
+                start: DateTime.utc(2026, 8, 6),
+                stop: DateTime.utc(2026, 8, 6, 1),
+                title: 'Programa',
+              ),
+            ),
+          ]),
+        );
+        final container = buildContainer(
+          sources: sources,
+          channels: channelsRepo,
+          m3uSource: importSource,
+          epgSource: epgSource,
+          epgWriter: epgWriter,
+        );
+
+        final history = <ImportState>[];
+        container.listen(importControllerProvider, (_, next) => history.add(next));
+
+        await container.read(importControllerProvider.notifier).start(newM3uSource());
+
+        expect(
+          history.whereType<ImportRunning>().map((s) => s.phase),
+          containsAll([ImportPhase.channels, ImportPhase.epg]),
+        );
+        final done = container.read(importControllerProvider) as ImportDone;
+        expect(done.epgStats, stats);
+        expect(done.epgReport, isNotNull);
+        expect(done.epgFailureReason, isNull);
+        expect(epgWriter.writeCalls, 1);
+        expect(epgWriter.written, hasLength(1));
+      },
+    );
+
+    test(
+      'un fallo de la ingesta EPG deja ImportDone (no ImportFailed), con '
+      'epgFailureReason y sin epgStats — los canales ya se importaron bien',
+      () async {
+        final sources = FakeSourceRepository();
+        final channelsRepo = FakeChannelRepository();
+        final importSource = FakeImportChannelSource(
+          channels: Stream.fromIterable([channel('a'), channel('b')]),
+        );
+        final epgSource = FakeEpgSource(
+          outcomeBuilder: () => XmltvParseOutcome(
+            entries: Stream<XmltvEntry>.error(
+              const SocketException('guía inalcanzable'),
+            ),
+            report: Future.error(const SocketException('guía inalcanzable')),
+          ),
+        );
+        final container = buildContainer(
+          sources: sources,
+          channels: channelsRepo,
+          m3uSource: importSource,
+          epgSource: epgSource,
+        );
+
+        await container.read(importControllerProvider.notifier).start(newM3uSource());
+
+        final done = container.read(importControllerProvider) as ImportDone;
+        expect(done.epgStats, isNull);
+        expect(done.epgReport, isNull);
+        expect(done.epgFailureReason, ProbeFailureReason.network);
+        // Los canales sí se confirmaron — un fallo de EPG no los revierte.
+        expect(channelsRepo.importedChannels, hasLength(2));
+      },
+    );
   });
 }

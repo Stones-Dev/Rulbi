@@ -607,5 +607,85 @@
         "type": "int"
       }
     }
+  },
+
+  "homeFavoritesTitle": "Favorites",
+  "@homeFavoritesTitle": {
+    "description": "Home desktop row header for the read-only favorites row (ui-spec §2.2), S5 · Ola 2."
+  },
+  "homeNowOnYourChannelsTitle": "Now on your channels",
+  "@homeNowOnYourChannelsTitle": {
+    "description": "Home desktop row header for the EPG now/next row (ui-spec §2.2: \"Ahora en tus canales\"), S5 · Ola 2."
+  },
+
+  "favoritesEmptyTitle": "No favorites yet",
+  "@favoritesEmptyTitle": {
+    "description": "Headline of the empty state in the Favorites section (S5 · Ola 2) — shown before the user has favorited any channel."
+  },
+  "favoritesEmptyHint": "Mark a channel as favorite from the channel list to see it here.",
+  "@favoritesEmptyHint": {
+    "description": "Subtitle of the empty favorites state, S5 · Ola 2."
+  },
+  "favoriteAddTooltip": "Add to favorites",
+  "@favoriteAddTooltip": {
+    "description": "Tooltip/semantic label for the favorite toggle on a channel row when it is NOT currently a favorite (ui-spec §2.3: \"favorito\"), S5 · Ola 2."
+  },
+  "favoriteRemoveTooltip": "Remove from favorites",
+  "@favoriteRemoveTooltip": {
+    "description": "Tooltip/semantic label for the favorite toggle on a channel row when it IS currently a favorite, S5 · Ola 2."
+  },
+
+  "importEpgPhaseRunning": "Importing programming guide…",
+  "@importEpgPhaseRunning": {
+    "description": "ImportRunning headline when ImportPhase.epg is active (S5 · Ola 2, ADR-008) — the writer has no incremental progress signal, so this replaces channelCount rather than showing a fabricated count."
+  },
+  "importEpgSectionTitle": "Programming guide",
+  "@importEpgSectionTitle": {
+    "description": "Section header on the ImportDone view shown only when the source has an epgUrl (epgStats or epgFailureReason present), S5 · Ola 2."
+  },
+  "importStatsEpgProgrammesInserted": "{count, plural, =0{No new schedule entries} =1{1 new schedule entry} other{{count} new schedule entries}}",
+  "@importStatsEpgProgrammesInserted": {
+    "description": "EpgImportStats.programmesInserted.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "importStatsEpgProgrammesUpdated": "{count, plural, =0{No schedule entries updated} =1{1 schedule entry updated} other{{count} schedule entries updated}}",
+  "@importStatsEpgProgrammesUpdated": {
+    "description": "EpgImportStats.programmesUpdated.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "importStatsEpgChannelsInserted": "{count, plural, =0{No new guide channels} =1{1 new guide channel} other{{count} new guide channels}}",
+  "@importStatsEpgChannelsInserted": {
+    "description": "EpgImportStats.channelsInserted (ADR-008 §Decisión 2: the <channel> entries of the guide, not iptv_core Channel).",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "importStatsEpgDuplicates": "{count, plural, =0{No duplicate schedule entries} =1{1 duplicate schedule entry} other{{count} duplicate schedule entries}}",
+  "@importStatsEpgDuplicates": {
+    "description": "EpgImportStats.duplicateKeys (ADR-008 §Decisión 3).",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "importEpgFailedNote": "Couldn't import the programming guide: {reason}",
+  "@importEpgFailedNote": {
+    "description": "Shown instead of the EPG stats block when ImportDone.epgFailureReason is non-null (S5 · Ola 2, D5: an EPG failure doesn't fail the whole import). {reason} reuses probeFailureReasonLabel.",
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
   }
 }

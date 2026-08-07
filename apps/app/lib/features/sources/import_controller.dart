@@ -157,15 +157,24 @@ final class ImportIdle extends ImportState {
   const ImportIdle();
 }
 
+/// Fase de un [ImportRunning] (S5 · Ola 2, ADR-008): la importación de
+/// canales siempre corre primero; la de guía EPG es una segunda fase
+/// opcional (solo si la fuente tiene `epgUrl`, ver [EpgSource]) — sin
+/// señal de progreso incremental propia (el escritor no expone avance
+/// parcial), así que la UI la distingue por fase, no por un contador.
+enum ImportPhase { channels, epg }
+
 final class ImportRunning extends ImportState {
   const ImportRunning({
     required this.sourceId,
     required this.sourceName,
     required this.channelsSeen,
+    this.phase = ImportPhase.channels,
   });
   final String sourceId;
   final String sourceName;
   final int channelsSeen;
+  final ImportPhase phase;
 }
 
 final class ImportDone extends ImportState {
@@ -174,11 +183,33 @@ final class ImportDone extends ImportState {
     required this.sourceName,
     required this.stats,
     required this.summary,
+    this.epgStats,
+    this.epgReport,
+    this.epgFailureReason,
   });
   final String sourceId;
   final String sourceName;
   final SourceImportStats stats;
   final ImportSummary summary;
+
+  /// Los tres campos de EPG solo se completan cuando la fuente tiene
+  /// `epgUrl` (`EpgSource.epgFor` devolvió algo que consumir) — si no,
+  /// los tres quedan `null` sin más: la fuente sencillamente no tiene
+  /// guía, no es un fallo de nada.
+  ///
+  /// Con `epgUrl` presente, [epgStats]/[epgReport] y [epgFailureReason]
+  /// son mutuamente excluyentes: éxito rellena los dos primeros, fallo
+  /// rellena solo el tercero — nunca los tres a la vez. Un fallo de EPG
+  /// no convierte el import en [ImportFailed] (los canales ya se
+  /// importaron bien, ver política de fallo en
+  /// [ImportController._runEpgPhase]); [epgFailureReason] es cómo la UI
+  /// sabe que hubo un intento y no salió bien, reutilizando el mismo
+  /// `ProbeFailureReason`/`probeFailureReasonLabel` que ya usan las sondas
+  /// M3U/Xtream y [ImportFailed], en vez de inventar una taxonomía de
+  /// error propia para EPG.
+  final EpgImportStats? epgStats;
+  final XmltvImportReport? epgReport;
+  final ProbeFailureReason? epgFailureReason;
 }
 
 final class ImportFailed extends ImportState {
@@ -331,11 +362,15 @@ class ImportController extends Notifier<ImportState> {
           channelsSeen: seen,
         );
       } else {
+        final epgOutcome = await _runEpgPhase(source, channelsSeen: seen);
         state = ImportDone(
           sourceId: source.id,
           sourceName: source.name,
           stats: stats,
           summary: summary,
+          epgStats: epgOutcome.$1,
+          epgReport: epgOutcome.$2,
+          epgFailureReason: epgOutcome.$3,
         );
         _markStatus(source.id, ok: true);
       }
@@ -359,6 +394,59 @@ class ImportController extends Notifier<ImportState> {
       await _subscription?.cancel();
       _subscription = null;
       _relay = null;
+    }
+  }
+
+  /// Segunda fase, tras el import de canales (S5 · Ola 2, ADR-008): si
+  /// [source] tiene `epgUrl` (`EpgSource.epgFor` no devuelve `null`),
+  /// descarga y escribe su guía XMLTV. Devuelve `(null, null, null)` sin
+  /// tocar nada más si la fuente no tiene guía.
+  ///
+  /// **Política de fallo**: un error aquí (red, parseo, escritura) nunca
+  /// se propaga — los canales de [source] ya se importaron correctamente
+  /// en la fase anterior, y tratar una guía rota como un fallo del import
+  /// completo escondería un éxito real detrás de un error parcial. El
+  /// tercer elemento de la tupla (`ProbeFailureReason?`) es cómo la UI se
+  /// entera de que hubo un intento fallido, sin que eso mueva el estado a
+  /// [ImportFailed] (ver [ImportDone.epgFailureReason]).
+  ///
+  /// No es cancelable a media fase (a diferencia de la importación de
+  /// canales): para cuando esto arranca, los canales ya están confirmados
+  /// en `data`, y [ImportController] no expone hoy un `cancel()` que
+  /// alcance esta segunda fase — limitación conocida, no un descuido.
+  Future<(EpgImportStats?, XmltvImportReport?, ProbeFailureReason?)>
+  _runEpgPhase(Source source, {required int channelsSeen}) async {
+    final XmltvParseOutcome? outcome;
+    try {
+      outcome = ref
+          .read(epgSourceProvider)
+          .epgFor(source, now: ref.read(clockProvider).now());
+    } catch (error) {
+      return (null, null, _mapImportError(error));
+    }
+    if (outcome == null) return (null, null, null);
+    // Mismo motivo que `outcome.summary.ignore()` más arriba: si
+    // `write()` falla porque `entries` mismo falló, `outcome.report`
+    // completa con el mismo error y nunca se llega a `await`
+    // lo más abajo — sin esto, Dart lo reporta como excepción sin
+    // manejar aunque el catch de debajo ya lo está tratando.
+    outcome.report.ignore();
+
+    state = ImportRunning(
+      sourceId: source.id,
+      sourceName: source.name,
+      channelsSeen: channelsSeen,
+      phase: ImportPhase.epg,
+    );
+
+    try {
+      final stats = await ref
+          .read(xmltvEpgWriterProvider)
+          .write(outcome.entries, now: ref.read(clockProvider).now());
+      final report = await outcome.report;
+      return (stats, report, null);
+    } catch (error) {
+      return (null, null, _mapImportError(error));
     }
   }
 

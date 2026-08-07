@@ -133,5 +133,21 @@
   "homeEmptyLibraryHint": "Añade una fuente para empezar a construir tu biblioteca.",
   "homeGoToSourcesButton": "Ir a Fuentes",
   "homeRemainingMinutes": "{count, plural, =1{Queda 1 min} other{Quedan {count} min}}",
-  "homeRemainingHoursMinutes": "Quedan {hours} h {minutes} min"
+  "homeRemainingHoursMinutes": "Quedan {hours} h {minutes} min",
+
+  "homeFavoritesTitle": "Favoritos",
+  "homeNowOnYourChannelsTitle": "Ahora en tus canales",
+
+  "favoritesEmptyTitle": "Aún no hay favoritos",
+  "favoritesEmptyHint": "Marca un canal como favorito desde el listado de canales para verlo aquí.",
+  "favoriteAddTooltip": "Añadir a favoritos",
+  "favoriteRemoveTooltip": "Quitar de favoritos",
+
+  "importEpgPhaseRunning": "Importando guía de programación…",
+  "importEpgSectionTitle": "Guía de programación",
+  "importStatsEpgProgrammesInserted": "{count, plural, =0{Sin programas nuevos} =1{1 programa nuevo} other{{count} programas nuevos}}",
+  "importStatsEpgProgrammesUpdated": "{count, plural, =0{Sin programas actualizados} =1{1 programa actualizado} other{{count} programas actualizados}}",
+  "importStatsEpgChannelsInserted": "{count, plural, =0{Sin canales de guía nuevos} =1{1 canal de guía nuevo} other{{count} canales de guía nuevos}}",
+  "importStatsEpgDuplicates": "{count, plural, =0{Sin programas duplicados} =1{1 programa duplicado} other{{count} programas duplicados}}",
+  "importEpgFailedNote": "No se pudo importar la guía de programación: {reason}"
 }

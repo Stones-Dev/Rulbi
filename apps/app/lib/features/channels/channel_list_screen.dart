@@ -4,6 +4,7 @@ import 'package:iptv_core/iptv_core.dart';
 import 'package:iptv_tokens/iptv_tokens.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../epg/epg_providers.dart';
 import '../sources/import_controller.dart';
 import '../sources/source_providers.dart';
 import 'category_panel.dart';
@@ -27,11 +28,17 @@ class _ChannelListScreenState extends ConsumerState<ChannelListScreen> {
   String? _selectedCategoryId;
   late ChannelPageCache _cache;
 
+  /// Una instancia por pantalla (S5 · Ola 2), mismo criterio que `_cache`:
+  /// no se reconstruye con `_rebuildCache` — un cambio de categoría no
+  /// invalida la guía ya cargada de los canales que sigan visibles.
+  late final EpgNowController _epgController;
+
   @override
   void initState() {
     super.initState();
     _cache = _createCache();
     _cache.init();
+    _epgController = createEpgNowController(ref);
   }
 
   ChannelPageCache _createCache() {
@@ -66,6 +73,7 @@ class _ChannelListScreenState extends ConsumerState<ChannelListScreen> {
   @override
   void dispose() {
     _cache.dispose();
+    _epgController.dispose();
     super.dispose();
   }
 
@@ -111,7 +119,11 @@ class _ChannelListScreenState extends ConsumerState<ChannelListScreen> {
         Expanded(
           child: ListenableBuilder(
             listenable: _cache,
-            builder: (context, _) => _ChannelListBody(cache: _cache, l10n: l10n),
+            builder: (context, _) => _ChannelListBody(
+              cache: _cache,
+              l10n: l10n,
+              epgController: _epgController,
+            ),
           ),
         ),
       ],
@@ -120,10 +132,15 @@ class _ChannelListScreenState extends ConsumerState<ChannelListScreen> {
 }
 
 class _ChannelListBody extends StatelessWidget {
-  const _ChannelListBody({required this.cache, required this.l10n});
+  const _ChannelListBody({
+    required this.cache,
+    required this.l10n,
+    required this.epgController,
+  });
 
   final ChannelPageCache cache;
   final AppLocalizations l10n;
+  final EpgNowController epgController;
 
   @override
   Widget build(BuildContext context) {
@@ -141,7 +158,7 @@ class _ChannelListBody extends StatelessWidget {
         final channel = cache.itemAt(index);
         return channel == null
             ? const ChannelRowSkeleton()
-            : ChannelRow(channel: channel);
+            : ChannelRow(channel: channel, epgController: epgController);
       },
     );
   }

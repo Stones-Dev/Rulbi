@@ -4,6 +4,7 @@ import 'package:iptv_data/iptv_data.dart';
 import 'package:iptv_protocols/iptv_protocols.dart';
 
 import 'delete_source.dart';
+import 'epg_source.dart';
 import 'import_controller.dart';
 import 'm3u_probe.dart';
 import 'save_source.dart';
@@ -128,3 +129,29 @@ final getContinueWatchingProvider = Provider<GetContinueWatching>((ref) {
     ref.watch(channelRepositoryProvider),
   );
 });
+
+/// Favoritos (S5 · Ola 2, ui-spec §2.2/§2.3).
+final favoritesRepositoryProvider = Provider<FavoritesRepository>((ref) {
+  return DriftFavoritesRepository(ref.watch(iptvDatabaseProvider));
+});
+
+final manageFavoritesProvider = Provider<ManageFavorites>((ref) {
+  return ManageFavorites(
+    ref.watch(favoritesRepositoryProvider),
+    ref.watch(clockProvider),
+  );
+});
+
+/// EPG ahora/siguiente + escritor XMLTV→drift (S5 · Ola 2, ADR-008).
+final epgRepositoryProvider = Provider<EpgRepository>((ref) {
+  return DriftEpgRepository(ref.watch(iptvDatabaseProvider));
+});
+
+final xmltvEpgWriterProvider = Provider<XmltvEpgWriter>((ref) {
+  return DriftXmltvEpgWriter(ref.watch(iptvDatabaseProvider));
+});
+
+/// Ingesta de guía durante el import (S5 · Ola 2, ADR-008) — mismo criterio
+/// que `m3uProbeProvider`/`xtreamImportChannelSourceProvider`: se
+/// construye su propio `http.Client` interno, no compartido.
+final epgSourceProvider = Provider<EpgSource>((ref) => XmltvEpgSource());

@@ -7,6 +7,8 @@ import 'package:iptv_app/features/sources/source_providers.dart';
 import 'package:iptv_app/l10n/app_localizations.dart';
 import 'package:iptv_core/iptv_core.dart';
 
+import '../../_helpers/fake_epg_repository.dart';
+import '../../_helpers/fake_favorites_repository.dart';
 import '../sources/_helpers/fakes.dart';
 import '_helpers/fake_channel_repository.dart';
 
@@ -46,6 +48,10 @@ void main() {
         overrides: [
           sourceRepositoryProvider.overrideWithValue(sources),
           channelRepositoryProvider.overrideWithValue(channelRepository),
+          favoritesRepositoryProvider.overrideWithValue(
+            FakeFavoritesRepository(),
+          ),
+          epgRepositoryProvider.overrideWithValue(FakeEpgRepository()),
         ],
         child: const MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,

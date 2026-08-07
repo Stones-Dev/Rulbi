@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iptv_tokens/iptv_tokens.dart';
 
 import '../features/channels/channel_list_screen.dart';
+import '../features/favorites/favorites_screen.dart';
 import '../features/home/home_screen.dart';
 import '../features/search/search_screen.dart';
 import '../features/sources/import_status_bar.dart';
@@ -17,13 +18,13 @@ import '../l10n/app_localizations.dart';
 /// 3: indicador global de import en segundo plano, visible desde
 /// cualquier sección).
 ///
-/// S5 · Ola 1 cablea tres secciones más con pantalla real: Inicio
-/// (`HomeScreen`, ui-spec §2.2 — solo "Continuar viendo"), TV en directo
+/// S5 · Ola 1 cableó Inicio (`HomeScreen`, ui-spec §2.2), TV en directo
 /// (`ChannelListScreen`, ui-spec §2.3) y Buscar (`SearchScreen`, ui-spec
-/// §2.11). Películas/Series siguen sin pantalla: ui-spec solo define
-/// detalle con póster (§2.6/§2.7), no una pantalla de listado/navegación
-/// para esa sección — hueco de spec, no de esta ola (ver handoff de
-/// cierre). Guía/Favoritos/Ajustes llegan en sprints posteriores.
+/// §2.11). S5 · Ola 2 añade Favoritos (`FavoritesScreen`) y completa Inicio
+/// con sus tres filas. Películas/Series siguen sin pantalla: ui-spec solo
+/// define detalle con póster (§2.6/§2.7), no una pantalla de
+/// listado/navegación para esa sección — hueco de spec, no de esta ola.
+/// Guía/Ajustes llegan en sprints posteriores.
 class DesktopShell extends ConsumerStatefulWidget {
   const DesktopShell({super.key});
 
@@ -44,6 +45,7 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
   static const _homeIndex = 0;
   static const _liveTvIndex = 1;
   static const _searchIndex = 4;
+  static const _favoritesIndex = 6;
   static const _sourcesIndex = 7;
 
   static const _iconsByDestination = [
@@ -181,6 +183,7 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
                   ),
                   _liveTvIndex => const ChannelListScreen(),
                   _searchIndex => const SearchScreen(),
+                  _favoritesIndex => const FavoritesScreen(),
                   _sourcesIndex => const SourcesScreen(),
                   _ => _SectionPlaceholder(label: labels[i]),
                 },

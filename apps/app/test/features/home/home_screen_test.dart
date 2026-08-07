@@ -6,13 +6,14 @@ import 'package:iptv_app/features/sources/source_providers.dart';
 import 'package:iptv_app/l10n/app_localizations.dart';
 import 'package:iptv_core/iptv_core.dart';
 
+import '../../_helpers/fake_epg_repository.dart';
+import '../../_helpers/fake_favorites_repository.dart';
 import '../channels/_helpers/fake_channel_repository.dart';
 import '../sources/_helpers/fakes.dart';
 import '_helpers/fake_watch_state_repository.dart';
 
-/// Home desktop (ui-spec §2.2, S5 · Ola 1) — solo la fila "Continuar
-/// viendo" está implementada esta ola; Favoritos/Ahora quedan en Ola 2
-/// (huecos estructurales, sin datos falsos).
+/// Home desktop (ui-spec §2.2): las tres filas —"Continuar viendo"
+/// (S5 · Ola 1), "Favoritos" y "Ahora en tus canales" (S5 · Ola 2).
 void main() {
   Source activeSource({String id = 's1'}) => Source(
     id: id,
@@ -47,6 +48,10 @@ void main() {
           sourceRepositoryProvider.overrideWithValue(sources),
           channelRepositoryProvider.overrideWithValue(channels),
           watchStateRepositoryProvider.overrideWithValue(watchState),
+          favoritesRepositoryProvider.overrideWithValue(
+            FakeFavoritesRepository(),
+          ),
+          epgRepositoryProvider.overrideWithValue(FakeEpgRepository()),
         ],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -155,7 +160,18 @@ void main() {
       watchState: watchState,
     );
 
-    expect(find.text('DAZN 1'), findsOneWidget);
+    // "DAZN 1" aparece dos veces desde S5 · Ola 2: en "Continuar viendo" y
+    // también en "Ahora en tus canales" (es un canal en directo real de
+    // esta misma fuente) — se acota a la tarjeta de "Continuar viendo"
+    // (`ContinueWatchingRow`, clave `continueWatching.<ref>`) para seguir
+    // comprobando específicamente esa fila.
+    expect(
+      find.descendant(
+        of: find.byKey(Key('continueWatching.${channel.ref.serialized}')),
+        matching: find.text('DAZN 1'),
+      ),
+      findsOneWidget,
+    );
     expect(find.textContaining('left'), findsNothing);
   });
 }

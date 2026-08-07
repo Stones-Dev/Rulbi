@@ -8,6 +8,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:iptv_core/iptv_core.dart';
 import 'package:iptv_data/iptv_data.dart';
 import 'package:iptv_data/testing.dart' as v1;
+import 'package:iptv_protocols/iptv_protocols.dart';
 
 import 'support/v1_seed.dart';
 
@@ -15,12 +16,13 @@ import 'support/v1_seed.dart';
 /// (no en el host, ver el ADR para las tres razones concretas por las
 /// que un test de `packages/data` sobre `NativeDatabase` del host no
 /// caza estos bugs). Alcance A+B: una BD v1 sembrada con datos reales
-/// migra a v2 sin perder nada, y los repositorios siguen funcionando
-/// sobre el esquema migrado — no solo humo de apertura.
+/// migra hasta v4 (v2 T1.6b + v3 S5 · Ola 1 + v4 ADR-008/S5 · Ola 2) sin
+/// perder nada, y los repositorios siguen funcionando sobre el esquema
+/// migrado — no solo humo de apertura.
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('una BD v1 sembrada migra a v2 en runtime Android con datos '
+  testWidgets('una BD v1 sembrada migra a v4 en runtime Android con datos '
       'intactos', (tester) async {
     // 0. `IptvDatabase.open()` (drift_flutter) no expone la ruta del
     // fichero que va a usar — se descubre en frío vía `PRAGMA
@@ -60,11 +62,30 @@ void main() {
     final watchStateRepository = DriftWatchStateRepository(migratedDb);
 
     // --- Migración estructural ---
-    expect(migratedDb.schemaVersion, 2);
+    expect(migratedDb.schemaVersion, 4);
     final userVersionRow = await migratedDb
         .customSelect('PRAGMA user_version')
         .getSingle();
-    expect(userVersionRow.data['user_version'], 2);
+    expect(userVersionRow.data['user_version'], 4);
+
+    // v3 (S5 · Ola 1): índices de listado paginado.
+    final channelsIndexRows = await migratedDb
+        .customSelect('PRAGMA index_list(channels)')
+        .get();
+    final channelsIndexNames = channelsIndexRows
+        .map((r) => r.data['name'] as String)
+        .toSet();
+    expect(channelsIndexNames, contains('idx_channels_type_name'));
+    expect(channelsIndexNames, contains('idx_channels_category_name'));
+
+    // v4 (ADR-008, S5 · Ola 2): tabla nueva para los `<channel>` de guía.
+    final tableNames = await migratedDb
+        .customSelect("SELECT name FROM sqlite_master WHERE type = 'table'")
+        .get();
+    expect(
+      tableNames.map((r) => r.data['name'] as String),
+      contains('epg_channels'),
+    );
 
     final foreignKeysRow = await migratedDb
         .customSelect('PRAGMA foreign_keys')
@@ -247,6 +268,34 @@ void main() {
     );
     final c11WatchState = await watchStateRepository.find(s1c11);
     expect(c11WatchState?.position, const Duration(milliseconds: 42000));
+
+    // v4 (ADR-008, S5 · Ola 2): el escritor XMLTV→drift y `nowAndNextFor`
+    // funcionan de verdad sobre el esquema migrado, no solo sobre una BD
+    // creada de cero (`onCreate`) — `epg_channels` viene de `onUpgrade`.
+    final epgWriter = DriftXmltvEpgWriter(migratedDb);
+    final epgRepository = DriftEpgRepository(migratedDb);
+    final epgNow = DateTime.utc(2026, 2, 3, 12);
+    final epgStats = await epgWriter.write(
+      Stream.fromIterable([
+        const XmltvChannelEntry(
+          XmltvChannel(id: 'c11', displayNames: ['Canal Once HD']),
+        ),
+        XmltvProgrammeEntry(
+          EpgProgramme(
+            tvgId: 'c11',
+            start: epgNow.subtract(const Duration(minutes: 10)),
+            stop: epgNow.add(const Duration(minutes: 50)),
+            title: 'Programa migrado',
+          ),
+        ),
+      ]),
+      now: epgNow,
+    );
+    expect(epgStats.channelsInserted, 1);
+    expect(epgStats.programmesInserted, 1);
+
+    final epgIndex = await epgRepository.nowAndNextFor({'c11'}, epgNow);
+    expect(epgIndex.nowAiring('c11')?.title, 'Programa migrado');
 
     // Segunda `integrity-check` de FTS5 tras todas las escrituras.
     await migratedDb.customStatement(
