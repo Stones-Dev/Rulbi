@@ -21,6 +21,7 @@ export 'src/ports/epg_ingest.dart';
 export 'src/ports/epg_repository.dart';
 export 'src/ports/favorites_repository.dart';
 export 'src/ports/paired_device_repository.dart';
+export 'src/ports/player_port.dart';
 export 'src/ports/secure_credential_store.dart';
 export 'src/ports/source_repository.dart';
 export 'src/ports/watch_state_repository.dart';
