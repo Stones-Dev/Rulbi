@@ -281,13 +281,18 @@ final class XtreamClient {
     ]);
   }
 
-  /// Import completo de live + VOD (categorías + streams), en la misma
-  /// forma que `parseM3u`/`M3uParseOutcome`: entra tal cual en
-  /// `ManageSources.addSource`/`refreshSource` (T1.6b). Series **no**
-  /// entra aquí — `get_series` no trae episodios, así que expandirlas
-  /// exigiría un `get_series_info` por serie (N+1 de red inviable con un
-  /// panel de miles de series); se piden bajo demanda al abrir la ficha
-  /// (`seriesInfo()` + `XtreamMapper.episodeToChannel`).
+  /// Import completo de live + VOD + **catálogo** de series (categorías +
+  /// streams/listado), en la misma forma que `parseM3u`/`M3uParseOutcome`:
+  /// entra tal cual en `ManageSources.addSource`/`refreshSource` (T1.6b).
+  ///
+  /// El catálogo de series (S5.5, Bloque C) sí entra aquí — a diferencia
+  /// de temporadas/episodios, que **no**: `get_series` no trae episodios,
+  /// así que expandirlos exigiría un `get_series_info` por serie (N+1 de
+  /// red inviable con un panel de miles de series); esos se piden bajo
+  /// demanda al abrir la ficha (`seriesInfo()` +
+  /// `XtreamMapper.episodeToChannel`). El catálogo en sí (`get_series`, sin
+  /// episodios) cuesta lo mismo que live/VOD: una llamada por tipo de
+  /// contenido, no una por serie.
   ///
   /// El parseo (fetch + mapeo) empieza solo cuando alguien escucha
   /// [XtreamImportOutcome.channels] (`onListen` diferido, mismo patrón que
@@ -349,6 +354,11 @@ final class XtreamClient {
       fetch: vodCategories,
       onFailure: discard,
     );
+    final seriesCategoryNames = await _categoryNameMap(
+      action: 'get_series_categories',
+      fetch: seriesCategories,
+      onFailure: discard,
+    );
 
     var parsedLive = 0;
     final liveResult = await liveStreams();
@@ -388,9 +398,29 @@ final class XtreamClient {
       }
     }
 
+    var parsedSeries = 0;
+    final seriesResult = await series();
+    if (seriesResult is XtreamErr<List<XtreamSeries>>) {
+      discard('get_series', seriesResult.failure.toString());
+    } else {
+      final items = (seriesResult as XtreamOk<List<XtreamSeries>>).value;
+      for (var i = 0; i < items.length; i++) {
+        controller.add(
+          XtreamMapper.seriesToChannel(
+            sourceId: sourceId,
+            series: items[i],
+            categoryNames: seriesCategoryNames,
+          ),
+        );
+        parsedSeries++;
+        if ((i + 1) % cessionInterval == 0) await Future<void>.delayed(Duration.zero);
+      }
+    }
+
     return XtreamImportReport(
       parsedLive: parsedLive,
       parsedVod: parsedVod,
+      parsedSeries: parsedSeries,
       discardedCount: discardedCount,
       discarded: List.unmodifiable(discarded),
     );

@@ -125,6 +125,69 @@ void main() {
       );
     });
   });
+
+  group('XtreamMapper.seriesToChannel (S5.5, Bloque C — catálogo de series)', () {
+    test('mapea una serie del catálogo, no un episodio: url no reproducible por diseño', () {
+      const series = XtreamSeries(
+        seriesId: 115941465,
+        name: 'Serie de Prueba',
+        categoryId: '9',
+        genre: 'Drama',
+        plot: 'Sinopsis de prueba.',
+        releaseDate: '2020-01-01',
+        coverUrl: 'http://panel.example.com/covers/115941465.jpg',
+        rating: 8.2,
+      );
+
+      final channel = XtreamMapper.seriesToChannel(
+        sourceId: 'src-1',
+        series: series,
+        categoryNames: {'9': 'Series'},
+      );
+
+      expect(channel.type, ContentType.series);
+      expect(channel.url.toString(), 'xtream://src-1/series-catalog/115941465');
+      expect(channel.logo.toString(), 'http://panel.example.com/covers/115941465.jpg');
+      expect(channel.metadata['x-xtream-series-id'], '115941465');
+      expect(channel.metadata['x-xtream-genre'], 'Drama');
+      expect(channel.metadata['x-xtream-plot'], 'Sinopsis de prueba.');
+      expect(channel.metadata['x-xtream-rating'], '8.2');
+      expect(
+        channel.categoryId,
+        Category.derive(sourceId: 'src-1', type: ContentType.series, name: 'Series').id,
+      );
+      expect(
+        channel.ref,
+        ChannelRef.derive(sourceId: 'src-1', url: 'xtream://src-1/series-catalog/115941465', name: 'Serie de Prueba'),
+      );
+    });
+
+    test('sin categoryId/cover/metadatos opcionales: no lanza, campos opcionales quedan null', () {
+      const series = XtreamSeries(seriesId: 1, name: 'Serie Mínima');
+
+      final channel = XtreamMapper.seriesToChannel(sourceId: 'src-1', series: series);
+
+      expect(channel.categoryId, isNull);
+      expect(channel.logo, isNull);
+      expect(channel.metadata.containsKey('x-xtream-genre'), isFalse);
+    });
+
+    test('no colisiona con el ref de un episodio de la misma serie (mismo id numérico)', () {
+      const series = XtreamSeries(seriesId: 42, name: 'Serie 42');
+      const episode = XtreamEpisode(id: '42', episodeNum: 1, title: 'Episodio 1', season: 1);
+
+      final seriesChannel = XtreamMapper.seriesToChannel(sourceId: 'src-1', series: series);
+      final episodeChannel = XtreamMapper.episodeToChannel(
+        sourceId: 'src-1',
+        seriesId: 42,
+        seasonNumber: 1,
+        episode: episode,
+      );
+
+      expect(seriesChannel.ref, isNot(episodeChannel.ref));
+      expect(seriesChannel.url, isNot(episodeChannel.url));
+    });
+  });
 }
 
 XtreamClient _client(FakeXtreamTransport transport) => XtreamClient(

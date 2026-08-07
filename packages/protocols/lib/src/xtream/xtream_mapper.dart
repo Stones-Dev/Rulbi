@@ -123,6 +123,48 @@ final class XtreamMapper {
     );
   }
 
+  /// Serie cruda (`get_series`) → `core.Channel(type: series)` que
+  /// representa el **catálogo** (S5.5, Bloque C) — no un episodio
+  /// reproducible: `url` es `seriesCatalogCanonical`, que
+  /// `XtreamUrlResolver.resolve` rechaza a propósito (una serie se abre,
+  /// no se reproduce). A diferencia de [episodeToChannel] (bajo demanda,
+  /// tras `seriesInfo()`), esto sí entra en `importChannels()` — `get_series`
+  /// no trae episodios (sin N+1 de red, ver `xtream_series.dart`), así que
+  /// listar el catálogo completo cuesta una sola llamada por categoría de
+  /// series, igual que live/VOD.
+  static Channel seriesToChannel({
+    required String sourceId,
+    required XtreamSeries series,
+    Map<String, String> categoryNames = const {},
+  }) {
+    final canonicalUrl = XtreamUrlResolver.seriesCatalogCanonical(
+      sourceId: sourceId,
+      seriesId: series.seriesId.toString(),
+    );
+    final categoryName = series.categoryId == null
+        ? null
+        : (categoryNames[series.categoryId] ?? series.categoryId);
+
+    return Channel(
+      ref: ChannelRef.derive(sourceId: sourceId, url: canonicalUrl.toString(), name: series.name),
+      sourceId: sourceId,
+      categoryId: categoryName == null
+          ? null
+          : Category.derive(sourceId: sourceId, type: ContentType.series, name: categoryName).id,
+      type: ContentType.series,
+      name: series.name,
+      url: canonicalUrl,
+      logo: series.coverUrl == null ? null : Uri.tryParse(series.coverUrl!),
+      metadata: {
+        'x-xtream-series-id': series.seriesId.toString(),
+        if (series.plot != null) 'x-xtream-plot': series.plot!,
+        if (series.genre != null) 'x-xtream-genre': series.genre!,
+        if (series.releaseDate != null) 'x-xtream-release-date': series.releaseDate!,
+        if (series.rating != null) 'x-xtream-rating': series.rating!.toString(),
+      },
+    );
+  }
+
   /// Un episodio → `core.Channel(type: series)`, **bajo demanda** (al
   /// abrir la ficha de una serie ya consultada con `seriesInfo()`), no
   /// invocado durante `importChannels()` — un import completo no puede

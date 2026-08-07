@@ -20,6 +20,7 @@ final class XtreamImportReport {
   const XtreamImportReport({
     required this.parsedLive,
     required this.parsedVod,
+    required this.parsedSeries,
     required this.discardedCount,
     required this.discarded,
   });
@@ -29,6 +30,13 @@ final class XtreamImportReport {
 
   /// Número de `Channel(type: vod)` emitidos con éxito.
   final int parsedVod;
+
+  /// Número de `Channel(type: series)` del **catálogo** emitidos con éxito
+  /// (S5.5, Bloque C) — series sin expandir (sin temporadas/episodios, ver
+  /// `XtreamMapper.seriesToChannel`). Los episodios individuales, pedidos
+  /// bajo demanda vía `seriesInfo()`, no entran en ningún import completo
+  /// y por tanto no cuentan aquí.
+  final int parsedSeries;
 
   /// Total real de acciones que fallaron, incluso si supera el tamaño de
   /// [discarded] (mismo criterio de cap que `XmltvImportReport`).
@@ -45,6 +53,7 @@ final class XtreamImportReport {
     'kind': 'xtream',
     'parsedLive': parsedLive,
     'parsedVod': parsedVod,
+    'parsedSeries': parsedSeries,
     'discardedCount': discardedCount,
     'discarded': [for (final d in discarded) d.toJson()],
   };
@@ -52,6 +61,7 @@ final class XtreamImportReport {
   factory XtreamImportReport.fromJson(Map<String, Object?> json) => XtreamImportReport(
     parsedLive: json['parsedLive'] as int,
     parsedVod: json['parsedVod'] as int,
+    parsedSeries: json['parsedSeries'] as int,
     discardedCount: json['discardedCount'] as int,
     discarded: [
       for (final entry in json['discarded'] as List)
@@ -61,7 +71,8 @@ final class XtreamImportReport {
 
   @override
   String toString() =>
-      'XtreamImportReport(live: $parsedLive, vod: $parsedVod, discarded: $discardedCount)';
+      'XtreamImportReport(live: $parsedLive, vod: $parsedVod, series: $parsedSeries, '
+      'discarded: $discardedCount)';
 }
 
 /// Una acción de `importChannels()` que falló por completo (a diferencia

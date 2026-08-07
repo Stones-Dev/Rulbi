@@ -7,19 +7,22 @@ import 'support/fake_xtream_transport.dart';
 /// T1.4: `importChannels()` de punta a punta contra los 9 fixtures reales
 /// — el equivalente Xtream de `parseM3u`, mismo contrato de salida
 /// (`Stream<Channel>` + informe de tolerancia) para que entre sin
-/// fricción en `ManageSources.addSource`.
+/// fricción en `ManageSources.addSource`. S5.5 Bloque C añade el catálogo
+/// de series (`get_series`/`get_series_categories`), también presentes
+/// entre los 9 fixtures reales de T1.1 (1 serie, sin episodios).
 void main() {
   group('XtreamClient.importChannels — contra los 9 fixtures reales', () {
-    test('emite 2 canales live + 1 vod, con categorías resueltas por nombre', () async {
+    test('emite 2 canales live + 1 vod + 1 serie, con categorías resueltas por nombre', () async {
       final client = _client(FakeXtreamTransport());
 
       final outcome = client.importChannels(sourceId: 'src-1');
       final channels = await outcome.channels.toList();
       final report = await outcome.report;
 
-      expect(channels, hasLength(3));
+      expect(channels, hasLength(4));
       expect(channels.where((c) => c.type == ContentType.live), hasLength(2));
       expect(channels.where((c) => c.type == ContentType.vod), hasLength(1));
+      expect(channels.where((c) => c.type == ContentType.series), hasLength(1));
 
       final canalUno = channels.firstWhere((c) => c.name == 'Canal Uno HD');
       expect(canalUno.sourceId, 'src-1');
@@ -32,8 +35,14 @@ void main() {
       expect(pelicula.name, 'Pelicula de Prueba');
       expect(pelicula.categoryId, Category.derive(sourceId: 'src-1', type: ContentType.vod, name: 'Peliculas').id);
 
+      final serie = channels.firstWhere((c) => c.type == ContentType.series);
+      expect(serie.name, 'Serie de Prueba');
+      expect(serie.categoryId, Category.derive(sourceId: 'src-1', type: ContentType.series, name: 'Series').id);
+      expect(serie.url.toString(), 'xtream://src-1/series-catalog/115941465');
+
       expect(report.parsedLive, 2);
       expect(report.parsedVod, 1);
+      expect(report.parsedSeries, 1);
       expect(report.discardedCount, 0);
     });
 

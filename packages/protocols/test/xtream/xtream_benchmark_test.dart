@@ -42,7 +42,7 @@ void main() {
       await outcome.report;
       stopwatch.stop();
 
-      expect(channels, hasLength(3)); // 2 live + 1 vod, ver dialect_o0zz/
+      expect(channels, hasLength(4)); // 2 live + 1 vod + 1 serie, ver dialect_o0zz/
       expect(stopwatch.elapsed, lessThan(const Duration(seconds: 1)));
     });
   });
@@ -68,11 +68,13 @@ void main() {
         final fake = FakeXtreamTransport()
           ..enqueue('get_live_categories', jsonResponse(categories))
           ..enqueue('get_vod_categories', jsonResponse(<Object?>[]))
+          ..enqueue('get_series_categories', jsonResponse(<Object?>[]))
           ..enqueue(
             'get_live_streams',
             rawResponse(File(path).readAsBytesSync(), contentType: 'application/json'),
           )
-          ..enqueue('get_vod_streams', jsonResponse(<Object?>[]));
+          ..enqueue('get_vod_streams', jsonResponse(<Object?>[]))
+          ..enqueue('get_series', jsonResponse(<Object?>[]));
 
         final client = XtreamClient(
           host: Uri.parse('http://127.0.0.1:8081'),

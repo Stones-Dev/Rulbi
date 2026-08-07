@@ -12,6 +12,7 @@ void main() {
       const report = XtreamImportReport(
         parsedLive: 2,
         parsedVod: 1,
+        parsedSeries: 1,
         discardedCount: 1,
         discarded: [XtreamDiscard(action: 'get_vod_streams', reason: 'XtreamHttpFailure(500)')],
       );
@@ -21,6 +22,7 @@ void main() {
       expect(json['kind'], 'xtream');
       expect(json['parsedLive'], 2);
       expect(json['parsedVod'], 1);
+      expect(json['parsedSeries'], 1);
       expect(json['discardedCount'], 1);
       expect(json['discarded'], [
         {'action': 'get_vod_streams', 'reason': 'XtreamHttpFailure(500)'},
@@ -31,6 +33,7 @@ void main() {
       const original = XtreamImportReport(
         parsedLive: 26752,
         parsedVod: 0,
+        parsedSeries: 340,
         discardedCount: 2,
         discarded: [
           XtreamDiscard(action: 'get_live_categories', reason: 'XtreamRateLimited(retryAfter: null)'),
@@ -42,6 +45,7 @@ void main() {
 
       expect(roundTripped.parsedLive, original.parsedLive);
       expect(roundTripped.parsedVod, original.parsedVod);
+      expect(roundTripped.parsedSeries, original.parsedSeries);
       expect(roundTripped.discardedCount, original.discardedCount);
       expect(roundTripped.discarded.map((d) => d.action), original.discarded.map((d) => d.action));
       expect(roundTripped.discarded.map((d) => d.reason), original.discarded.map((d) => d.reason));
@@ -51,6 +55,7 @@ void main() {
       const report = XtreamImportReport(
         parsedLive: 5,
         parsedVod: 3,
+        parsedSeries: 2,
         discardedCount: 0,
         discarded: [],
       );
@@ -59,7 +64,13 @@ void main() {
     });
 
     test('sin descartes: discarded es una lista vacía, no null', () {
-      const report = XtreamImportReport(parsedLive: 1, parsedVod: 0, discardedCount: 0, discarded: []);
+      const report = XtreamImportReport(
+        parsedLive: 1,
+        parsedVod: 0,
+        parsedSeries: 0,
+        discardedCount: 0,
+        discarded: [],
+      );
 
       expect(report.toJson()['discarded'], isEmpty);
     });

@@ -39,6 +39,14 @@ void main() {
       );
       expect(uri.toString(), 'xtream://src-1/series/1875868768.mp4');
     });
+
+    test('series-catalog (S5.5, Bloque C): no colisiona con series de episodios', () {
+      final seriesUri = XtreamUrlResolver.seriesCatalogCanonical(sourceId: 'src-1', seriesId: '42');
+      final episodeUri = XtreamUrlResolver.seriesCanonical(sourceId: 'src-1', episodeId: '42');
+
+      expect(seriesUri.toString(), 'xtream://src-1/series-catalog/42');
+      expect(seriesUri, isNot(episodeUri));
+    });
   });
 
   group('XtreamUrlResolver.resolve — URL reproducible', () {
@@ -119,6 +127,20 @@ void main() {
       expect(
         () => XtreamUrlResolver.resolve(
           canonical: Uri.parse('xtream://src-1/unknown/1'),
+          panelHost: Uri.parse('http://h'),
+          username: 'u',
+          secret: 'p',
+        ),
+        throwsArgumentError,
+      );
+    });
+
+    test('series-catalog (una serie, no un episodio) no es reproducible: ArgumentError', () {
+      final canonical = XtreamUrlResolver.seriesCatalogCanonical(sourceId: 'src-1', seriesId: '42');
+
+      expect(
+        () => XtreamUrlResolver.resolve(
+          canonical: canonical,
           panelHost: Uri.parse('http://h'),
           username: 'u',
           secret: 'p',

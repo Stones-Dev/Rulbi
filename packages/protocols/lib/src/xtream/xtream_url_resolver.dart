@@ -54,6 +54,19 @@ final class XtreamUrlResolver {
   static Uri seriesRefCanonical({required String sourceId, required String episodeId}) =>
       _canonical(sourceId, 'series', episodeId);
 
+  /// Canónica de una **serie** del catálogo (`get_series`, S5.5 Bloque C)
+  /// — a propósito un `kind` distinto de `series` (que ya identifica
+  /// *episodios*): `seriesId` y `episodeId` son enteros en espacios de
+  /// nombres separados del panel, así que reutilizar `series` haría
+  /// colisionar la canónica de la serie 42 con la del episodio 42.
+  ///
+  /// No tiene variante reproducible: una serie no se reproduce, se abre su
+  /// ficha y se elige episodio — [resolve] rechaza este `kind` con
+  /// `ArgumentError` (mismo camino que cualquier `kind` desconocido, ver
+  /// su `switch`).
+  static Uri seriesCatalogCanonical({required String sourceId, required String seriesId}) =>
+      _canonical(sourceId, 'series-catalog', seriesId);
+
   static Uri _canonical(String sourceId, String kind, String id, {String? extension}) {
     final hasExt = extension != null && extension.trim().isNotEmpty;
     final idWithExt = hasExt ? '$id.${extension.trim()}' : id;

@@ -184,19 +184,21 @@ depende del tamaño del documento.)
 
 Campos de `XtreamImportReport.toJson()`
 (`packages/protocols/lib/src/xtream/xtream_import_report.dart`) — producido
-por `XtreamClient.importChannels()` (T1.4). No reutiliza la forma de M3U ni
-la de XMLTV: `discarded` aquí no son entradas individuales dentro de una
-lista bien formada (esas ya se toleran campo a campo dentro de cada
-`fromJson`, sin dejar rastro — ver batería de dialectos de T1.4), sino
-**acciones completas de `player_api.php` que fallaron** (p. ej. un 500 en
-`get_vod_streams` a mitad de import) — el import de live/VOD sigue
-adelante con lo que sí respondió (P7).
+por `XtreamClient.importChannels()` (T1.4, catálogo de series añadido en
+S5.5 Bloque C). No reutiliza la forma de M3U ni la de XMLTV: `discarded`
+aquí no son entradas individuales dentro de una lista bien formada (esas ya
+se toleran campo a campo dentro de cada `fromJson`, sin dejar rastro — ver
+batería de dialectos de T1.4), sino **acciones completas de
+`player_api.php` que fallaron** (p. ej. un 500 en `get_vod_streams` a
+mitad de import) — el import de live/VOD/series sigue adelante con lo que
+sí respondió (P7).
 
 | Campo | Tipo | Significado |
 |---|---|---|
 | `kind` | `"xtream"` | Discriminador. |
 | `parsedLive` | `int` | `Channel(type: live)` emitidos con éxito. |
 | `parsedVod` | `int` | `Channel(type: vod)` emitidos con éxito. |
+| `parsedSeries` | `int` | `Channel(type: series)` del **catálogo** emitidos con éxito (S5.5) — series sin expandir, sin temporadas/episodios (ver más abajo). |
 | `discardedCount` | `int` | Total real de acciones fallidas, incluso si supera el cap (1000, mismo criterio que XMLTV). |
 | `discarded` | `XtreamDiscard[]` | En el orden en que ocurrieron. |
 
@@ -204,19 +206,24 @@ adelante con lo que sí respondió (P7).
 
 | Campo | Tipo | Significado |
 |---|---|---|
-| `action` | `string` | Action de `player_api.php` que falló (`get_live_categories`, `get_vod_streams`, ...). |
+| `action` | `string` | Action de `player_api.php` que falló (`get_live_categories`, `get_vod_streams`, `get_series`, ...). |
 | `reason` | `string` | `toString()` del `XtreamFailure` correspondiente (p. ej. `"XtreamHttpFailure(500)"`) — nunca contiene la contraseña del panel (ADR-006/P5, ningún `XtreamFailure` la lleva). |
 
-Series/temporadas/episodios **no** entran en este informe: `get_series` no
-trae episodios (un import completo no puede pedir `get_series_info` por
-cada serie de un panel grande), así que se piden bajo demanda al abrir la
-ficha y no forman parte de `importChannels()`.
+**El catálogo de series** (`get_series`, sin temporadas/episodios) sí entra
+en `importChannels()` desde S5.5 — cuesta una llamada por tipo de
+contenido, igual que live/VOD. Lo que **no** entra, ni con S5.5, son
+temporadas/episodios individuales: `get_series` no los trae, así que
+expandirlos exigiría un `get_series_info` por serie (N+1 de red inviable
+con un panel de miles de series) — se piden bajo demanda al abrir la
+ficha (`XtreamClient.seriesInfo()` + `XtreamMapper.episodeToChannel`) y no
+forman parte de ningún informe de import.
 
 ### Ejemplo real
 
 Contra los 9 fixtures de T1.1 (`o0Zz/xtreamcodeserver`, ver
 `packages/protocols/test/fixtures/xtream/dialect_o0zz/`): 2 canales live +
-1 película, sin descartes (`packages/protocols/test/xtream/xtream_report_json_test.dart`,
+1 película + 1 serie (catálogo, sin episodios), sin descartes
+(`packages/protocols/test/xtream/xtream_report_json_test.dart`,
 `xtream_import_test.dart`):
 
 ```json
@@ -224,19 +231,21 @@ Contra los 9 fixtures de T1.1 (`o0Zz/xtreamcodeserver`, ver
   "kind": "xtream",
   "parsedLive": 2,
   "parsedVod": 1,
+  "parsedSeries": 1,
   "discardedCount": 0,
   "discarded": []
 }
 ```
 
-Con un fallo simulado en `get_vod_streams` (500), el import de live sigue
-adelante:
+Con un fallo simulado en `get_vod_streams` (500), el import de live/series
+sigue adelante:
 
 ```json
 {
   "kind": "xtream",
   "parsedLive": 2,
   "parsedVod": 0,
+  "parsedSeries": 1,
   "discardedCount": 1,
   "discarded": [
     { "action": "get_vod_streams", "reason": "XtreamHttpFailure(500)" }
