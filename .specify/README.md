@@ -20,7 +20,7 @@ Este directorio es un **espejo de solo lectura** de la carpeta del proyecto en e
 |---|---|---|
 | `constitution.md` | `constitution.md` | 2026-07-28 (Sprint 0) |
 | `spec.md` | `spec.md` (rev. 1.1) | 2026-07-28 (Sprint 0) |
-| `ui-spec.md` | `ui-spec.md` | 2026-07-28 (Sprint 0) |
+| `ui-spec.md` | `ui-spec.md` | 2026-08-07 (S5.5, añade §2.3.1 "Películas y series (listado)") |
 | `plan.md` | `plan.md` (rev. 1.5) | 2026-08-01 (S3 · Spike de escritorio, ADR-009) |
 | `tasks.md` | `tasks.md` | 2026-07-29 (cierre de migración ADR-005) |
 

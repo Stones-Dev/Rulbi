@@ -52,6 +52,17 @@ Filas horizontales de tarjetas (patrón 10-foot, reutilizado en todos los shells
 - Estados: sin EPG (ítem sin subtítulo), fuente desactivada (oculta), error de fuente (banner).
 - Conexión: `channelsProvider(category)` sobre FTS5/drift; scroll infinito por lotes.
 
+### 2.3.1 Películas y series (listado)
+
+*Añadido 2026-08-07 — hueco de spec detectado en S5 (VOD/Series solo tenían pantalla de detalle, §2.6/§2.7, sin pantalla de la que partir). Mismo patrón que 2.3, adaptado a catálogo.*
+
+- Dos pestañas o selector: **Películas** / **Series** (no mezcladas en la misma rejilla — géneros y metadatos difieren).
+- Panel de **categorías/géneros** (lateral en TV/Desktop, desplegable en móvil): nombre + contador, igual que 2.3.
+- **Rejilla virtualizada** de pósters (no lista de filas como canales — el póster es el dato principal); ítem: póster, título, año, badge de favorito. Orden: alfabético o por fuente/categoría.
+- Acciones por ítem: abrir detalle (→ 2.6 Detalle VOD / 2.7 Detalle de serie), favorito (mismo patrón contextual que 2.3).
+- Estados: sin póster (fallback tipográfico, mismo criterio que 2.6), fuente desactivada (oculta), catálogo vacío (sin Películas o sin Series según la fuente).
+- Conexión: `vodListProvider(category)` / `seriesListProvider(category)` sobre drift (mismo patrón de paginación que `channelsProvider`); requiere `ContentType.movie`/`ContentType.series` ya usados en `SearchChannels.grouped` (S5).
+
 ### 2.4 Rejilla EPG
 
 Eje Y canales (con logo), eje X tiempo; ventana de ±12 h con carga perezosa por desplazamiento; línea de "ahora"; botón *Hoy/Ahora*. Celda: título + franja. En TV: foco celda a celda, OK abre 2.5. Estados: canal sin datos → celda "Sin información". Conexión: `epgWindowProvider(range)` — solo la ventana visible viene de SQLite.
