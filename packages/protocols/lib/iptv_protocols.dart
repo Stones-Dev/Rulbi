@@ -22,6 +22,7 @@ export 'src/xtream/xtream_account.dart' show XtreamAccount;
 export 'src/xtream/xtream_category.dart' show XtreamCategory;
 export 'src/xtream/xtream_client.dart' show XtreamClient, XtreamImportOutcome;
 export 'src/xtream/xtream_epg.dart' show XtreamEpgListing;
+export 'src/xtream/xtream_epg_adapter.dart' show xtreamEpgToEntries;
 export 'src/xtream/xtream_host.dart'
     show
         XtreamHostInvalid,

@@ -90,7 +90,7 @@ class _NowCard extends StatelessWidget {
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 4),
-          EpgProgressBar(tvgId: channel.tvgId, controller: epgController),
+          EpgProgressBar(tvgId: channel.tvgId, controller: epgController, channel: channel),
         ],
       ),
     );

@@ -117,6 +117,7 @@ class _ChannelRowState extends ConsumerState<ChannelRow> {
                     EpgProgressBar(
                       tvgId: channel.tvgId,
                       controller: epgController,
+                      channel: channel,
                     ),
                 ],
               ),

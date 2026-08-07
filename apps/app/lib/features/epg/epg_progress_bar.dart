@@ -23,11 +23,19 @@ class EpgProgressBar extends ConsumerWidget {
   const EpgProgressBar({
     required this.tvgId,
     required this.controller,
+    this.channel,
     super.key,
   });
 
   final String? tvgId;
   final EpgNowController controller;
+
+  /// Opcional (S5.5, Bloque A3): si se provee, alimenta
+  /// `EpgNowController.request`, que lo usa para el fallback bajo demanda
+  /// de EPG Xtream (`ensureEpgFor`) cuando este canal se queda sin
+  /// "ahora/siguiente". Sin `channel`, el comportamiento es idéntico al de
+  /// antes de esta ola.
+  final Channel? channel;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -49,7 +57,7 @@ class EpgProgressBar extends ConsumerWidget {
           // un `Timer` propio de la pantalla, para no tener que cablear
           // ese ciclo de vida por separado en cada pantalla que use EPG.
           controller.invalidateIfStale(now);
-          controller.request(tvgId, now);
+          controller.request(tvgId, now, channel: channel);
           final programme = controller.nowAiring(tvgId);
           if (programme == null) return const SizedBox.shrink();
 

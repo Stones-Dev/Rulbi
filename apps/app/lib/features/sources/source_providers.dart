@@ -151,7 +151,12 @@ final xmltvEpgWriterProvider = Provider<XmltvEpgWriter>((ref) {
   return DriftXmltvEpgWriter(ref.watch(iptvDatabaseProvider));
 });
 
-/// Ingesta de guía durante el import (S5 · Ola 2, ADR-008) — mismo criterio
-/// que `m3uProbeProvider`/`xtreamImportChannelSourceProvider`: se
-/// construye su propio `http.Client` interno, no compartido.
-final epgSourceProvider = Provider<EpgSource>((ref) => XmltvEpgSource());
+/// Ingesta de guía durante el import (S5 · Ola 2, ADR-008; S5.5 Bloque A2
+/// añade Xtream vía `xmltv.php`) — mismo criterio que
+/// `m3uProbeProvider`/`xtreamImportChannelSourceProvider`: se construye su
+/// propio `http.Client` interno, no compartido. `secureStore` sí se
+/// comparte (mismo `secureCredentialStoreProvider` que `SaveSource`), para
+/// leer la credencial del panel en el momento de descargar `xmltv.php`.
+final epgSourceProvider = Provider<EpgSource>((ref) {
+  return XmltvEpgSource(secureStore: ref.watch(secureCredentialStoreProvider));
+});

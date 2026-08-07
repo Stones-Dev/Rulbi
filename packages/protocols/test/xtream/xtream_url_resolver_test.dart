@@ -128,6 +128,54 @@ void main() {
     });
   });
 
+  group('XtreamUrlResolver.xmltvUrl — guía del panel (S5.5, Bloque A)', () {
+    test('host sin puerto: username/password como query params', () {
+      final uri = XtreamUrlResolver.xmltvUrl(
+        panelHost: Uri.parse('http://panel.example.com'),
+        username: 'user',
+        secret: 'pass',
+      );
+
+      expect(uri.scheme, 'http');
+      expect(uri.host, 'panel.example.com');
+      expect(uri.hasPort, isFalse);
+      expect(uri.path, '/xmltv.php');
+      expect(uri.queryParameters, {'username': 'user', 'password': 'pass'});
+    });
+
+    test('host con puerto se conserva', () {
+      final uri = XtreamUrlResolver.xmltvUrl(
+        panelHost: Uri.parse('http://127.0.0.1:8081'),
+        username: 'user',
+        secret: 'pass',
+      );
+
+      expect(uri.port, 8081);
+      expect(uri.toString(), 'http://127.0.0.1:8081/xmltv.php?username=user&password=pass');
+    });
+
+    test('scheme https se conserva', () {
+      final uri = XtreamUrlResolver.xmltvUrl(
+        panelHost: Uri.parse('https://panel.example:8443'),
+        username: 'user',
+        secret: 'pass',
+      );
+
+      expect(uri.scheme, 'https');
+    });
+
+    test('una contraseña con caracteres reservados se percent-encoda en la query', () {
+      final uri = XtreamUrlResolver.xmltvUrl(
+        panelHost: Uri.parse('http://h:80'),
+        username: 'u',
+        secret: r'p/a?s#s&w=1',
+      );
+
+      expect(uri.queryParameters['password'], r'p/a?s#s&w=1');
+      expect(uri.toString(), isNot(contains('p/a?s#s&w=1')));
+    });
+  });
+
   group('P5 — anti-fuga de credenciales', () {
     test('ninguna forma canónica contiene la contraseña, sea cual sea el kind', () {
       const secret = 'super-secreta-jamas-visible';

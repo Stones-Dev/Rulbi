@@ -5,6 +5,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iptv_core/iptv_core.dart';
 
 import '../sources/source_providers.dart';
+import 'xtream_epg_fallback.dart';
+
+/// Fallback bajo demanda de EPG Xtream por canal (S5.5, Bloque A3) — se
+/// construye su propio `XtreamClient`/transporte por invocación (mismo
+/// criterio que `xtreamProbeProvider`/`xtreamImportChannelSourceProvider`:
+/// nunca compartido entre llamadas).
+final xtreamEpgFallbackProvider = Provider<XtreamEpgFallback>((ref) {
+  return XtreamEpgFallback(
+    epgRepository: ref.watch(epgRepositoryProvider),
+    writer: ref.watch(xmltvEpgWriterProvider),
+    sources: ref.watch(sourceRepositoryProvider),
+    secureStore: ref.watch(secureCredentialStoreProvider),
+  );
+});
 
 /// Reloj compartido de la barra de progreso EPG (S5 · Ola 2, D7 del plan
 /// de la ola): un único `ValueListenable<DateTime>` a nivel de app que
@@ -39,9 +53,18 @@ final epgClockProvider = Provider<ValueListenable<DateTime>>((ref) {
 /// .nowAndNextFor`, agendada en un microtask — nunca una consulta por
 /// fila. La lectura (`nowAiring`/`nextUp`) es siempre síncrona.
 class EpgNowController extends ChangeNotifier {
-  EpgNowController({required this.repository});
+  EpgNowController({required this.repository, this.ensureEpgFor});
 
   final EpgRepository repository;
+
+  /// Fallback bajo demanda de EPG Xtream (S5.5, Bloque A3) — `null` en la
+  /// mayoría de tests y en cualquier composición que no lo necesite
+  /// (comportamiento 100% igual al de antes de esta ola). Cuando se
+  /// provee, [_flush] lo invoca una única vez por `tvgId` que resultó sin
+  /// "ahora/siguiente", solo si [request] vino acompañado del [Channel]
+  /// (ver su docstring) — nunca en bloque, nunca más de una vez por
+  /// `tvgId` mientras este controller viva.
+  final Future<bool> Function(Channel channel, DateTime at)? ensureEpgFor;
 
   EpgNowIndex? _index;
 
@@ -55,6 +78,12 @@ class EpgNowController extends ChangeNotifier {
   /// reconstrucción infinito para cualquier canal sin EPG.
   final Set<String> _known = {};
   final Set<String> _pending = {};
+
+  /// Canal asociado a un `tvgId` pendiente, solo si [request] lo trajo —
+  /// es lo único que [ensureEpgFor] necesita (`sourceId`,
+  /// `x-xtream-stream-id`) y que este controller no tiene por su cuenta
+  /// (solo trabaja con `tvgId`s sueltos, ver docstring de la clase).
+  final Map<String, Channel> _pendingChannels = {};
   bool _flushScheduled = false;
 
   EpgProgramme? nowAiring(String? tvgId) =>
@@ -66,8 +95,14 @@ class EpgNowController extends ChangeNotifier {
   /// Encola [tvgId] para el próximo lote, si no está ya resuelto. No-op si
   /// [tvgId] es `null` (canal sin `tvgId`, ver docstring de `Channel`) —
   /// ese canal nunca tendrá EPG, no hay nada que pedir.
-  void request(String? tvgId, DateTime at) {
+  ///
+  /// [channel] es opcional y solo alimenta [ensureEpgFor] (S5.5, Bloque
+  /// A3): sin él, un `tvgId` sin "ahora/siguiente" se queda así hasta que
+  /// alguna llamada posterior sí lo traiga — el resto del comportamiento
+  /// (caché por `_known`, batching) es idéntico con o sin `channel`.
+  void request(String? tvgId, DateTime at, {Channel? channel}) {
     if (tvgId == null || _known.contains(tvgId)) return;
+    if (channel != null) _pendingChannels[tvgId] = channel;
     if (_pending.add(tvgId) && !_flushScheduled) {
       _flushScheduled = true;
       scheduleMicrotask(() => _flush(at));
@@ -79,6 +114,9 @@ class EpgNowController extends ChangeNotifier {
     if (_pending.isEmpty) return;
     final ids = Set<String>.of(_pending);
     _pending.clear();
+    final channelsForIds = <String, Channel>{
+      for (final id in ids) id: ?_pendingChannels.remove(id),
+    };
 
     final loaded = await repository.nowAndNextFor(ids, at);
     if (_disposed) return;
@@ -95,6 +133,38 @@ class EpgNowController extends ChangeNotifier {
       entries: {...?_index?.entries, ...loaded.entries},
     );
     notifyListeners();
+
+    final fallback = ensureEpgFor;
+    if (fallback == null) return;
+    for (final id in ids) {
+      if (loaded.entries.containsKey(id)) continue;
+      final channel = channelsForIds[id];
+      if (channel == null) continue;
+      unawaited(_tryFallback(fallback, channel, at));
+    }
+  }
+
+  /// Best-effort: un fallo del fallback (red, panel sin credencial, etc.)
+  /// nunca debe romper esta pantalla — mismo criterio P7 que el resto de
+  /// EPG. Si escribió programas nuevos, libera el `tvgId` de [_known] y lo
+  /// vuelve a encolar — sin esto, el `tvgId` seguiría marcado como
+  /// "ya resuelto (sin guía)" para siempre, aunque el fallback acabara de
+  /// escribir datos reales.
+  Future<void> _tryFallback(
+    Future<bool> Function(Channel channel, DateTime at) fallback,
+    Channel channel,
+    DateTime at,
+  ) async {
+    try {
+      final wrote = await fallback(channel, at);
+      if (!wrote || _disposed) return;
+      final tvgId = channel.tvgId;
+      if (tvgId == null) return;
+      _known.remove(tvgId);
+      request(tvgId, at, channel: channel);
+    } catch (_) {
+      // Silencioso a propósito — ver docstring de [ensureEpgFor].
+    }
   }
 
   /// Se llama en cada tick de [epgClockProvider] (una vez por pantalla que
@@ -135,9 +205,14 @@ class EpgNowController extends ChangeNotifier {
 /// Construye un [EpgNowController] nuevo por cada pantalla que lo necesita
 /// (mismo criterio que `ChannelPageCache`: no es un estado global — cada
 /// pantalla tiene su propio conjunto de canales visibles y su propio ciclo
-/// de vida de widget). Solo para pantallas reales — un test con
-/// `ProviderContainer` (que no es un `WidgetRef`) construye
+/// de vida de widget), cableado con el fallback Xtream real (S5.5, Bloque
+/// A3). Solo para pantallas reales — un test con `ProviderContainer` (que
+/// no es un `WidgetRef`) construye
 /// `EpgNowController(repository: container.read(epgRepositoryProvider))`
-/// directamente, sin pasar por este helper.
-EpgNowController createEpgNowController(WidgetRef ref) =>
-    EpgNowController(repository: ref.read(epgRepositoryProvider));
+/// directamente, sin pasar por este helper (y sin `ensureEpgFor`, salvo
+/// que el propio test lo necesite).
+EpgNowController createEpgNowController(WidgetRef ref) => EpgNowController(
+  repository: ref.read(epgRepositoryProvider),
+  ensureEpgFor: (channel, at) =>
+      ref.read(xtreamEpgFallbackProvider).ensureEpgFor(channel, now: at),
+);

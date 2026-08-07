@@ -115,4 +115,24 @@ final class XtreamUrlResolver {
       ],
     );
   }
+
+  /// URL de la guía XMLTV que sirve el propio panel (`xmltv.php`, S5.5
+  /// Bloque A) — transporte principal de EPG Xtream: una sola descarga en
+  /// vez de una petición `get_short_epg`/`get_simple_data_table` por canal
+  /// (ver `xtream_epg.dart`, que queda como fallback bajo demanda). A
+  /// diferencia de [resolve], esta URL sí es la que se descarga
+  /// directamente (nunca se persiste — `EpgSource.epgFor` la construye y
+  /// la descarga en el momento, igual que ya hace con la guía M3U por
+  /// URL), así que usa `queryParameters` (no `pathSegments`) para que el
+  /// propio `Uri` percent-encode la contraseña sin que el llamador tenga
+  /// que pensarlo.
+  static Uri xmltvUrl({required Uri panelHost, required String username, required String secret}) {
+    return Uri(
+      scheme: panelHost.scheme.isEmpty ? 'http' : panelHost.scheme,
+      host: panelHost.host,
+      port: panelHost.hasPort ? panelHost.port : null,
+      pathSegments: [...panelHost.pathSegments.where((s) => s.isNotEmpty), 'xmltv.php'],
+      queryParameters: {'username': username, 'password': secret},
+    );
+  }
 }
