@@ -687,5 +687,22 @@
         "type": "String"
       }
     }
+  },
+
+  "catalogEmptyMoviesTitle": "No movies yet",
+  "@catalogEmptyMoviesTitle": {
+    "description": "Headline shown in the Movies catalog grid (ui-spec §2.3.1, S5.5) when ContentType.vod has zero live channels for the active sources."
+  },
+  "catalogEmptyMoviesHint": "Add or refresh an Xtream source to see movies here.",
+  "@catalogEmptyMoviesHint": {
+    "description": "Subtitle of the empty Movies catalog state, S5.5. Xtream-specific on purpose: movies (ContentType.vod with a real poster) only come from Xtream imports today — M3U always writes ContentType.live (see xtream_mapper.dart)."
+  },
+  "catalogEmptySeriesTitle": "No series yet",
+  "@catalogEmptySeriesTitle": {
+    "description": "Headline shown in the Series catalog grid (ui-spec §2.3.1, S5.5) when ContentType.series has zero rows for the active sources."
+  },
+  "catalogEmptySeriesHint": "Add or refresh an Xtream source to see series here.",
+  "@catalogEmptySeriesHint": {
+    "description": "Subtitle of the empty Series catalog state, S5.5. Xtream-specific on purpose, same reason as catalogEmptyMoviesHint — the series catalog is imported from get_series (S5.5 Bloque C), never from M3U."
   }
 }

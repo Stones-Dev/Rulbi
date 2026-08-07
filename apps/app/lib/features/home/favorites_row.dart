@@ -4,6 +4,7 @@ import 'package:iptv_core/iptv_core.dart';
 import 'package:iptv_tokens/iptv_tokens.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../../widgets/poster_fallback.dart';
 
 /// Fila "Favoritos" de Home (ui-spec §2.2, S5 · Ola 2) — de solo lectura:
 /// el *drag* para reordenar vive en la sección Favoritos
@@ -59,42 +60,16 @@ class _FavoriteCard extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(IptvSpacing.radius),
         child: logo == null
-            ? _PosterFallback(name: channel.name)
+            ? PosterFallback(name: channel.name, size: 174)
             : CachedNetworkImage(
                 imageUrl: logo.toString(),
                 width: 174,
                 height: 174,
                 fit: BoxFit.cover,
                 memCacheWidth: 348,
-                placeholder: (_, _) => _PosterFallback(name: channel.name),
-                errorWidget: (_, _, _) => _PosterFallback(name: channel.name),
+                placeholder: (_, _) => PosterFallback(name: channel.name, size: 174),
+                errorWidget: (_, _, _) => PosterFallback(name: channel.name, size: 174),
               ),
-      ),
-    );
-  }
-}
-
-class _PosterFallback extends StatelessWidget {
-  const _PosterFallback({required this.name});
-
-  final String name;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 174,
-      height: 174,
-      alignment: Alignment.center,
-      color: IptvColors.surface,
-      padding: const EdgeInsets.all(IptvSpacing.sm),
-      child: Text(
-        name,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-        textAlign: TextAlign.center,
-        style: Theme.of(
-          context,
-        ).textTheme.titleMedium?.copyWith(color: IptvColors.textSecondary),
       ),
     );
   }

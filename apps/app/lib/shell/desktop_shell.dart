@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:iptv_core/iptv_core.dart';
 import 'package:iptv_tokens/iptv_tokens.dart';
 
+import '../features/catalog/catalog_screen.dart';
 import '../features/channels/channel_list_screen.dart';
 import '../features/favorites/favorites_screen.dart';
 import '../features/home/home_screen.dart';
@@ -21,10 +23,9 @@ import '../l10n/app_localizations.dart';
 /// S5 · Ola 1 cableó Inicio (`HomeScreen`, ui-spec §2.2), TV en directo
 /// (`ChannelListScreen`, ui-spec §2.3) y Buscar (`SearchScreen`, ui-spec
 /// §2.11). S5 · Ola 2 añade Favoritos (`FavoritesScreen`) y completa Inicio
-/// con sus tres filas. Películas/Series siguen sin pantalla: ui-spec solo
-/// define detalle con póster (§2.6/§2.7), no una pantalla de
-/// listado/navegación para esa sección — hueco de spec, no de esta ola.
-/// Guía/Ajustes llegan en sprints posteriores.
+/// con sus tres filas. S5.5 (Bloque D) añade Películas/Series
+/// (`CatalogScreen`, ui-spec §2.3.1, rejilla de pósteres — el hueco de
+/// spec de S5 ya se cerró). Guía/Ajustes llegan en sprints posteriores.
 class DesktopShell extends ConsumerStatefulWidget {
   const DesktopShell({super.key});
 
@@ -37,13 +38,13 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
   final FocusNode _focusNode = FocusNode();
 
   /// Posiciones en `_labels`/`_iconsByDestination` (ui-spec §1, orden:
-  /// **Inicio**·**TV**·Películas·Series·**Buscar**·Guía·Favoritos·
-  /// **Fuentes**·Ajustes). Guía/Favoritos/Ajustes siguen siendo
-  /// placeholder; Películas/Series también, pero por hueco de ui-spec
-  /// (§2.6/§2.7 son detalle con póster, no listado) — no por pendiente
-  /// de esta ola.
+  /// **Inicio**·**TV**·**Películas**·**Series**·**Buscar**·Guía·
+  /// **Favoritos**·**Fuentes**·Ajustes). Guía/Ajustes siguen siendo
+  /// placeholder (sprints posteriores).
   static const _homeIndex = 0;
   static const _liveTvIndex = 1;
+  static const _moviesIndex = 2;
+  static const _seriesIndex = 3;
   static const _searchIndex = 4;
   static const _favoritesIndex = 6;
   static const _sourcesIndex = 7;
@@ -182,6 +183,8 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
                     onGoToSources: () => _selectIndex(_sourcesIndex),
                   ),
                   _liveTvIndex => const ChannelListScreen(),
+                  _moviesIndex => const CatalogScreen(type: ContentType.vod),
+                  _seriesIndex => const CatalogScreen(type: ContentType.series),
                   _searchIndex => const SearchScreen(),
                   _favoritesIndex => const FavoritesScreen(),
                   _sourcesIndex => const SourcesScreen(),

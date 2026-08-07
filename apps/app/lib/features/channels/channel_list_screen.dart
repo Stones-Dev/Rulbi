@@ -13,10 +13,11 @@ import 'channel_providers.dart';
 import 'channel_row.dart';
 
 /// Listado de canales (ui-spec §2.3, S5 · Ola 1) — sección "TV en directo"
-/// del `DesktopShell`. Solo `ContentType.live`: Películas/Series no
-/// tienen pantalla de navegación especificada en ui-spec (§2.6/§2.7 son
-/// detalle con póster, no listado) — quedan como placeholder hasta que
-/// esa spec exista, ver handoff de cierre de esta ola.
+/// del `DesktopShell`. Solo `ContentType.live`: Películas/Series usan
+/// `CatalogScreen` (rejilla de pósteres, ui-spec §2.3.1, S5.5 Bloque D) en
+/// vez de esta pantalla — el listado de canales es lista de filas, no
+/// pósteres, y el dato principal difiere (programa actual con EPG vs.
+/// póster).
 class ChannelListScreen extends ConsumerStatefulWidget {
   const ChannelListScreen({super.key});
 
