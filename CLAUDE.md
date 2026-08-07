@@ -153,6 +153,20 @@ de esa misma sesión también tiene que **tocar X**. Si no lo toca, la referenci
 promesa, no un hecho, y se anota como pendiente explícito en la siguiente entrada de
 `handoff.md`, no se da por resuelta.
 
+### Verificación de wiring, no solo de tests en verde
+
+**Qué pasó**: `PurgeScheduler` (S2) estaba escrito y testeado desde S2, pero nunca se
+invocaba desde `IptvApp.initState` — quedó inerte en producción durante S2, S3, S4 y S5
+sin que ningún cierre de sprint lo detectara, porque los tests probaban la clase en
+aislamiento, no que algo la arrancara de verdad. Se corrigió de paso en S5.5 al arrancar
+`epgRefreshSchedulerProvider`.
+
+**Regla para el futuro**: antes de declarar "Lista" cualquier tarea que introduzca un
+servicio, scheduler, listener o mecanismo de fondo, verificar explícitamente que algo en
+el árbol de la app lo arranca (`initState`, provider, DI) — no basta con que sus tests
+unitarios pasen en verde. Si el propio código ya tiene un caso así sin arrancar,
+repórtalo aunque no sea parte del alcance de la tarea actual.
+
 ## Para el usuario (viene de TypeScript / PHP-Laravel)
 
 Dart es nuevo para ti — algunos paralelismos útiles mientras trabajamos:
