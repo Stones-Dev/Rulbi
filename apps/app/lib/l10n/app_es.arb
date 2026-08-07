@@ -154,5 +154,27 @@
   "catalogEmptyMoviesTitle": "Aún no hay películas",
   "catalogEmptyMoviesHint": "Añade o actualiza una fuente Xtream para ver películas aquí.",
   "catalogEmptySeriesTitle": "Aún no hay series",
-  "catalogEmptySeriesHint": "Añade o actualiza una fuente Xtream para ver series aquí."
+  "catalogEmptySeriesHint": "Añade o actualiza una fuente Xtream para ver series aquí.",
+
+  "playerBackTooltip": "Volver",
+  "playerPlayTooltip": "Reproducir",
+  "playerPauseTooltip": "Pausa",
+  "playerPreviousTooltip": "Anterior",
+  "playerNextTooltip": "Siguiente",
+  "playerMuteTooltip": "Silenciar",
+  "playerUnmuteTooltip": "Activar sonido",
+  "playerFullscreenTooltip": "Pantalla completa",
+  "playerExitFullscreenTooltip": "Salir de pantalla completa",
+  "playerAudioTrackTooltip": "Pista de audio",
+  "playerSubtitleTrackTooltip": "Subtítulos",
+  "playerSubtitlesOffOption": "Desactivados",
+  "playerBufferingLabel": "Cargando…",
+  "playerUnplayableMessage": "Este contenido no se puede reproducir ahora mismo.",
+  "playerAspectRatioTooltip": "Relación de aspecto",
+
+  "contentDetailPlayAction": "Reproducir",
+  "contentDetailContinueAction": "Continuar ({time})",
+  "seriesDetailContinueEpisode": "Continuar T{season}E{episode}",
+  "seriesDetailSeasonLabel": "Temporada {season}",
+  "vodDetailDurationMinutes": "{count, plural, =1{1 min} other{{count} min}}"
 }

@@ -704,5 +704,110 @@
   "catalogEmptySeriesHint": "Add or refresh an Xtream source to see series here.",
   "@catalogEmptySeriesHint": {
     "description": "Subtitle of the empty Series catalog state, S5.5. Xtream-specific on purpose, same reason as catalogEmptyMoviesHint — the series catalog is imported from get_series (S5.5 Bloque C), never from M3U."
+  },
+
+  "playerBackTooltip": "Back",
+  "@playerBackTooltip": {
+    "description": "Tooltip for the back button shown in the player's top bar when not fullscreen (ui-spec §2.13, S6)."
+  },
+  "playerPlayTooltip": "Play",
+  "@playerPlayTooltip": {
+    "description": "Tooltip/label for the play button in the player overlay when playback is paused, S6."
+  },
+  "playerPauseTooltip": "Pause",
+  "@playerPauseTooltip": {
+    "description": "Tooltip/label for the pause button in the player overlay when playback is playing, S6."
+  },
+  "playerPreviousTooltip": "Previous",
+  "@playerPreviousTooltip": {
+    "description": "Tooltip for the zapping-previous button in the player overlay (↑, ui-spec §2.13, S6)."
+  },
+  "playerNextTooltip": "Next",
+  "@playerNextTooltip": {
+    "description": "Tooltip for the zapping-next button in the player overlay (↓, ui-spec §2.13, S6)."
+  },
+  "playerMuteTooltip": "Mute",
+  "@playerMuteTooltip": {
+    "description": "Tooltip for the mute button in the player overlay when audio is unmuted, S6."
+  },
+  "playerUnmuteTooltip": "Unmute",
+  "@playerUnmuteTooltip": {
+    "description": "Tooltip for the mute button in the player overlay when audio is muted, S6."
+  },
+  "playerFullscreenTooltip": "Fullscreen",
+  "@playerFullscreenTooltip": {
+    "description": "Tooltip for the fullscreen toggle in the player overlay when not fullscreen, S6."
+  },
+  "playerExitFullscreenTooltip": "Exit fullscreen",
+  "@playerExitFullscreenTooltip": {
+    "description": "Tooltip for the fullscreen toggle in the player overlay when already fullscreen, S6."
+  },
+  "playerAudioTrackTooltip": "Audio track",
+  "@playerAudioTrackTooltip": {
+    "description": "Tooltip for the audio track selector button in the player overlay (ui-spec §2.13, S6)."
+  },
+  "playerSubtitleTrackTooltip": "Subtitles",
+  "@playerSubtitleTrackTooltip": {
+    "description": "Tooltip for the subtitle track selector button in the player overlay (ui-spec §2.13, S6)."
+  },
+  "playerSubtitlesOffOption": "Off",
+  "@playerSubtitlesOffOption": {
+    "description": "Menu entry that disables subtitles in the player's subtitle track selector, S6."
+  },
+  "playerBufferingLabel": "Buffering…",
+  "@playerBufferingLabel": {
+    "description": "Buffer status text shown in the overlay while PlaybackStatus.buffering (ui-spec §2.13: \"estado de buffer\"), S6."
+  },
+  "playerUnplayableMessage": "This content can't be played right now.",
+  "@playerUnplayableMessage": {
+    "description": "Shown instead of the video surface when PlaybackUrlResolver can't produce a playable URL (missing credential, deleted source), S6."
+  },
+  "playerAspectRatioTooltip": "Aspect ratio",
+  "@playerAspectRatioTooltip": {
+    "description": "Tooltip for the button that cycles BoxFit.contain/cover/fill in the player overlay (ui-spec §2.13: \"relación de aspecto\"), S6."
+  },
+
+  "contentDetailPlayAction": "Play",
+  "@contentDetailPlayAction": {
+    "description": "Primary action button in VOD/Series detail (ui-spec §2.6/§2.7) when there's no saved progress yet, S6."
+  },
+  "contentDetailContinueAction": "Continue ({time})",
+  "@contentDetailContinueAction": {
+    "description": "Primary action button in VOD detail when there's saved progress (ui-spec §2.6: \"Continuar (mm:ss)\"). {time} is pre-formatted mm:ss, S6.",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "seriesDetailContinueEpisode": "Continue S{season}E{episode}",
+  "@seriesDetailContinueEpisode": {
+    "description": "Featured action in Series detail (ui-spec §2.7: \"Continuar T2E5\") pointing at the episode with the most recent unfinished WatchState, S6.",
+    "placeholders": {
+      "season": {
+        "type": "int"
+      },
+      "episode": {
+        "type": "int"
+      }
+    }
+  },
+  "seriesDetailSeasonLabel": "Season {season}",
+  "@seriesDetailSeasonLabel": {
+    "description": "Entry label in the season selector dropdown (ui-spec §2.7), S6.",
+    "placeholders": {
+      "season": {
+        "type": "int"
+      }
+    }
+  },
+  "vodDetailDurationMinutes": "{count, plural, =1{1 min} other{{count} min}}",
+  "@vodDetailDurationMinutes": {
+    "description": "Total runtime shown in VOD detail (ui-spec §2.6: \"duración\"), from XtreamVodInfo.durationSecs, S6.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }

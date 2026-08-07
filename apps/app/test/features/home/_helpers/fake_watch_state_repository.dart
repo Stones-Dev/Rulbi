@@ -7,6 +7,13 @@ import 'package:iptv_core/iptv_core.dart';
 final class FakeWatchStateRepository implements WatchStateRepository {
   final Map<ChannelRef, WatchState> _byChannel = {};
 
+  /// Historial completo de `upsert` en orden de llegada (S6, Bloque C:
+  /// el controlador del reproductor guarda progreso cada 10 s sobre el
+  /// mismo canal, así que el mapa por clave no basta para contar cuántas
+  /// veces se llamó — hace falta la secuencia, no solo el último valor).
+  final List<WatchState> upsertHistory = [];
+  int get upsertCalls => upsertHistory.length;
+
   void seed(WatchState state) => _byChannel[state.channel] = state;
 
   @override
@@ -18,5 +25,6 @@ final class FakeWatchStateRepository implements WatchStateRepository {
   @override
   Future<void> upsert(WatchState state) async {
     _byChannel[state.channel] = state;
+    upsertHistory.add(state);
   }
 }

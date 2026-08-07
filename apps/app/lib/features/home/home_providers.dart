@@ -4,11 +4,11 @@ import 'package:iptv_core/iptv_core.dart';
 import '../channels/channel_providers.dart';
 import '../sources/source_providers.dart';
 
-/// Home desktop — fila "Continuar viendo" (ui-spec §2.2, S5 · Ola 1).
-/// Sin invalidación automática todavía: no hay reproductor en este ola
-/// que escriba en `watch_state`, así que no hace falta refrescar en
-/// caliente — se recalcula al reconstruir el provider (p. ej. al volver
-/// a Inicio).
+/// Home desktop — fila "Continuar viendo" (ui-spec §2.2, S5 · Ola 1). Desde
+/// S6, `openPlayer` (`features/player/open_player.dart`) invalida este
+/// provider al volver del reproductor — que sí escribe en `watch_state`
+/// cada 10 s y al salir (`PlayerController`) — así que la fila se
+/// refresca sin esperar a un rebuild fortuito.
 final continueWatchingProvider = FutureProvider<List<ContinueWatchingItem>>((
   ref,
 ) {

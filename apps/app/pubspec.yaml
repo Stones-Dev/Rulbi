@@ -66,6 +66,14 @@ dependencies:
   iptv_data:
     path: ../../packages/data
 
+  # `PlayerPort` + implementaciones nativas (S6, Bloque A/E) — `main.dart`
+  # llama a `IptvPlayback.ensureInitialized()` antes de `runApp`, y las
+  # pantallas de `features/player/` construyen `MediaKitPlayer` a través de
+  # `player_providers.dart`. `apps/app` nunca importa `media_kit*`
+  # directamente (P6) — solo `iptv_playback`.
+  iptv_playback:
+    path: ../../packages/player
+
   # Selector de archivo nativo (ui-spec §2.8, origen "Archivo" del
   # Formulario M3U): soporta Windows/Linux/Android. MIT (P8 ok). >=10.3.3
   # a propósito: versiones anteriores (incl. 8.x) fijan `compileSdk 34` a
@@ -101,6 +109,14 @@ dev_dependencies:
   # `iptv_data`/`drift_flutter` (`depend_on_referenced_packages`). Misma
   # versión que resuelve `packages/data` (2.34.3).
   drift: ^2.34.3
+
+  # `fakeAsync` en `player_controller_test.dart` (S6, Bloque C): controla
+  # el temporizador de 10 s de `watch_state` y el autoocultado de 4 s del
+  # overlay sin esperas reales. Ya resolvía como transitiva de
+  # `flutter_test` — declarada explícita por el mismo motivo que `drift`
+  # arriba (`depend_on_referenced_packages`). Misma versión que ya fija el
+  # lockfile del workspace (1.3.3).
+  fake_async: ^1.3.3
 
   integration_test:
     sdk: flutter
