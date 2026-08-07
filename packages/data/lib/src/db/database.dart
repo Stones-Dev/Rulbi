@@ -3,6 +3,7 @@ import 'package:drift_flutter/drift_flutter.dart';
 
 import 'tables/categories.dart';
 import 'tables/channels.dart';
+import 'tables/epg_channels.dart';
 import 'tables/epg_programmes.dart';
 import 'tables/favorites.dart';
 import 'tables/paired_devices.dart';
@@ -13,7 +14,9 @@ part 'database.g.dart';
 
 /// Esquema local (T1.5, plan §4.2): idéntico en todas las plataformas.
 /// `schemaVersion` empezó en 1 (T1.5a); v2 (T1.6b) añade `deletedAt`/
-/// `contentHash` a `channels` para el upsert diferencial. El snapshot de
+/// `contentHash` a `channels` para el upsert diferencial; v3 (S5 · Ola 1)
+/// añade índices de listado paginado sobre `channels`; v4 (ADR-008, S5 ·
+/// Ola 2) añade `epg_channels` para el escritor XMLTV→drift. El snapshot de
 /// v1 vive en `drift_schemas/drift_schema_v1.json` (volcado con
 /// `drift_dev schema dump` **antes** de tocar la tabla — ver
 /// `test/import_differential_test.dart`, test de migración), con su
@@ -33,6 +36,7 @@ part 'database.g.dart';
     Categories,
     Channels,
     EpgProgrammes,
+    EpgChannels,
     Favorites,
     WatchState,
     PairedDevices,
@@ -48,7 +52,7 @@ class IptvDatabase extends _$IptvDatabase {
   factory IptvDatabase.open() => IptvDatabase(driftDatabase(name: 'iptv'));
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -89,6 +93,11 @@ class IptvDatabase extends _$IptvDatabase {
       if (from < 3) {
         await m.createIndex(idxChannelsTypeName);
         await m.createIndex(idxChannelsCategoryName);
+      }
+      // v3 -> v4 (ADR-008, S5 · Ola 2): tabla nueva para los `<channel>`
+      // de la guía XMLTV — ver docstring de `EpgChannels`.
+      if (from < 4) {
+        await m.createTable(epgChannels);
       }
     },
     beforeOpen: (details) async {

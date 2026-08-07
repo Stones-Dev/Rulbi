@@ -8,9 +8,20 @@ final class DriftFavoritesRepository implements FavoritesRepository {
 
   final IptvDatabase _db;
 
+  /// `ORDER BY sort_order, source_id, ref_key` (S5 · Ola 2): el orden
+  /// manual del usuario es el punto de la pantalla de Favoritos — sin
+  /// esto, la lista se pintaría en el orden físico de la tabla, que no
+  /// tiene por qué coincidir con `sortOrder` tras un `reorder`. Los
+  /// tombstones (`deletedAt` no nulo) se filtran en el provider de la app,
+  /// no aquí — mismo precedente que `sourcesStreamProvider`.
   @override
   Future<List<Favorite>> getAll() async {
-    final rows = await _db.select(_db.favorites).get();
+    final rows = await (_db.select(_db.favorites)..orderBy([
+          (f) => OrderingTerm.asc(f.sortOrder),
+          (f) => OrderingTerm.asc(f.sourceId),
+          (f) => OrderingTerm.asc(f.refKey),
+        ]))
+        .get();
     return rows.map(_toEntity).toList();
   }
 
@@ -35,8 +46,11 @@ final class DriftFavoritesRepository implements FavoritesRepository {
 
   @override
   Stream<List<Favorite>> watchAll() {
-    return _db
-        .select(_db.favorites)
+    return (_db.select(_db.favorites)..orderBy([
+          (f) => OrderingTerm.asc(f.sortOrder),
+          (f) => OrderingTerm.asc(f.sourceId),
+          (f) => OrderingTerm.asc(f.refKey),
+        ]))
         .watch()
         .map((rows) => rows.map(_toEntity).toList());
   }

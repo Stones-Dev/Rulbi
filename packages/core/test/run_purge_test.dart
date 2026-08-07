@@ -44,7 +44,8 @@ final class _FakeEpgRepository implements EpgRepository {
   }) async => const [];
 
   @override
-  EpgProgramme? nowAiring(String tvgId, DateTime at) => null;
+  Future<EpgNowIndex> nowAndNextFor(Set<String> tvgIds, DateTime at) async =>
+      EpgNowIndex(at: at, entries: const {});
 }
 
 /// Variante que registra el orden de entrada/salida de
@@ -79,7 +80,8 @@ final class _SequencedEpgRepository implements EpgRepository {
   }) async => const [];
 
   @override
-  EpgProgramme? nowAiring(String tvgId, DateTime at) => null;
+  Future<EpgNowIndex> nowAndNextFor(Set<String> tvgIds, DateTime at) async =>
+      EpgNowIndex(at: at, entries: const {});
 }
 
 /// Fake de `ChannelRepository`: solo interesa `purgeOrphanTombstones` —

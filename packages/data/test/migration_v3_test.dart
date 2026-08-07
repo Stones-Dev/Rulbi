@@ -57,7 +57,10 @@ void main() {
         final indexNames = await indexNamesOf(migratedDb, 'channels');
         expect(indexNames, contains('idx_channels_type_name'));
         expect(indexNames, contains('idx_channels_category_name'));
-        expect(migratedDb.schemaVersion, 3);
+        // La migración real desde v1 hoy pasa por v2, v3 y v4 (ADR-008,
+        // S5 · Ola 2) — este test solo verifica que la parada v3 sigue
+        // trayendo los índices en el camino, no el esquema final.
+        expect(migratedDb.schemaVersion, 4);
       },
     );
 

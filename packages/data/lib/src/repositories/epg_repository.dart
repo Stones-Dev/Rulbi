@@ -34,15 +34,54 @@ final class DriftEpgRepository implements EpgRepository {
     return rows.map(_toEntity).toList();
   }
 
+  /// SQLite tiene un límite de ~999 parámetros de sentencia; se trocea en
+  /// bloques del mismo tamaño que el resto de lotes del repositorio para
+  /// no coordinar un segundo valor.
+  static const int _inClauseChunkSize = 500;
+
+  /// Carga "ahora/siguiente" para [tvgIds] en un único snapshot (S5 · Ola
+  /// 2, ver docstring del puerto). Una sola consulta por bloque de
+  /// `tvgIds` sobre `idx_epg_tvg_id_start` (`stop > at` descarta lo que ya
+  /// terminó de una vez): entre las filas restantes de un mismo `tvgId`,
+  /// la que cubre `at` (`start <= at`) es "ahora" y la de `start` mínimo
+  /// por encima de `at` es "siguiente" — se resuelven las dos en la misma
+  /// pasada en memoria en vez de con dos consultas SQL por canal.
   @override
-  EpgProgramme? nowAiring(String tvgId, DateTime at) {
-    // Nota: intencionalmente síncrono en el puerto (ui-spec §2.2, lectura
-    // desde una caché ya cargada); la implementación real de esta
-    // consulta puntual llega con T1.3, cuando exista un flujo real de
-    // datos EPG que poblar y contra el que medir el caso de uso.
-    throw UnimplementedError(
-      'nowAiring: pendiente de T1.3 (parser XMLTV que puebla epg_programmes)',
-    );
+  Future<EpgNowIndex> nowAndNextFor(Set<String> tvgIds, DateTime at) async {
+    if (tvgIds.isEmpty) return EpgNowIndex(at: at, entries: const {});
+
+    final entries = <String, EpgNowNext>{};
+    for (final chunk in _chunked(tvgIds.toList(), _inClauseChunkSize)) {
+      final rows =
+          await (_db.select(_db.epgProgrammes)
+                ..where(
+                  (p) => p.tvgId.isIn(chunk) & p.stop.isBiggerThanValue(at),
+                )
+                ..orderBy([(p) => OrderingTerm.asc(p.start)]))
+              .get();
+
+      final byTvgId = <String, List<EpgProgrammeRow>>{};
+      for (final row in rows) {
+        (byTvgId[row.tvgId] ??= []).add(row);
+      }
+
+      for (final entry in byTvgId.entries) {
+        EpgProgrammeRow? nowRow;
+        EpgProgrammeRow? nextRow;
+        for (final row in entry.value) {
+          if (!row.start.isAfter(at)) {
+            nowRow = row; // start <= at < stop, ya filtrado por el WHERE
+          } else {
+            nextRow ??= row; // orderBy asc: el primero que llega es el mínimo
+          }
+        }
+        entries[entry.key] = EpgNowNext(
+          now: nowRow == null ? null : _toEntity(nowRow),
+          next: nextRow == null ? null : _toEntity(nextRow),
+        );
+      }
+    }
+    return EpgNowIndex(at: at, entries: entries);
   }
 
   /// Purga por ventana ("Ventana y purga EPG", S2): complemento exacto de
@@ -104,4 +143,10 @@ final class DriftEpgRepository implements EpgRepository {
     title: row.title,
     description: row.description,
   );
+}
+
+Iterable<List<T>> _chunked<T>(List<T> items, int size) sync* {
+  for (var i = 0; i < items.length; i += size) {
+    yield items.sublist(i, i + size > items.length ? items.length : i + size);
+  }
 }

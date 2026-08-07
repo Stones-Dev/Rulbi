@@ -21,6 +21,14 @@ dependencies:
   iptv_core:
     path: ../core
 
+  # `data -> protocols` es una dependencia legal (CLAUDE.md, regla de
+  # capas). Antes era dev-only (solo el benchmark de import 100k la
+  # usaba); ADR-008/S5 · Ola 2 la sube a dependencia real: el escritor
+  # XMLTV→drift (`xmltv_epg_writer.dart`) consume `XmltvEntry` de
+  # `parseXmltv` en código de producción, no solo en tests.
+  iptv_protocols:
+    path: ../protocols
+
   # MIT (P8). drift/SQLite + FTS5 (T1.5, plan §4.2).
   drift: ^2.34.3
   # Apertura de la BD por plataforma (rutas correctas en Win/Linux/Android)
@@ -36,14 +44,6 @@ dev_dependencies:
 
   drift_dev: ^2.34.5
   build_runner: ^2.10.1
-
-  # T1.5b (Benchmark 100k, RNF-01): el test end-to-end de
-  # test/import_100k_benchmark_test.dart necesita el parser M3U real, no
-  # solo canales sintéticos (eso ya lo cubre benchmark_test.dart). Dev-only
-  # — no acopla producción; `data -> protocols` es una dependencia legal
-  # (CLAUDE.md, regla de capas).
-  iptv_protocols:
-    path: ../protocols
   flutter_secure_storage_platform_interface: ^2.0.3
 
 flutter:

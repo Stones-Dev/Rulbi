@@ -216,6 +216,50 @@ void main() {
         isNull,
       );
     });
+
+    // S5 · Ola 2 (sección Favoritos, ui-spec §2.2/§2.3): el orden manual
+    // es el punto de la pantalla — `getAll`/`watchAll` deben devolverlo en
+    // ese orden, no en el orden físico de inserción de la tabla.
+    test('getAll ordena por sortOrder, no por orden de inserción', () async {
+      const a = ChannelRef(sourceId: 's1', key: 'a');
+      const b = ChannelRef(sourceId: 's1', key: 'b');
+      const c = ChannelRef(sourceId: 's1', key: 'c');
+      // Se insertan fuera de orden a propósito.
+      await repository.upsert(
+        Favorite(channel: b, order: 1, updatedAt: DateTime(2026, 1, 1)),
+      );
+      await repository.upsert(
+        Favorite(channel: c, order: 2, updatedAt: DateTime(2026, 1, 1)),
+      );
+      await repository.upsert(
+        Favorite(channel: a, order: 0, updatedAt: DateTime(2026, 1, 1)),
+      );
+
+      final all = await repository.getAll();
+      expect(all.map((f) => f.channel), [a, b, c]);
+    });
+
+    test(
+      'ManageFavorites.reorder persiste el nuevo orden — un getAll '
+      'posterior ya lo refleja',
+      () async {
+        const a = ChannelRef(sourceId: 's1', key: 'a');
+        const b = ChannelRef(sourceId: 's1', key: 'b');
+        const c = ChannelRef(sourceId: 's1', key: 'c');
+        for (final (ref, order) in [(a, 0), (b, 1), (c, 2)]) {
+          await repository.upsert(
+            Favorite(channel: ref, order: order, updatedAt: DateTime(2026, 1, 1)),
+          );
+        }
+
+        final manageFavorites = ManageFavorites(repository, const SystemClock());
+        await manageFavorites.reorder([c, a, b]);
+
+        final all = await repository.getAll();
+        expect(all.map((f) => f.channel), [c, a, b]);
+        expect(all.map((f) => f.order), [0, 1, 2]);
+      },
+    );
   });
 
   group('DriftWatchStateRepository', () {

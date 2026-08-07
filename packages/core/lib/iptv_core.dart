@@ -7,6 +7,7 @@ export 'src/entities/category.dart';
 export 'src/entities/channel.dart';
 export 'src/entities/channel_query.dart';
 export 'src/entities/content_type.dart';
+export 'src/entities/epg_now_index.dart';
 export 'src/entities/epg_programme.dart';
 export 'src/entities/favorite.dart';
 export 'src/entities/paired_device.dart';

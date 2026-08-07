@@ -543,7 +543,7 @@ void main() {
     });
   });
 
-  group('migración v1 -> v3', () {
+  group('migración v1 -> v4', () {
     test(
       'una BD creada con el esquema v1 abre en la versión actual sin '
       'perder filas de channels, con las columnas nuevas en NULL',
@@ -594,7 +594,7 @@ void main() {
         // `Channels.contentHash`).
         expect(rows.single.deletedAt, isNull);
         expect(rows.single.contentHash, isNull);
-        expect(migratedDb.schemaVersion, 3);
+        expect(migratedDb.schemaVersion, 4);
       },
     );
   });
