@@ -84,6 +84,7 @@ Reparto de responsabilidades entre herramientas, coherente con la jerarquía de 
   - Conocimiento reutilizable nuevo → nota en `03-Conocimiento/` del vault (buscar antes de crear).
   - Cierre de sprint o de sesión → actualizar `handoff.md` del proyecto (protocolo 12).
   - Enmienda de spec/plan/tasks si cambió el alcance (SDD vivo) — se hace primero en el vault, luego se re-sincroniza `.specify/`.
+- **Excepción — MCP de Obsidian caído.** El vault lo escribe normalmente el chat de coordinación, no Claude Code (protocolo bilateral: vault = decisión, Claude Code = ejecución). El 2026-08-07, durante S5 · Ola 2, el MCP de Obsidian del chat de coordinación estaba inalcanzable y bloqueaba el cierre de sesión (ADR-008 citaba "v2→v3" para una migración que en realidad era "v3→v4"); Claude Code escribió la corrección directamente en el ADR. Regla para el futuro: si el chat de coordinación no está disponible y surge una corrección puramente factual (no una decisión de fondo) que bloquea el cierre, se permite escribir directamente al vault **solo si** se deja una nota fechada y atribuida en el propio documento (como se hizo en esa corrección) — nunca para reabrir o alterar una decisión ya tomada, eso siempre espera al chat de coordinación.
 - **No se escribe una bitácora por cada tarea** en este repo ni en las notas del proyecto del vault: eso es ruido. Commits descriptivos + Notion son suficientes para el microprogreso.
 
 ## Plataformas de la v1 (recuérdalo al escribir código)
