@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=IPTV Player
+GenericName=Reproductor IPTV
+Comment=Reproductor IPTV multiplataforma (beta)
+Exec=/opt/iptv-player/iptv_app
+Icon=video-x-generic
+Terminal=false
+Categories=AudioVideo;Player;
+StartupWMClass=com.stonesdev.iptv.iptv_app

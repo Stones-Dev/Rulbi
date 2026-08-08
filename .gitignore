@@ -88,6 +88,13 @@ app.*.map.json
 # Coverage
 coverage/
 
+# S6 — Empaquetado beta: salida local de
+# installer/windows/build-installer.ps1 e installer/linux/build-deb.sh
+# (instaladores .exe/.deb/.tar.gz). Son artefactos de build, igual que
+# build/ — se regeneran, no se commitean. CI los sube como artifact del
+# workflow (package-desktop.yml), no como parte del repo.
+dist/
+
 # VS Code / editores
 .vscode/*
 !.vscode/settings.json

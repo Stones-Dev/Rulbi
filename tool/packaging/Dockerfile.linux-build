@@ -1,0 +1,50 @@
+# Build de Linux (.deb + tar.gz) sin gastar minutos de CI. Réplica local del
+# job `linux-package` de .github/workflows/package-desktop.yml: mismas
+# dependencias de sistema, mismo installer/linux/build-deb.sh.
+#
+# Uso (desde la raíz del repo):
+#   docker build -f tool/packaging/Dockerfile.linux-build -t iptv-linux-build .
+#   docker run --rm -v "$PWD:/repo:ro" -v "$PWD/dist/linux:/dist" iptv-linux-build
+#
+# El repo se monta de solo lectura y se COPIA (rsync, preserva cambios sin
+# commitear) dentro del contenedor a /work (ver entrypoint-linux-build.sh) en
+# vez de compilar directamente sobre el bind-mount: `melos bootstrap` puede
+# crear symlinks, y hacerlo a través del sistema de ficheros de Windows es
+# una fuente de fallos ajena a lo que queremos probar aquí. Se usa rsync en
+# vez de `git clone` a propósito: un clone solo trae el HEAD comiteado, y
+# esta imagen existe precisamente para validar cambios locales ANTES de
+# comitearlos.
+#
+# Nota de cobertura: esta imagen no tiene servidor gráfico, así que valida la
+# MECÁNICA de empaquetado (estructura del .deb, Depends, enlace a libmpv),
+# no que la app arranque — eso queda pendiente de una máquina Linux real
+# (ver docs/packaging.md).
+
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# libsecret-1-dev: NO está en la lista de ci.yml (ninja-build libgtk-3-dev
+# clang cmake pkg-config libmpv-dev) porque el job de analyze/test nunca
+# llama a `flutter build linux` — solo lo dispara compilar de verdad. Lo
+# encontró esta misma validación local (CMake: "required packages were not
+# found: libsecret-1>=0.18.4", desde flutter_secure_storage_linux) antes de
+# gastar minutos de CI en package-desktop.yml, que sí necesita este paquete.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        ninja-build libgtk-3-dev clang cmake pkg-config libmpv-dev \
+        libsecret-1-dev \
+        git curl unzip xz-utils ca-certificates dpkg-dev rsync \
+    && rm -rf /var/lib/apt/lists/*
+
+# Flutter stable — mismo canal que subosito/flutter-action@v2 usa en CI
+# (ci.yml, FLUTTER_CHANNEL: stable). No se fija una revisión exacta: esta
+# imagen valida la mecánica de empaquetado, no la paridad byte a byte con el
+# binario que compilará CI.
+RUN git clone --depth 1 -b stable https://github.com/flutter/flutter.git /opt/flutter
+ENV PATH="/opt/flutter/bin:${PATH}"
+RUN flutter config --no-analytics --enable-linux-desktop && flutter precache --linux
+
+COPY tool/packaging/entrypoint-linux-build.sh /usr/local/bin/entrypoint-linux-build.sh
+RUN chmod +x /usr/local/bin/entrypoint-linux-build.sh
+
+ENTRYPOINT ["/usr/local/bin/entrypoint-linux-build.sh"]

@@ -1,0 +1,169 @@
+name: Package desktop (beta)
+
+# S6 · Desktop III — "Empaquetado beta". Workflow separado de ci.yml a
+# propósito: empaquetar no tiene por qué re-ejecutar analyze/test/emulador
+# (que no tienen nada que ver con generar un instalador), y ci.yml no tiene
+# por qué re-ejecutarse cada vez que se toca el instalador. Disparo manual
+# (workflow_dispatch), no en cada push — el presupuesto de minutos de CI de
+# este mes no da para que esto corra automáticamente.
+#
+# El input `platform` es una medida de presupuesto: si falla solo uno de los
+# dos jobs, se puede reintentar solo ese (Windows ~20 min de cuota, Linux
+# ~10) sin repagar el otro.
+#
+# Validado en local antes de tocar esto (ver docs/packaging.md):
+#   - Windows: apps/app + installer/windows/build-installer.ps1, nativo.
+#   - Linux: tool/packaging/Dockerfile.linux-build, sin coste de CI.
+# Ambos caminos ejecutan literalmente los mismos scripts que este workflow.
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: "Qué plataforma empaquetar"
+        type: choice
+        options:
+          - both
+          - windows
+          - linux
+        default: both
+
+concurrency:
+  group: package-desktop-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_CHANNEL: stable
+
+jobs:
+  windows-installer:
+    name: Windows — instalador Inno Setup
+    if: ${{ github.event.inputs.platform == 'both' || github.event.inputs.platform == 'windows' }}
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          cache: true
+
+      - name: Activar Melos
+        run: dart pub global activate melos
+
+      - name: melos bootstrap
+        run: melos bootstrap
+
+      # Mismo motivo que en ci.yml: packages/data queda fuera del workspace
+      # Dart raíz (drift_dev vs melos), así que compilar apps/app entera
+      # necesita database.g.dart generado aquí.
+      - name: packages/data — pub get
+        working-directory: packages/data
+        run: flutter pub get
+
+      - name: packages/data — codegen (drift)
+        working-directory: packages/data
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: apps/app — codegen (flutter gen-l10n)
+        working-directory: apps/app
+        run: flutter gen-l10n
+
+      - name: Build Windows (release)
+        working-directory: apps/app
+        run: flutter build windows --release
+
+      - name: Leer versión de apps/app/pubspec.yaml
+        id: version
+        working-directory: apps/app
+        shell: pwsh
+        run: |
+          $line = Select-String -Path "pubspec.yaml" -Pattern '^version:\s*(\S+)' | Select-Object -First 1
+          $full = $line.Matches[0].Groups[1].Value          # ej. 0.1.0+1
+          $semver = $full.Split('+')[0]                     # ej. 0.1.0
+          "semver=$semver" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+      - name: Empaquetar (Inno Setup)
+        shell: pwsh
+        run: |
+          .\installer\windows\build-installer.ps1 -AppVersion "${{ steps.version.outputs.semver }}"
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: windows-installer
+          path: dist/windows/*.exe
+          if-no-files-found: error
+          retention-days: 90
+
+  linux-package:
+    name: Linux — .deb + tar.gz
+    if: ${{ github.event.inputs.platform == 'both' || github.event.inputs.platform == 'linux' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      # Mismo paquete que ci.yml instala para el job de analyze/test en
+      # Linux (S6, ADR-009): libmpv-dev es dependencia de *build*, no solo
+      # de runtime, para el CMake de apps/app/linux. libsecret-1-dev NO está
+      # en ci.yml porque ese job nunca llama a `flutter build linux` — solo
+      # compilar de verdad lo dispara (CMake de flutter_secure_storage_linux
+      # exige libsecret-1>=0.18.4 por pkg-config). Encontrado validando en
+      # local con tool/packaging/Dockerfile.linux-build antes de gastar
+      # minutos de CI aquí.
+      - name: Instalar dependencias del sistema
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build libgtk-3-dev clang cmake pkg-config libmpv-dev libsecret-1-dev dpkg-dev
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          cache: true
+
+      - name: Activar Melos
+        run: dart pub global activate melos
+
+      - name: melos bootstrap
+        run: melos bootstrap
+
+      - name: packages/data — pub get
+        working-directory: packages/data
+        run: flutter pub get
+
+      - name: packages/data — codegen (drift)
+        working-directory: packages/data
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: apps/app — codegen (flutter gen-l10n)
+        working-directory: apps/app
+        run: flutter gen-l10n
+
+      - name: Build Linux (release)
+        working-directory: apps/app
+        run: flutter build linux --release
+
+      - name: Leer versión de apps/app/pubspec.yaml
+        id: version
+        run: |
+          full="$(grep -m1 '^version:' apps/app/pubspec.yaml | awk '{print $2}')"
+          semver="${full%%+*}"
+          echo "semver=$semver" >> "$GITHUB_OUTPUT"
+
+      - name: Empaquetar (.deb + tar.gz)
+        run: |
+          bash installer/linux/build-deb.sh \
+            "${{ steps.version.outputs.semver }}" \
+            "apps/app/build/linux/x64/release/bundle" \
+            "dist/linux"
+
+      - name: Verificar metadata del .deb
+        run: dpkg-deb -I dist/linux/*.deb
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: linux-package
+          path: |
+            dist/linux/*.deb
+            dist/linux/*.tar.gz
+          if-no-files-found: error
+          retention-days: 90

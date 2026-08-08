@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.stonesdev.iptv" "\0"
-            VALUE "FileDescription", "iptv_app" "\0"
+            VALUE "CompanyName", "Stones Dev" "\0"
+            VALUE "FileDescription", "IPTV Player" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "iptv_app" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 com.stonesdev.iptv. All rights reserved." "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 Stones Dev. All rights reserved." "\0"
             VALUE "OriginalFilename", "iptv_app.exe" "\0"
-            VALUE "ProductName", "iptv_app" "\0"
+            VALUE "ProductName", "IPTV Player" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
