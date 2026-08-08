@@ -1,0 +1,15 @@
+# Servidor Xtream de pruebas — solo desarrollo, ver README.md.
+#
+# Uso:
+#   docker compose -f docker-compose.dev.yml up --build
+#
+# Puerto 8081 a propósito: es el mismo host:puerto que ya hardcodean los
+# tests de packages/protocols (capturados en T1.1 contra un servidor
+# o0Zz/xtreamcodeserver local idéntico a este).
+services:
+  xtream-test-server:
+    build: .
+    ports:
+      - "127.0.0.1:8081:8081"
+    # Sin volúmenes: el contenido es sintético y se regenera en cada build,
+    # no hace falta persistirlo entre arranques.
