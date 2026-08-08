@@ -30,6 +30,16 @@ burn_timecode() {
   echo "drawtext=fontfile=${FONT}:timecode='00\:00\:00\:00':rate=25:fontsize=64:fontcolor=white:box=1:boxcolor=black@0.6:x=(w-text_w)/2:y=h-140"
 }
 
+# NOTA sobre -t vs -shortest: con subtítulos como input de fichero (SRT) mezclados
+# con audio/vídeo de lavfi, `-shortest` truncaba el vídeo real a ~2.6 s (66 fotogramas)
+# y el audio a ~93 ms, aunque el contenedor siguiera anunciando la duración completa —
+# el demuxer del propio ffmpeg y el reproductor nativo de Windows coincidían en
+# congelarse ahí, así que no era un bug de ningún reproductor, era del propio fixture.
+# `-t <duración>` fuerza la duración de salida sin depender de cómo cada demuxer de
+# entrada reporte la suya. No cambiar a `-shortest` sin volver a comprobar con
+# `ffprobe -show_entries stream=duration,nb_frames` por pista (no solo a nivel de
+# contenedor) que el vídeo/audio realmente llega a la duración pedida.
+
 # --- Película VOD: 10 min, 3 pistas de audio, 2 de subtítulos (mp4/mov_text) ---
 MOVIE_DUR=600
 make_srt "$WORKDIR/sub_eng.srt" "$MOVIE_DUR" "SUB ENG"
@@ -49,7 +59,7 @@ ffmpeg -y -loglevel error \
   -metadata:s:s:0 language=eng -metadata:s:s:0 title="SUB ENG" \
   -metadata:s:s:1 language=spa -metadata:s:s:1 title="SUB SPA" \
   -movflags +faststart \
-  -shortest "$OUT_ROOT/vod/movie.mp4"
+  -t "$MOVIE_DUR" "$OUT_ROOT/vod/movie.mp4"
 
 # --- Episodios de serie: 5 min, 2 pistas de audio, 1 de subtítulos (mkv/srt) ---
 EP_DUR=300
@@ -69,7 +79,7 @@ for season in 1 2; do
       -metadata:s:a:0 language=eng -metadata:s:a:0 title=English \
       -metadata:s:a:1 language=spa -metadata:s:a:1 title=Español \
       -metadata:s:s:0 language=eng -metadata:s:s:0 title="SUB ENG" \
-      -shortest "$out"
+      -t "$EP_DUR" "$out"
   done
 done
 
@@ -81,6 +91,6 @@ ffmpeg -y -loglevel error \
   -filter_complex "[0:v]drawtext=fontfile=${FONT}:text='LIVE TEST':fontsize=56:fontcolor=red:x=40:y=40,$(burn_timecode)[v]" \
   -map "[v]" -map 1:a \
   -c:v libx264 -g 50 -pix_fmt yuv420p -c:a aac \
-  -shortest -f mpegts "$OUT_ROOT/live/channel1.ts"
+  -t "$LIVE_DUR" -f mpegts "$OUT_ROOT/live/channel1.ts"
 
 echo "Fixtures generadas en $OUT_ROOT"
