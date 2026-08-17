@@ -12,6 +12,29 @@ from PIL import Image
 ICONS_DIR = r'c:\Users\Usuario\Documents\GitHub\IPTVapp\docs\design-assets\icons'
 os.makedirs(ICONS_DIR, exist_ok=True)
 
+# svglib/reportlab renders at 72dpi regardless of the SVG's own units, shrinking a
+# 24x24 viewBox to an 18x18 raster (24 * 72/96). Chroma-keying a color no icon fill
+# uses (magenta) is how we get real alpha transparency out of renderPM, which has no
+# transparent-background option of its own.
+CHROMA_KEY = (255, 0, 255)
+
+
+def render_icon_png(svg_path, png_path, target_size=48):
+    drawing = svg2rlg(svg_path)
+    scale = target_size / drawing.width
+    drawing.width = target_size
+    drawing.height = target_size
+    drawing.scale(scale, scale)
+    renderPM.drawToFile(drawing, png_path, fmt='PNG', bg=0xFF00FF)
+
+    img = Image.open(png_path).convert('RGBA')
+    pixels = img.load()
+    for py in range(img.height):
+        for px in range(img.width):
+            r, g, b, _ = pixels[px, py]
+            pixels[px, py] = (r, g, b, 0) if (r, g, b) == CHROMA_KEY else (r, g, b, 255)
+    img.save(png_path, 'PNG')
+
 # 1. Home
 # Inactive: Rounded home outline (weight 400)
 # Active: Filled home (weight 600)
@@ -130,9 +153,9 @@ for name, (inact, act) in icons.items():
     d_ac = svg2rlg(p_act)
     assert d_in is not None, f"Failed to parse {p_inact}"
     assert d_ac is not None, f"Failed to parse {p_act}"
-    
-    renderPM.drawToFile(d_in, os.path.join(ICONS_DIR, f'icon_{name}.png'), fmt='PNG')
-    renderPM.drawToFile(d_ac, os.path.join(ICONS_DIR, f'icon_{name}_active.png'), fmt='PNG')
+
+    render_icon_png(p_inact, os.path.join(ICONS_DIR, f'icon_{name}.png'))
+    render_icon_png(p_act, os.path.join(ICONS_DIR, f'icon_{name}_active.png'))
     print(f"Generated & verified: icon_{name}.svg & icon_{name}_active.svg (with rasterized PNGs)")
 
 print("All 18 Material Symbols Rounded SVGs generated and validated!")

@@ -58,15 +58,15 @@ if bd_faro_matches:
     bd_faro_matches.sort(key=os.path.getmtime, reverse=True)
     img = Image.open(bd_faro_matches[0]).convert('RGB').resize((1376, 768), Image.Resampling.LANCZOS)
     
-    # Apply precise bottom gradient to #0B0F14 (from y=460 to 768)
+    # Apply precise bottom gradient to #0B0F14 (from y=440 to the last row, y=767)
     grad_overlay = Image.new('RGBA', (1376, 768), (0, 0, 0, 0))
     g_draw = ImageDraw.Draw(grad_overlay)
     for y in range(440, 768):
-        progress = (y - 440) / (768.0 - 440.0)
+        progress = (y - 440) / (767.0 - 440.0)  # reaches exactly 1.0 at the last row
         # Power curve for natural cinematic fade
-        alpha = int(255 * (progress ** 1.35))
+        alpha = round(255 * (progress ** 1.35))
         g_draw.line([(0, y), (1376, y)], fill=(11, 15, 20, min(255, alpha)))
-    
+
     img_rgba = img.convert('RGBA')
     img_final = Image.alpha_composite(img_rgba, grad_overlay).convert('RGB')
     dst = os.path.join(BACKDROPS_DIR, 'backdrop_el_faro_rojo.jpg')
@@ -82,10 +82,10 @@ if bd_cronos_matches:
     grad_overlay = Image.new('RGBA', (1376, 768), (0, 0, 0, 0))
     g_draw = ImageDraw.Draw(grad_overlay)
     for y in range(440, 768):
-        progress = (y - 440) / (768.0 - 440.0)
-        alpha = int(255 * (progress ** 1.35))
+        progress = (y - 440) / (767.0 - 440.0)  # reaches exactly 1.0 at the last row
+        alpha = round(255 * (progress ** 1.35))
         g_draw.line([(0, y), (1376, y)], fill=(11, 15, 20, min(255, alpha)))
-    
+
     img_rgba = img.convert('RGBA')
     img_final = Image.alpha_composite(img_rgba, grad_overlay).convert('RGB')
     dst = os.path.join(BACKDROPS_DIR, 'backdrop_cronos.jpg')

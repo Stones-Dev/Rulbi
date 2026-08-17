@@ -39,9 +39,13 @@ LIVE_RED = (235, 50, 60)
 STAR_GOLD = (255, 196, 38)
 
 INTER_FONT_PATH = os.path.join(FONTS_DIR, 'Inter-Regular.ttf')
+INTER_BOLD_FONT_PATH = os.path.join(FONTS_DIR, 'Inter-Bold.ttf')
 
 def get_font(size):
     return ImageFont.truetype(INTER_FONT_PATH, size)
+
+def get_font_bold(size):
+    return ImageFont.truetype(INTER_BOLD_FONT_PATH, size)
 
 def draw_play_icon(draw, center_x, center_y, size, color):
     """Draw a vector play triangle (no missing font glyphs)"""
@@ -74,7 +78,7 @@ def render_rail(img, active_name="home"):
     draw.line([rail_w, 0, rail_w, img.height], fill=(28, 36, 48), width=1)
 
     # Logo RULBI at top
-    draw.text((rail_w // 2, 36), "RULBI", fill=TEXT_PRIMARY, font=get_font(18), anchor="mm")
+    draw.text((rail_w // 2, 36), "RULBI", fill=TEXT_PRIMARY, font=get_font_bold(18), anchor="mm")
 
     rail_items = [
         "home", "live_tv", "movies", "series", "search", "guide", "favorites", "sources", "settings"
@@ -114,7 +118,7 @@ def render_desktop_home():
     # Row 1: "Continuar viendo" (Landscape cards with progress)
     # ---------------------------------------------------------
     row1_title_y = 36
-    draw.text((cx, row1_title_y), "Continuar viendo", fill=TEXT_PRIMARY, font=get_font(24))
+    draw.text((cx, row1_title_y), "Continuar viendo", fill=TEXT_PRIMARY, font=get_font_bold(24))
 
     card_w, card_h = 390, 220
     card_gap = 20
@@ -162,7 +166,7 @@ def render_desktop_home():
             img.paste(card_grad.convert('RGB'), (px, row1_y + card_h - 70), card_grad.split()[3])
 
             # Title & Subtitle inside card
-            draw.text((px + 14, row1_y + card_h - 48), title, fill=TEXT_PRIMARY, font=get_font(15))
+            draw.text((px + 14, row1_y + card_h - 48), title, fill=TEXT_PRIMARY, font=get_font_bold(15))
             draw.text((px + 14, row1_y + card_h - 28), subtitle, fill=TEXT_SECONDARY, font=get_font(12))
 
             # Progress bar
@@ -175,7 +179,7 @@ def render_desktop_home():
     # Row 2: "Favoritos" (Landscape TV cards)
     # ---------------------------------------------------------
     row2_title_y = row1_y + card_h + 34
-    draw.text((cx, row2_title_y), "Favoritos", fill=TEXT_PRIMARY, font=get_font(24))
+    draw.text((cx, row2_title_y), "Favoritos", fill=TEXT_PRIMARY, font=get_font_bold(24))
 
     row2_y = row2_title_y + 44
     row2_cards = [
@@ -203,14 +207,14 @@ def render_desktop_home():
                 cg_draw.line([(0, gy), (card_w, gy)], fill=(11, 15, 20, alpha))
             img.paste(card_grad.convert('RGB'), (px, row2_y + card_h - 60), card_grad.split()[3])
 
-            draw.text((px + 14, row2_y + card_h - 44), title, fill=TEXT_PRIMARY, font=get_font(15))
+            draw.text((px + 14, row2_y + card_h - 44), title, fill=TEXT_PRIMARY, font=get_font_bold(15))
             draw.text((px + 14, row2_y + card_h - 24), meta, fill=TEXT_SECONDARY, font=get_font(12))
 
     # ---------------------------------------------------------
     # Row 3: "Ahora en tus canales" (Live EPG Cards + EN DIRECTO Badges)
     # ---------------------------------------------------------
     row3_title_y = row2_y + card_h + 34
-    draw.text((cx, row3_title_y), "Ahora en tus canales", fill=TEXT_PRIMARY, font=get_font(24))
+    draw.text((cx, row3_title_y), "Ahora en tus canales", fill=TEXT_PRIMARY, font=get_font_bold(24))
 
     row3_y = row3_title_y + 44
     epg_w = 526
@@ -265,18 +269,20 @@ def render_tv_home():
     pad = 88
 
     # Top Bar: Left Logo "RULBI" in #3D7AFF, Right Clock "21:47" in #8A98A8
-    draw.text((pad, pad), "RULBI", fill=ACCENT_BLUE, font=get_font(32))
-    draw.text((w - pad, pad), "21:47", fill=TEXT_SECONDARY, font=get_font(32), anchor="ra")
+    draw.text((pad, pad), "RULBI", fill=ACCENT_BLUE, font=get_font_bold(32))
+    draw.text((w - pad, pad), "21:47", fill=TEXT_SECONDARY, font=get_font_bold(32), anchor="ra")
 
     # ---------------------------------------------------------
     # Section 1: "Continuar viendo" (3 Cards per row in TV!)
     # ---------------------------------------------------------
     sec1_title_y = pad + 70
-    draw.text((pad, sec1_title_y), "Continuar viendo", fill=TEXT_PRIMARY, font=get_font(36))
+    draw.text((pad, sec1_title_y), "Continuar viendo", fill=TEXT_PRIMARY, font=get_font_bold(36))
 
     card_w, card_h = 540, 310
     card_gap = 32
-    row1_y = sec1_title_y + 60
+    # +76, not +60: at glow_pad=28 (below) the halo top used to land 2px above the
+    # bottom of "Continuar viendo" at 36px bold, clipping the title. +76 leaves 14px clear.
+    row1_y = sec1_title_y + 76
 
     tv_row1 = [
         ("tv_card_el_faro_rojo.jpg", "El Faro Rojo", "24:10 / 1h 52m", 0.65, True), # FOCUSED!
@@ -317,7 +323,7 @@ def render_tv_home():
                 cg_draw.line([(0, gy), (card_w, gy)], fill=(11, 15, 20, alpha))
             img.paste(card_grad.convert('RGB'), (px, row1_y + card_h - 90), card_grad.split()[3])
 
-            draw.text((px + 20, row1_y + card_h - 60), title, fill=TEXT_PRIMARY, font=get_font(22))
+            draw.text((px + 20, row1_y + card_h - 60), title, fill=TEXT_PRIMARY, font=get_font_bold(22))
             draw.text((px + 20, row1_y + card_h - 32), meta, fill=TEXT_SECONDARY, font=get_font(16))
 
             # Progress bar
@@ -330,7 +336,7 @@ def render_tv_home():
     # Section 2: "Favoritos" (3 Landscape cards)
     # ---------------------------------------------------------
     sec2_title_y = row1_y + card_h + 54
-    draw.text((pad, sec2_title_y), "Favoritos", fill=TEXT_PRIMARY, font=get_font(28))
+    draw.text((pad, sec2_title_y), "Favoritos", fill=TEXT_PRIMARY, font=get_font_bold(28))
 
     row2_y = sec2_title_y + 48
     tv_row2 = [
@@ -356,7 +362,7 @@ def render_tv_home():
                 cg_draw.line([(0, gy), (card_w, gy)], fill=(11, 15, 20, alpha))
             img.paste(card_grad.convert('RGB'), (px, row2_y + card_h - 80), card_grad.split()[3])
 
-            draw.text((px + 20, row2_y + card_h - 52), title, fill=TEXT_PRIMARY, font=get_font(22))
+            draw.text((px + 20, row2_y + card_h - 52), title, fill=TEXT_PRIMARY, font=get_font_bold(22))
             draw.text((px + 20, row2_y + card_h - 26), meta, fill=TEXT_SECONDARY, font=get_font(16))
 
     dst = os.path.join(MOCKUPS_DIR, 'mockup_tv_home.png')
@@ -404,7 +410,7 @@ def render_detalle_pelicula():
     meta_y = 440
 
     # Title
-    draw.text((meta_x, meta_y), "El Faro Rojo", fill=TEXT_PRIMARY, font=get_font(34))
+    draw.text((meta_x, meta_y), "El Faro Rojo", fill=TEXT_PRIMARY, font=get_font_bold(34))
 
     # Row with Year, Duration, Rating ★ 8.1, Genres, Badges 4K / 5.1
     tags_y = meta_y + 52
@@ -436,7 +442,7 @@ def render_detalle_pelicula():
     btn1_w, btn1_h = 220, 48
     draw.rounded_rectangle([meta_x, cta_y, meta_x + btn1_w, cta_y + btn1_h], radius=8, fill=ACCENT_BLUE)
     draw_play_icon(draw, meta_x + 34, cta_y + 24, 14, TEXT_ON_ACCENT)
-    draw.text((meta_x + 120, cta_y + 24), "Continuar 24:10", fill=TEXT_ON_ACCENT, font=get_font(16), anchor="mm")
+    draw.text((meta_x + 120, cta_y + 24), "Continuar 24:10", fill=TEXT_ON_ACCENT, font=get_font_bold(16), anchor="mm")
 
     btn2_w = 210
     btn2_x = meta_x + btn1_w + 16
@@ -495,7 +501,7 @@ def render_detalle_serie():
     meta_x = poster_x + pw + 40
     meta_y = 250
 
-    draw.text((meta_x, meta_y), "Cronos", fill=TEXT_PRIMARY, font=get_font(34))
+    draw.text((meta_x, meta_y), "Cronos", fill=TEXT_PRIMARY, font=get_font_bold(34))
 
     tags_y = meta_y + 48
     # Frame 44:2 states "3 Temporadas"
@@ -515,7 +521,7 @@ def render_detalle_serie():
     btn_w, btn_h = 220, 44
     draw.rounded_rectangle([meta_x, cta_y, meta_x + btn_w, cta_y + btn_h], radius=8, fill=ACCENT_BLUE)
     draw_play_icon(draw, meta_x + 32, cta_y + 22, 12, TEXT_ON_ACCENT)
-    draw.text((meta_x + 115, cta_y + 22), "Continuar T2 E5", fill=TEXT_ON_ACCENT, font=get_font(15), anchor="mm")
+    draw.text((meta_x + 115, cta_y + 22), "Continuar T2 E5", fill=TEXT_ON_ACCENT, font=get_font_bold(15), anchor="mm")
 
     # Season selector chips (3 chips matching "3 Temporadas")
     chips_y = cta_y + 60
@@ -535,7 +541,7 @@ def render_detalle_serie():
 
     # 4. Approved 5 Episodes List
     ep_section_y = poster_y + ph + 32
-    draw.text((poster_x, ep_section_y), "Episodios — Temporada 2", fill=TEXT_PRIMARY, font=get_font(22))
+    draw.text((poster_x, ep_section_y), "Episodios — Temporada 2", fill=TEXT_PRIMARY, font=get_font_bold(22))
 
     approved_episodes = [
         ("cronos_ep01_ruido_de_fondo.jpg", "1. Ruido de fondo", "42 min", "Un fallo en el colisionador cuántico abre una brecha temporal imprevista.", 1.0),
@@ -567,7 +573,7 @@ def render_detalle_serie():
                 draw.rectangle([poster_x + 4, pb_y, poster_x + 4 + int(thumb_w * prog), pb_y + 4], fill=ACCENT_BLUE)
 
         tx = poster_x + thumb_w + 20
-        draw.text((tx, ey + 10), ep_title, fill=TEXT_PRIMARY, font=get_font(15))
+        draw.text((tx, ey + 10), ep_title, fill=TEXT_PRIMARY, font=get_font_bold(15))
         draw.text((tx + 260, ey + 10), f"•   {ep_dur}", fill=TEXT_SECONDARY, font=get_font(14))
         draw.text((tx, ey + 34), ep_desc, fill=TEXT_SECONDARY, font=get_font(13))
 
