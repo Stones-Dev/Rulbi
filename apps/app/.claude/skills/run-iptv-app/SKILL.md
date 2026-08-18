@@ -62,6 +62,11 @@ $app = Start-IptvApp          # builds if needed, launches, waits for the window
 $app.Hwnd                     # save this — every other call needs it
 $app.ProcessId                # save this too — for Stop-IptvApp at the end
 
+if (-not (Confirm-IptvForeground -Hwnd $app.Hwnd)) {
+    # Something else (the human's actual work) has real foreground focus.
+    # Stop here — see Gotchas. Do not proceed to Send-IptvClick.
+}
+
 Save-IptvScreenshot -Hwnd $app.Hwnd -OutFile "C:\tmp\shot.png"
 ```
 
@@ -83,6 +88,7 @@ loop; there is no shortcut around actually looking at each frame.
 |---|---|
 | `Start-IptvApp [-Rebuild]` | Builds (if needed) and launches the app, waits up to 15s for its window, returns `{Hwnd, ProcessId}` |
 | `Stop-IptvApp -ProcessId <id>` | Kills the app |
+| `Confirm-IptvForeground -Hwnd <h>` | `$true` only if `Hwnd` genuinely has OS foreground focus right now — call before driving anything, see Gotchas |
 | `Save-IptvScreenshot -Hwnd <h> -OutFile <path>` | Brings the window to front, captures **the window's own bounds** (title bar included) to a PNG |
 | `Send-IptvClick -Hwnd <h> -X <n> -Y <n> [-SettleMs 500]` | Real left-click at window-relative pixel coordinates (`SendInput`, not the legacy `mouse_event`) |
 | `Send-IptvKeys -Hwnd <h> -Keys <s> [-SettleMs 500]` | Real keystrokes via `SendKeys` syntax (`"^2"` = Ctrl+2, `"{ENTER}"`, `"{ESC}"`) |
@@ -108,6 +114,23 @@ flutter test          # from apps/app/ — just this package
 ---
 
 ## Gotchas
+
+- **Check whose window is actually in the foreground before trusting a
+  screenshot — this driver shares the one physical screen with whatever
+  the human is doing.** `SetForegroundWindow` can silently fail (Windows'
+  foreground-lock protection: a background process generally can't steal
+  focus from whatever app the user is actively using) while still
+  returning `$true` and moving the literal OS cursor — `Save-IptvScreenshot`
+  will then happily save a screenshot of the human's actual foreground
+  app (their browser, their game, whatever) at the coordinates of our
+  window, not our window. Caught live: the human was playing a game:
+  ```powershell
+  [IptvFg2]::GetForegroundWindow()   # returned the game's HWND, not ours
+  ```
+  Before driving anything — and especially before any `Send-IptvClick`,
+  which could misclick into whatever's actually focused — call
+  `Confirm-IptvForeground -Hwnd $hwnd`. If it returns `$false`, **stop**:
+  don't force focus over a human's active session. Wait, or ask.
 
 - **No UI Automation tree — don't try `AutomationElement.FindFirst` by
   name.** `[System.Windows.Automation.AutomationElement]::FromHandle($hwnd)`

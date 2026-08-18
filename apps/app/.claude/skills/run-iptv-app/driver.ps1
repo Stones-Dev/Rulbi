@@ -32,6 +32,8 @@ public class IptvWin32 {
     public static extern bool SetCursorPos(int X, int Y);
     [DllImport("user32.dll")]
     public static extern void mouse_event(uint dwFlags, uint dx, uint dy, uint dwData, UIntPtr dwExtraInfo);
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetForegroundWindow();
 }
 "@
 }
@@ -149,6 +151,22 @@ function Send-IptvClick {
     Start-Sleep -Milliseconds 60
     [IptvWin32]::mouse_event($script:MOUSEEVENTF_LEFTUP, 0, 0, 0, [UIntPtr]::Zero)
     Start-Sleep -Milliseconds $SettleMs
+}
+
+<#
+.SYNOPSIS
+`$true` only if `Hwnd` genuinely holds OS foreground focus right now.
+Call this BEFORE driving anything (clicks especially) — `SetForegroundWindow`
+can silently fail (Windows' foreground-lock protection) while still
+returning success and moving the cursor, leaving whatever the human is
+actually using as the real foreground window. See Gotchas in SKILL.md —
+caught live once with a human mid-game. If this returns `$false`, stop:
+don't force focus over an active human session.
+#>
+function Confirm-IptvForeground {
+    param([Parameter(Mandatory)][IntPtr]$Hwnd)
+    Set-IptvForeground -Hwnd $Hwnd
+    [IptvWin32]::GetForegroundWindow() -eq $Hwnd
 }
 
 function Save-IptvScreenshot {
