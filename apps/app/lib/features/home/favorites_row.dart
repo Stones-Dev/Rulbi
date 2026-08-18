@@ -1,17 +1,19 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:iptv_core/iptv_core.dart';
 import 'package:iptv_tokens/iptv_tokens.dart';
 
 import '../../l10n/app_localizations.dart';
-import '../../widgets/poster_fallback.dart';
+import '../../widgets/media_card.dart';
 
 /// Fila "Favoritos" de Home (ui-spec §2.2, S5 · Ola 2) — de solo lectura:
 /// el *drag* para reordenar vive en la sección Favoritos
 /// (`FavoritesScreen`), no aquí (arrastrar entraría en conflicto con el
-/// scroll horizontal de esta fila). Mismo patrón visual de tarjeta que
-/// `ContinueWatchingRow` (Figma TV Shell), sin barra de progreso — un
-/// favorito no tiene "cuánto queda".
+/// scroll horizontal de esta fila).
+///
+/// S6.5 (Implementación Desktop rediseñado): mismo `MediaCard` que
+/// `ContinueWatchingRow` — el frame canónico `38:3` ya fusionado en Figma
+/// muestra tarjetas 220×124 con título superpuesto también en esta fila,
+/// a diferencia del recorte cuadrado 174×174 sin título de antes de S6.5.
 class FavoritesRow extends StatelessWidget {
   const FavoritesRow({super.key, required this.channels, this.onTap});
 
@@ -35,54 +37,24 @@ class FavoritesRow extends StatelessWidget {
         ),
         const SizedBox(height: IptvSpacing.md),
         SizedBox(
-          height: 174,
+          height: MediaCard.height,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: channels.length,
             separatorBuilder: (_, _) => const SizedBox(width: IptvSpacing.lg),
-            itemBuilder: (context, index) => _FavoriteCard(
-              channel: channels[index],
-              onTap: onTap == null ? null : () => onTap!(channels[index]),
-            ),
+            itemBuilder: (context, index) {
+              final channel = channels[index];
+              return MediaCard(
+                itemKey: Key('favoritesRow.${channel.ref.serialized}'),
+                imageUrl: channel.logo,
+                fallbackLabel: channel.name,
+                title: channel.name,
+                onTap: onTap == null ? null : () => onTap!(channel),
+              );
+            },
           ),
         ),
       ],
-    );
-  }
-}
-
-class _FavoriteCard extends StatelessWidget {
-  const _FavoriteCard({required this.channel, this.onTap});
-
-  final Channel channel;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final logo = channel.logo;
-
-    return InkWell(
-      key: Key('favoritesRow.${channel.ref.serialized}'),
-      onTap: onTap,
-      child: SizedBox(
-        width: 174,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(IptvSpacing.radius),
-          child: logo == null
-              ? PosterFallback(name: channel.name, size: 174)
-              : CachedNetworkImage(
-                  imageUrl: logo.toString(),
-                  width: 174,
-                  height: 174,
-                  fit: BoxFit.cover,
-                  memCacheWidth: 348,
-                  placeholder: (_, _) =>
-                      PosterFallback(name: channel.name, size: 174),
-                  errorWidget: (_, _, _) =>
-                      PosterFallback(name: channel.name, size: 174),
-                ),
-        ),
-      ),
     );
   }
 }

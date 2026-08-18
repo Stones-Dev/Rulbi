@@ -617,6 +617,10 @@
   "@homeNowOnYourChannelsTitle": {
     "description": "Home desktop row header for the EPG now/next row (ui-spec §2.2: \"Ahora en tus canales\"), S5 · Ola 2."
   },
+  "homeLiveBadge": "LIVE",
+  "@homeLiveBadge": {
+    "description": "\"Now on your channels\" card badge (Figma frame 38:3, Row/AhoraEnTusCanales, node LiveBadge: \"EN DIRECTO\"), S6.5 Implementación Desktop rediseñado — corrected to accent blue in the canonical frame, not the red used in an earlier draft mockup (see 48:2 caption 54:35)."
+  },
 
   "favoritesEmptyTitle": "No favorites yet",
   "@favoritesEmptyTitle": {
