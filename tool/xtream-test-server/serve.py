@@ -71,6 +71,24 @@ def _start_image_server() -> None:
     _LOGGER.info("Servidor de imágenes listo en %s (docs/design-assets/tv_cards+posters)", IMAGES_BASE_URL)
 
 
+class _SerieWithBackdrop(XTreamCodeSerie):
+    """`xtreamcodeserver==1.1.0` no expone forma de fijar `backdrop_path`
+    en una serie (`XTreamCodeVod.set_backdrop_url` existe; el equivalente
+    en `XTreamCodeSerie` no — `get_serie_json` hardcodea `"backdrop_path":
+    []`). Se sobreescribe aquí en vez de tocar la dependencia — es
+    tooling de desarrollo, no producto (S6.5, paso 7b).
+    """
+
+    def __init__(self, *args, backdrop_url: str | None = None, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.m_backdrop_url = backdrop_url
+
+    def get_serie_json(self, num: int | None = None) -> dict:
+        ret = super().get_serie_json(num)
+        ret["backdrop_path"] = [self.m_backdrop_url]
+        return ret
+
+
 def build_catalog(entry_provider: XTreamCodeEntryMemoryProvider) -> None:
     """Catálogo con los títulos canónicos del frame Figma `38:3` (Desktop /
     Home), no genéricos — así una captura de la Home real es comparable 1:1
@@ -115,27 +133,51 @@ def build_catalog(entry_provider: XTreamCodeEntryMemoryProvider) -> None:
         "sangre_fria": "Sangre Fría",
         "8_bits": "8 Bits",
     }
+    # Backdrop a sangre del detalle VOD (S6.5, paso 7b, frame Figma `43:2`)
+    # — solo `el_faro_rojo` tiene asset propio en
+    # `docs/design-assets/backdrops/`; el resto de títulos deja
+    # `backdrop_path` vacío a propósito (`XTreamCodeVod` por defecto), sin
+    # inventar un asset — `DetailHero` cae entonces a `coverUrl`
+    # difuminado, el comportamiento correcto sin backdrop real.
+    backdrops = {"el_faro_rojo": "backdrop_el_faro_rojo.jpg"}
+
     vod_category = XTreamCodeCategory(name="Películas sintéticas", category_type=XTreamCodeType.VOD)
     for slug in continue_watching + favorites:
-        vod_category.add_entry(
-            XTreamCodeVod(
-                name=titles[slug],
-                extension=".mp4",
-                stream=XTreamCodeFileSystemStream(_path("vod", "movie.mp4")),
-                cover_url=_image_url("tv_cards", f"tv_card_{slug}.jpg"),
-                description="Contenido sintético (testsrc2 + tonos) para verificar selector de pistas y seek.",
-            )
+        vod = XTreamCodeVod(
+            name=titles[slug],
+            extension=".mp4",
+            stream=XTreamCodeFileSystemStream(_path("vod", "movie.mp4")),
+            cover_url=_image_url("tv_cards", f"tv_card_{slug}.jpg"),
+            description="Contenido sintético (testsrc2 + tonos) para verificar selector de pistas y seek.",
         )
+        if slug in backdrops:
+            vod.set_backdrop_url(_image_url("backdrops", backdrops[slug]))
+        vod_category.add_entry(vod)
     entry_provider.add_category(vod_category)
 
     # --- Series: Cronos S02, 2 temporadas x 2 episodios ---
     # >=2 episodios por temporada a propósito: hace falta poder distinguir
-    # "Continuar T1E2" de una vuelta a T1E1. Sin arte de episodio propio en
-    # el repo (docs/design-assets no trae cronos_epNN.*) — movie_image se
-    # deja vacío a propósito, no se inventa un asset; XtreamEpisode.stillUrl
-    # (paso 8) cae a su fallback, que es el comportamiento correcto sin él.
+    # "Continuar T1E2" de una vuelta a T1E1. Backdrop de serie (S6.5, paso
+    # 7b/8, frame Figma `44:2`) vía `_SerieWithBackdrop` — la librería no
+    # trae forma nativa de fijarlo, ver esa clase más arriba. Miniaturas de
+    # episodio (`XtreamEpisode.stillUrl`, paso 8) desde
+    # `docs/design-assets/episodes/cronos_epNN_*.jpg` — 4 de los 5 stills
+    # aprobados cubren los 4 episodios de este catálogo sintético (2
+    # temporadas × 2), el quinto (`cronos_ep05_lo_que_queda.jpg`) queda sin
+    # usar aquí a propósito, no hay un quinto episodio que lo pida.
+    episode_stills = [
+        "cronos_ep01_ruido_de_fondo.jpg",
+        "cronos_ep02_el_eco.jpg",
+        "cronos_ep03_frecuencia_muerta.jpg",
+        "cronos_ep04_umbral.jpg",
+    ]
     series_category = XTreamCodeCategory(name="Series sintéticas", category_type=XTreamCodeType.SERIE)
-    serie = XTreamCodeSerie(name="Cronos S02", cover_url=_image_url("tv_cards", "tv_card_cronos_s02.jpg"))
+    serie = _SerieWithBackdrop(
+        name="Cronos S02",
+        cover_url=_image_url("tv_cards", "tv_card_cronos_s02.jpg"),
+        backdrop_url=_image_url("backdrops", "backdrop_cronos.jpg"),
+    )
+    still_index = 0
     for season_num in (1, 2):
         season = XTreamCodeSeason(
             season_number=season_num,
@@ -152,8 +194,10 @@ def build_catalog(entry_provider: XTreamCodeEntryMemoryProvider) -> None:
                     stream=XTreamCodeFileSystemStream(
                         _path("series", f"s{season_num:02d}e{episode_num:02d}.mkv")
                     ),
+                    cover_url=_image_url("episodes", episode_stills[still_index]),
                 )
             )
+            still_index += 1
         serie.add_season(season)
     series_category.add_entry(serie)
     entry_provider.add_category(series_category)

@@ -31,6 +31,8 @@ RUN pip install --no-cache-dir xtreamcodeserver==1.1.0
 COPY --from=fixtures /media /media
 COPY docs/design-assets/tv_cards /images/tv_cards
 COPY docs/design-assets/posters /images/posters
+COPY docs/design-assets/backdrops /images/backdrops
+COPY docs/design-assets/episodes /images/episodes
 COPY tool/xtream-test-server/serve.py /app/serve.py
 WORKDIR /app
 
