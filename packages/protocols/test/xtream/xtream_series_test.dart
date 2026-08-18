@@ -30,6 +30,11 @@ void main() {
 
       final info = (result as XtreamOk<XtreamSeriesInfo>).value;
       expect(info.info.name, 'Serie de Prueba');
+      expect(
+        info.info.backdropUrl,
+        isNull,
+        reason: 'fixture real trae backdrop_path: [] — panel sin backdrop (S6.5, paso 7)',
+      );
       expect(info.seasons, hasLength(1));
       expect(
         info.seasons.single.seasonNumber,

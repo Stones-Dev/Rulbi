@@ -80,15 +80,79 @@ void main() {
       expect(series.coverUrl, isNull);
     });
 
-    test('backdrop_path: [] y [null] no rompen el parseo (campo no modelado)', () {
+    test('backdrop_path: array de URLs -> primera entrada (forma habitual de Xtream)', () {
+      final series = XtreamSeries.fromJson({
+        'series_id': 1,
+        'name': 'X',
+        'backdrop_path': ['https://example.com/backdrop1.jpg', 'https://example.com/backdrop2.jpg'],
+      });
+      final vod = XtreamVodInfo.fromJson({
+        'info': {
+          'name': 'X',
+          'backdrop_path': ['https://example.com/backdrop1.jpg'],
+        },
+        'movie_data': {'stream_id': 1},
+      });
+
+      expect(series.backdropUrl, 'https://example.com/backdrop1.jpg');
+      expect(vod.backdropUrl, 'https://example.com/backdrop1.jpg');
+    });
+
+    test('backdrop_path: string suelto en vez de array (dialecto real de algún panel)', () {
+      final series = XtreamSeries.fromJson({
+        'series_id': 1,
+        'name': 'X',
+        'backdrop_path': 'https://example.com/backdrop.jpg',
+      });
+
+      expect(series.backdropUrl, 'https://example.com/backdrop.jpg');
+    });
+
+    test('backdrop_path: [] y [null] -> backdropUrl null, sin lanzar (fixture real de T1.1)', () {
       expect(
         () => XtreamSeries.fromJson({'series_id': 1, 'name': 'X', 'backdrop_path': <Object?>[]}),
         returnsNormally,
       );
-      expect(
-        () => XtreamSeries.fromJson({'series_id': 1, 'name': 'X', 'backdrop_path': <Object?>[null]}),
-        returnsNormally,
-      );
+      final vacio = XtreamSeries.fromJson({'series_id': 1, 'name': 'X', 'backdrop_path': <Object?>[]});
+      final soloNull = XtreamSeries.fromJson({
+        'series_id': 1,
+        'name': 'X',
+        'backdrop_path': <Object?>[null],
+      });
+
+      expect(vacio.backdropUrl, isNull);
+      expect(soloNull.backdropUrl, isNull);
+    });
+
+    test('backdrop_path: array con null intercalado antes de la primera URL real', () {
+      final series = XtreamSeries.fromJson({
+        'series_id': 1,
+        'name': 'X',
+        'backdrop_path': [null, '', 'https://example.com/backdrop.jpg'],
+      });
+
+      expect(series.backdropUrl, 'https://example.com/backdrop.jpg');
+    });
+
+    test('backdrop_path: clave ausente -> backdropUrl null, sin lanzar', () {
+      final series = XtreamSeries.fromJson({'series_id': 1, 'name': 'X'});
+      final vod = XtreamVodInfo.fromJson({
+        'info': {'name': 'X'},
+        'movie_data': {'stream_id': 1},
+      });
+
+      expect(series.backdropUrl, isNull);
+      expect(vod.backdropUrl, isNull);
+    });
+
+    test('backdrop_path: valor no-URL se conserva tal cual (mismo criterio que cover_url, sin validar)', () {
+      final series = XtreamSeries.fromJson({
+        'series_id': 1,
+        'name': 'X',
+        'backdrop_path': ['esto no es una URL'],
+      });
+
+      expect(series.backdropUrl, 'esto no es una URL');
     });
 
     test('direct_source vacío ("") -> sin host saneado', () {
