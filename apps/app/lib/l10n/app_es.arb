@@ -182,5 +182,7 @@
   "contentDetailContinueAction": "Continuar ({time})",
   "seriesDetailContinueEpisode": "Continuar T{season}E{episode}",
   "seriesDetailSeasonLabel": "Temporada {season}",
-  "vodDetailDurationMinutes": "{count, plural, =1{1 min} other{{count} min}}"
+  "vodDetailDurationMinutes": "{count, plural, =1{1 min} other{{count} min}}",
+  "vodDetailDurationHoursMinutes": "{hours}h {minutes}m",
+  "seriesDetailSeasonCount": "{count, plural, =1{1 temporada} other{{count} temporadas}}"
 }

@@ -24,9 +24,15 @@ import 'watch_state_providers.dart';
 /// para la temporada seleccionada — mismo criterio que `CatalogScreen`
 /// con `_selectedCategoryId`.
 class SeriesDetailScreen extends ConsumerStatefulWidget {
-  const SeriesDetailScreen({super.key, required this.channel});
+  const SeriesDetailScreen({super.key, required this.channel, this.heroTag});
 
   final Channel channel;
+
+  /// Ver docstring de `VodDetailScreen.heroTag` — mismo propósito. Cableado
+  /// al `DetailHero` en el paso 8 (S6.5); el constructor lo acepta ya
+  /// desde el paso 7e para que `openChannel` pueda propagarlo sin esperar
+  /// a que la ficha de serie tenga su propio rediseño.
+  final String? heroTag;
 
   @override
   ConsumerState<SeriesDetailScreen> createState() => _SeriesDetailScreenState();

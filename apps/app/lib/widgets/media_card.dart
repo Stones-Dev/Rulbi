@@ -32,6 +32,7 @@ class MediaCard extends StatefulWidget {
     this.footer,
     this.onTap,
     this.semanticLabel,
+    this.heroTag,
   });
 
   /// Tamaño exacto del frame canónico `Card/*` de `38:3` — único en toda la
@@ -82,6 +83,14 @@ class MediaCard extends StatefulWidget {
   /// `null` usa [fallbackLabel].
   final String? semanticLabel;
 
+  /// Propaga la transición `Hero` hacia el póster de la ficha de detalle
+  /// (S6.5 paso 7e, nodo Figma `43:15`) — `null` no envuelve la imagen en
+  /// `Hero` (no todos los orígenes de `MediaCard` navegan a una ficha con
+  /// póster que la reciba, p. ej. "Continuar viendo" abre el reproductor
+  /// directo). Cuando se usa, debe ser la misma cadena que recibe
+  /// `VodDetailScreen.heroTag`/`SeriesDetailScreen.heroTag` en el destino.
+  final String? heroTag;
+
   @override
   State<MediaCard> createState() => _MediaCardState();
 }
@@ -112,6 +121,12 @@ class _MediaCardState extends State<MediaCard> {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final tag = widget.heroTag;
+    final image = _Image(
+      imageUrl: widget.imageUrl,
+      fallbackLabel: widget.fallbackLabel,
+      fallbackIcon: widget.fallbackIcon,
+    );
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hovering = true),
@@ -138,7 +153,7 @@ class _MediaCardState extends State<MediaCard> {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  _Image(imageUrl: widget.imageUrl, fallbackLabel: widget.fallbackLabel, fallbackIcon: widget.fallbackIcon),
+                  tag != null ? Hero(tag: tag, child: image) : image,
                   if (widget.title != null || widget.footer != null) _Scrim(),
                   if (widget.badge != null)
                     Positioned(top: IptvSpacing.xs, left: IptvSpacing.xs, child: widget.badge!),

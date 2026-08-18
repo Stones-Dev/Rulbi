@@ -846,5 +846,26 @@
         "type": "int"
       }
     }
+  },
+  "vodDetailDurationHoursMinutes": "{hours}h {minutes}m",
+  "@vodDetailDurationHoursMinutes": {
+    "description": "Total runtime of an hour or more, shown in VOD/Series detail (ui-spec §2.6, Figma frame 43:2: \"1h 52m\") — S6.5 paso 7, replaces the plain-minutes format for anything ≥1h.",
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "seriesDetailSeasonCount": "{count, plural, =1{1 season} other{{count} seasons}}",
+  "@seriesDetailSeasonCount": {
+    "description": "Season count in the Series detail meta line (ui-spec §2.7, Figma frame 44:2: \"3 temporadas\") — S6.5 paso 8, derived from episodesBySeason.length (XtreamSeriesInfo.seasons isn't used for grouping, see its docstring).",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
 }

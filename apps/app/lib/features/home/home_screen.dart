@@ -129,6 +129,7 @@ class _HomeContentState extends ConsumerState<_HomeContent> {
                           queue: liveIndex < 0
                               ? null
                               : PlaybackQueue(items: liveChannels, index: liveIndex),
+                          heroTag: 'favoritesRow.${channel.ref.serialized}',
                         );
                       },
                     ),

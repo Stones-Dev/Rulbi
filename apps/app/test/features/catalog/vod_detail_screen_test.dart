@@ -8,6 +8,7 @@ import 'package:iptv_app/features/catalog/catalog_info_providers.dart';
 import 'package:iptv_app/features/catalog/vod_detail_screen.dart';
 import 'package:iptv_app/features/sources/source_providers.dart';
 import 'package:iptv_app/l10n/app_localizations.dart';
+import 'package:iptv_app/widgets/detail_hero.dart';
 import 'package:iptv_core/iptv_core.dart';
 
 import '../../_helpers/fake_favorites_repository.dart';
@@ -84,6 +85,7 @@ void main() {
     String rating = '8.9',
     String releaseDate = '2023-07-21',
     int durationSecs = 10800,
+    String? backdropUrl,
   }) => jsonEncode({
     'info': {
       'plot': plot,
@@ -92,6 +94,7 @@ void main() {
       'releasedate': releaseDate,
       'duration_secs': durationSecs,
       'cover_big': 'http://panel.example.com/covers/oppenheimer.jpg',
+      if (backdropUrl != null) 'backdrop_path': [backdropUrl],
     },
     'movie_data': {'stream_id': '42', 'name': name, 'category_id': '1'},
   });
@@ -107,7 +110,9 @@ void main() {
 
     expect(find.text('Oppenheimer'), findsWidgets);
     expect(find.textContaining('2023'), findsOneWidget);
-    expect(find.textContaining('180 min'), findsOneWidget);
+    // S6.5 paso 7: "180 min" -> "3h 0m" (formatDurationHoursMinutes, frame
+    // Figma 43:2 usa "1h 52m", no minutos sueltos para duraciones ≥1h).
+    expect(find.textContaining('3h 0m'), findsOneWidget);
     expect(find.textContaining('Drama, Historia'), findsOneWidget);
     expect(find.textContaining('★ 8.9'), findsOneWidget);
     expect(find.text('Historia del físico J. Robert Oppenheimer.'), findsOneWidget);
@@ -181,6 +186,102 @@ void main() {
     await tester.pumpWidget(wrap(setup.container, channel));
     await tester.pumpAndSettle();
 
-    expect(find.widgetWithText(ElevatedButton, 'Play'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Play'), findsOneWidget);
+  });
+
+  // S6.5 paso 7: DetailHero (backdrop, botón de volver, favorito animado).
+  testWidgets('backdrop_path de la ficha se propaga a DetailHero.backdropUrl', (tester) async {
+    final setup = buildContainer(source: xtreamSource());
+    setup.transport.respond(
+      'get_vod_info',
+      vodInfoBody(backdropUrl: 'http://panel.example.com/backdrops/oppenheimer.jpg'),
+    );
+    final channel = vodChannel();
+
+    await primeVodInfo(tester, setup.container, channel);
+    await tester.pumpWidget(wrap(setup.container, channel));
+    await tester.pumpAndSettle();
+
+    final hero = tester.widget<DetailHero>(find.byType(DetailHero));
+    expect(hero.backdropUrl, 'http://panel.example.com/backdrops/oppenheimer.jpg');
+  });
+
+  testWidgets('sin backdrop_path: DetailHero.backdropUrl es null (cae a coverUrl difuminado)', (
+    tester,
+  ) async {
+    final setup = buildContainer(source: xtreamSource());
+    setup.transport.respond('get_vod_info', vodInfoBody());
+    final channel = vodChannel();
+
+    await primeVodInfo(tester, setup.container, channel);
+    await tester.pumpWidget(wrap(setup.container, channel));
+    await tester.pumpAndSettle();
+
+    final hero = tester.widget<DetailHero>(find.byType(DetailHero));
+    expect(hero.backdropUrl, isNull);
+    expect(hero.coverUrl, 'http://panel.example.com/covers/oppenheimer.jpg');
+  });
+
+  testWidgets('Key(contentDetail.back) hace pop de la ficha', (tester) async {
+    final setup = buildContainer(source: xtreamSource());
+    setup.transport.respond('get_vod_info', vodInfoBody());
+    final channel = vodChannel();
+    await primeVodInfo(tester, setup.container, channel);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: setup.container,
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: Center(
+                child: ElevatedButton(
+                  onPressed: () => Navigator.of(
+                    context,
+                  ).push(MaterialPageRoute<void>(builder: (_) => VodDetailScreen(channel: channel))),
+                  child: const Text('abrir'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('abrir'));
+    await tester.pumpAndSettle();
+    expect(find.byType(VodDetailScreen), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('contentDetail.back')));
+    await tester.pumpAndSettle();
+    expect(find.byType(VodDetailScreen), findsNothing);
+  });
+
+  testWidgets('el toggle de favorito no rompe el árbol durante la animación de rebote', (tester) async {
+    final setup = buildContainer(source: xtreamSource());
+    setup.transport.respond('get_vod_info', vodInfoBody());
+    final channel = vodChannel();
+
+    await primeVodInfo(tester, setup.container, channel);
+    await tester.pumpWidget(wrap(setup.container, channel));
+    await tester.pumpAndSettle();
+
+    final favoriteKey = Key('contentDetail.favorite.${channel.ref.serialized}');
+    // El backdrop+póster (S6.5 paso 7) empuja el CTA fuera del viewport
+    // por defecto del test (800×600) — sin esto, `tap()` avisa de un hit
+    // test fuera de pantalla (sigue entregando el evento, pero es ruido
+    // evitable, mismo motivo que `pumpSeries` amplía la superficie).
+    await tester.ensureVisible(find.byKey(favoriteKey));
+    await tester.tap(find.byKey(favoriteKey));
+    // A medio camino de la animación de rebote (200ms) — el árbol no debe
+    // lanzar ni el botón debe desaparecer mientras `_scale` está en 1.3.
+    await tester.pump(const Duration(milliseconds: 80));
+    expect(find.byKey(favoriteKey), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
   });
 }

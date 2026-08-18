@@ -195,9 +195,15 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(VodDetailScreen), findsOneWidget);
+    // S6.5 paso 7: sin AppBar (DetailHero con backdrop a sangre en su
+    // lugar) — el título vive dentro de la propia pantalla, no de un
+    // AppBar que ya no existe. `findsWidgets` (no `findsOneWidget`): sin
+    // cover_url en este canal sintético, el póster cae a `PosterFallback`,
+    // que también pinta el nombre como texto — dos apariciones legítimas,
+    // no una regresión.
     expect(
-      find.descendant(of: find.byType(AppBar), matching: find.text('Pelicula 001')),
-      findsOneWidget,
+      find.descendant(of: find.byType(VodDetailScreen), matching: find.text('Pelicula 001')),
+      findsWidgets,
     );
   });
 
@@ -209,9 +215,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(SeriesDetailScreen), findsOneWidget);
+    // `findsWidgets`, mismo motivo que en el caso de Película arriba.
     expect(
-      find.descendant(of: find.byType(AppBar), matching: find.text('Serie 001')),
-      findsOneWidget,
+      find.descendant(of: find.byType(SeriesDetailScreen), matching: find.text('Serie 001')),
+      findsWidgets,
     );
   });
 }

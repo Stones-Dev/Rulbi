@@ -49,6 +49,10 @@ class FavoritesRow extends StatelessWidget {
                 imageUrl: channel.logo,
                 fallbackLabel: channel.name,
                 title: channel.name,
+                // Mismo string que `itemKey.value` — `openChannel`
+                // propaga este tag hasta `VodDetailScreen`/
+                // `SeriesDetailScreen` (S6.5 paso 7e).
+                heroTag: 'favoritesRow.${channel.ref.serialized}',
                 onTap: onTap == null ? null : () => onTap!(channel),
               );
             },
