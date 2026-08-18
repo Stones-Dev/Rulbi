@@ -18,6 +18,7 @@ final class XtreamSeries {
     this.genre,
     this.releaseDate,
     this.coverUrl,
+    this.backdropUrl,
     this.rating,
   });
 
@@ -30,6 +31,10 @@ final class XtreamSeries {
   final String? genre;
   final String? releaseDate;
   final String? coverUrl;
+
+  /// Primera URL de `backdrop_path` (S6.5, paso 7/8 — hero a sangre del
+  /// detalle de serie, frame Figma `44:2`). `null` si el panel no lo trae.
+  final String? backdropUrl;
   final double? rating;
 
   static XtreamSeries fromJson(Map<String, Object?> json) => XtreamSeries(
@@ -44,6 +49,7 @@ final class XtreamSeries {
       asFlexibleString(json['releaseDate']) ?? asFlexibleString(json['releasedate']),
     ),
     coverUrl: nonEmptyOrNull(asFlexibleString(json['cover'])),
+    backdropUrl: asFlexibleFirstUrl(json['backdrop_path']),
     rating: asFlexibleDouble(json['rating']),
   );
 

@@ -76,6 +76,29 @@ List<Object?> asFlexibleList(Object? value) => switch (value) {
   _ => const [],
 };
 
+/// `backdrop_path` de `get_vod_info`/`get_series_info`/`get_series`: la
+/// forma habitual de Xtream es un `List` de URLs (a veces con entradas
+/// `null` intercaladas — fixture real de T1.1, `dialect_o0zz`), pero
+/// algún panel lo manda como un `String` suelto. Se toma la primera
+/// entrada no vacía en cualquiera de las dos formas; `[]`, `[null]` o la
+/// clave ausente → `null`, nunca lanza. Sin validar que el resultado sea
+/// una URL bien formada — mismo criterio que `cover_url`/`stream_icon` en
+/// este fichero: el string se pasa tal cual, la validación (si hace
+/// falta) es cosa de quien lo consuma, no del parseo.
+String? asFlexibleFirstUrl(Object? value) {
+  // `nonEmptyOrNull` vive en `xtream_stream.dart`, que ya importa este
+  // fichero — inline aquí en vez de crear un import circular por un
+  // helper de una línea.
+  String? nonEmpty(String? s) => (s == null || s.isEmpty) ? null : s;
+
+  return switch (value) {
+    null => null,
+    String s => nonEmpty(s),
+    List l => l.map((e) => nonEmpty(asFlexibleString(e))).firstWhere((e) => e != null, orElse: () => null),
+    _ => null,
+  };
+}
+
 /// `direct_source` (campo real de `get_live_streams`/`get_vod_streams`,
 /// vacío en los fixtures de T1.1 pero no siempre en paneles reales) es una
 /// URL alternativa que puede llevar sus propias credenciales embebidas —

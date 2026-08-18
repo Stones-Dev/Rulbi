@@ -65,6 +65,7 @@ final class XtreamVodInfo {
     this.genre,
     this.releaseDate,
     this.coverUrl,
+    this.backdropUrl,
     this.durationSecs,
     this.rating,
   });
@@ -79,6 +80,11 @@ final class XtreamVodInfo {
   final String? genre;
   final String? releaseDate;
   final String? coverUrl;
+
+  /// Primera URL de `info.backdrop_path` (S6.5, paso 7 — hero a sangre del
+  /// detalle VOD, frame Figma `43:2`). `null` si el panel no lo trae —
+  /// `DetailHero` cae entonces a [coverUrl] difuminado.
+  final String? backdropUrl;
   final int? durationSecs;
   final double? rating;
 
@@ -103,6 +109,7 @@ final class XtreamVodInfo {
       coverUrl: nonEmptyOrNull(
         asFlexibleString(info['cover_big']) ?? asFlexibleString(info['movie_image']),
       ),
+      backdropUrl: asFlexibleFirstUrl(info['backdrop_path']),
       durationSecs: asFlexibleIntOrNull(info['duration_secs']),
       rating: asFlexibleDouble(info['rating']),
     );
