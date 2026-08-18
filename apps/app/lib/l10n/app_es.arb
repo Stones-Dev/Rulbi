@@ -172,6 +172,11 @@
   "playerBufferingLabel": "Cargando…",
   "playerUnplayableMessage": "Este contenido no se puede reproducir ahora mismo.",
   "playerAspectRatioTooltip": "Relación de aspecto",
+  "playerLiveBadge": "DIRECTO",
+  "playerNowPlayingLabel": "Ahora: {title}",
+  "playerUpNextLabel": "A continuación {time} · {title}",
+  "playerShortcutsHelpLive": "Espacio pausa · F pantalla completa · ↑↓ zapping · M silenciar",
+  "playerShortcutsHelpVod": "Espacio pausa · F pantalla completa · ←→ avance rápido · M silenciar",
 
   "contentDetailPlayAction": "Reproducir",
   "contentDetailContinueAction": "Continuar ({time})",

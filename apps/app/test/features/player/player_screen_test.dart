@@ -154,4 +154,56 @@ void main() {
 
     expect(port.currentTracks.selectedAudioId, 'a2');
   });
+
+  // S6.5 paso 6 (rediseño del overlay, Figma 42:2/45:2): diferencias
+  // live/VOD que el rediseño introduce o mueve, además de las ya
+  // cubiertas arriba (barra de progreso, texto de posición).
+  //
+  // Un `pumpScreen` por `testWidgets`, nunca dos sobre el mismo `tester`:
+  // `PlayerScreen` no lleva `Key`, así que un segundo `tester.pumpWidget`
+  // con el mismo tipo en la misma posición del árbol hace que Flutter
+  // reutilice el `State` existente (`didUpdateWidget`, no `initState`) en
+  // vez de reconstruirlo — `_PlayerScreenState._controller` se queda con
+  // el `request` del primer pump, así que el segundo canal nunca llega a
+  // aplicarse. Confirmado leyendo el mensaje de fallo real antes de
+  // corregir, no asumido (CLAUDE.md: no parchear sin diagnosticar).
+  group('S6.5 paso 6 — tratamiento visual live vs VOD', () {
+    Channel vodChannel() => Channel(
+      ref: const ChannelRef(sourceId: 's1', key: 'peli-1'),
+      sourceId: 's1',
+      type: ContentType.vod,
+      name: 'Oppenheimer',
+      url: Uri.parse('http://cdn.example.com/vod/peli.mp4'),
+    );
+
+    testWidgets('el badge DIRECTO aparece en directo', (tester) async {
+      await pumpScreen(tester);
+      expect(find.text('LIVE'), findsOneWidget);
+    });
+
+    testWidgets('el badge DIRECTO no aparece en VOD', (tester) async {
+      await pumpScreen(tester, request: PlaybackRequest(channel: vodChannel()));
+      expect(find.text('LIVE'), findsNothing);
+    });
+
+    testWidgets('la barra de progreso (seekBar) no aparece en directo', (tester) async {
+      await pumpScreen(tester);
+      expect(find.byKey(const Key('playerOverlay.seekBar')), findsNothing);
+    });
+
+    testWidgets('la barra de progreso (seekBar) aparece en VOD', (tester) async {
+      await pumpScreen(tester, request: PlaybackRequest(channel: vodChannel()));
+      expect(find.byKey(const Key('playerOverlay.seekBar')), findsOneWidget);
+    });
+
+    testWidgets('la ayuda de atajos en directo no menciona seek (no-op en live)', (tester) async {
+      await pumpScreen(tester);
+      expect(find.text('Space pause · F fullscreen · ↑↓ zapping · M mute'), findsOneWidget);
+    });
+
+    testWidgets('la ayuda de atajos en VOD menciona seek', (tester) async {
+      await pumpScreen(tester, request: PlaybackRequest(channel: vodChannel()));
+      expect(find.text('Space pause · F fullscreen · ←→ seek · M mute'), findsOneWidget);
+    });
+  });
 }
