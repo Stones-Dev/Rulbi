@@ -3,6 +3,12 @@
 # Imagen en dos etapas para que ffmpeg (~300 MB, y GPL — ver nota de licencia
 # en el README) no acabe en la imagen final: solo se usa en build time para
 # generar contenido sintético, nunca se ejecuta en el contenedor servido.
+#
+# Build context = raíz del repo (ver docker-compose.dev.yml) para poder
+# copiar los pósters/tv_cards ya aprobados de docs/design-assets — así la
+# verificación visual (S6.5) compara MediaCard contra el mismo arte que ya
+# está fusionado en los frames canónicos de Figma, no contra el icono de
+# fallback.
 
 # --- Etapa 1: genera los ficheros de vídeo/audio/subtítulos sintéticos ---
 FROM debian:bookworm-slim AS fixtures
@@ -12,7 +18,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /build
-COPY make-fixtures.sh .
+COPY tool/xtream-test-server/make-fixtures.sh .
 RUN chmod +x make-fixtures.sh && ./make-fixtures.sh /media
 
 # --- Etapa 2: solo el servidor Xtream + el contenido generado ---
@@ -23,8 +29,10 @@ FROM python:3.12-slim
 RUN pip install --no-cache-dir xtreamcodeserver==1.1.0
 
 COPY --from=fixtures /media /media
-COPY serve.py /app/serve.py
+COPY docs/design-assets/tv_cards /images/tv_cards
+COPY docs/design-assets/posters /images/posters
+COPY tool/xtream-test-server/serve.py /app/serve.py
 WORKDIR /app
 
-EXPOSE 8081
+EXPOSE 8081 8082
 CMD ["python", "serve.py"]
