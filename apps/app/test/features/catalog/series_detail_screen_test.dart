@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -9,6 +10,7 @@ import 'package:iptv_app/features/catalog/series_detail_screen.dart';
 import 'package:iptv_app/features/sources/source_providers.dart';
 import 'package:iptv_app/l10n/app_localizations.dart';
 import 'package:iptv_core/iptv_core.dart';
+import 'package:iptv_tokens/iptv_tokens.dart';
 
 import '../../_helpers/fake_favorites_repository.dart';
 import '../home/_helpers/fake_watch_state_repository.dart';
@@ -74,14 +76,17 @@ void main() {
     );
   }
 
-  /// El póster (240×360) + cabecera + acciones ya superan el alto de
-  /// superficie por defecto de un test (~600 px) — sin ampliarla, los
-  /// `_EpisodeRow` quedan fuera del `cacheExtent` del `ListView` y nunca
-  /// se montan (un widget fuera de vista no aparece en el árbol de
-  /// Elements, así que `find.text` no los encuentra aunque existan como
-  /// dato). Se amplía aquí en vez de scrollear en cada test.
+  /// El backdrop+póster de `DetailHero` (S6.5 paso 8: 340+180px antes de
+  /// que arranque el contenido) + cabecera + acciones + chips ya superan
+  /// el alto de superficie por defecto de un test (~600 px) — sin
+  /// ampliarla, los `_EpisodeRow` quedan fuera del árbol montado por el
+  /// `SingleChildScrollView` y nunca se montan (un widget fuera de vista
+  /// no aparece en el árbol de Elements, así que `find.text` no los
+  /// encuentra aunque existan como dato). Se amplía aquí en vez de
+  /// scrollear en cada test — más alto que antes del rediseño (2600), el
+  /// hero a sangre desplaza todo hacia abajo.
   Future<void> pumpSeries(WidgetTester tester, ProviderContainer container, Channel channel) async {
-    tester.view.physicalSize = const Size(1200, 2600);
+    tester.view.physicalSize = const Size(1200, 3200);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
@@ -141,10 +146,12 @@ void main() {
     expect(find.textContaining('Drama'), findsOneWidget);
     expect(find.textContaining('★ 9.4'), findsOneWidget);
     expect(find.text('La catástrofe nuclear de 1986.'), findsOneWidget);
-    expect(find.text('1:23:45'), findsOneWidget);
-    expect(find.text('Please Remain Calm'), findsOneWidget);
+    // S6.5 paso 8: el título de la fila pasa a "E{n} · {título}" (frame
+    // Figma 44:19: "E1 · Ruido de fondo"), ya no el título suelto.
+    expect(find.text('E1 · 1:23:45'), findsOneWidget);
+    expect(find.text('E2 · Please Remain Calm'), findsOneWidget);
     // T2 no está seleccionada por defecto (T1 es la primera).
-    expect(find.text('Open Wide, O Earth'), findsNothing);
+    expect(find.text('E1 · Open Wide, O Earth'), findsNothing);
   });
 
   testWidgets('sin ficha (fuente M3U): fallback sin reventar, sin selector de temporada', (tester) async {
@@ -187,16 +194,16 @@ void main() {
     await primeSeriesInfo(tester, setup.container, channel);
     await pumpSeries(tester, setup.container, channel);
 
-    expect(find.text('Please Remain Calm'), findsOneWidget);
-    expect(find.text('Open Wide, O Earth'), findsNothing);
+    expect(find.text('E2 · Please Remain Calm'), findsOneWidget);
+    expect(find.text('E1 · Open Wide, O Earth'), findsNothing);
 
-    await tester.tap(find.byKey(const Key('seriesDetail.seasonSelector')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Season 2').last, warnIfMissed: false);
+    // S6.5 paso 8: el selector pasa de `DropdownButton` a chips — se toca
+    // el chip de la temporada directamente, ya no hay menú que abrir.
+    await tester.tap(find.byKey(const Key('seriesDetail.season.2')));
     await tester.pumpAndSettle();
 
-    expect(find.text('Please Remain Calm'), findsNothing);
-    expect(find.text('Open Wide, O Earth'), findsOneWidget);
+    expect(find.text('E2 · Please Remain Calm'), findsNothing);
+    expect(find.text('E1 · Open Wide, O Earth'), findsOneWidget);
   });
 
   testWidgets('"Continuar T{n}E{n}" apunta al episodio con progreso real más reciente', (tester) async {
@@ -238,5 +245,55 @@ void main() {
     await pumpSeries(tester, setup.container, channel);
 
     expect(find.text('Continue S1E1'), findsOneWidget);
+  });
+
+  // S6.5 paso 8 — miniatura de episodio (XtreamEpisode.stillUrl).
+  testWidgets('con movie_image poblado, la miniatura del episodio usa stillUrl', (tester) async {
+    final setup = buildContainer(source: xtreamSource());
+    setup.transport.respond(
+      'get_series_info',
+      jsonEncode({
+        'info': {'name': 'Chernobyl', 'plot': 'x', 'genre': 'Drama', 'rating': '9.4'},
+        'seasons': [
+          {'season_number': 1, 'name': 'Temporada 1'},
+        ],
+        'episodes': {
+          '1': [
+            {
+              'id': '101',
+              'episode_num': 1,
+              'title': 'Uno Veintitrés Cuarenta y Cinco',
+              'container_extension': 'mp4',
+              'info': {
+                'duration_secs': 3600,
+                'movie_image': 'https://panel.example.com/stills/chernobyl_e1.jpg',
+              },
+            },
+          ],
+        },
+      }),
+    );
+    final channel = seriesChannel();
+
+    await primeSeriesInfo(tester, setup.container, channel);
+    await pumpSeries(tester, setup.container, channel);
+
+    final image = tester.widget<CachedNetworkImage>(find.byType(CachedNetworkImage).last);
+    expect(image.imageUrl, 'https://panel.example.com/stills/chernobyl_e1.jpg');
+  });
+
+  testWidgets('sin movie_image, la miniatura del episodio cae al fallback (icono)', (tester) async {
+    final setup = buildContainer(source: xtreamSource());
+    setup.transport.respond('get_series_info', seriesInfoBody());
+    final channel = seriesChannel();
+
+    await primeSeriesInfo(tester, setup.container, channel);
+    await pumpSeries(tester, setup.container, channel);
+
+    // Ningún episodio de `seriesInfoBody()` trae `movie_image` — cero
+    // `CachedNetworkImage` en toda la ficha (ni backdrop/póster: sin
+    // cover_url tampoco), solo iconos de fallback.
+    expect(find.byType(CachedNetworkImage), findsNothing);
+    expect(find.byIcon(Symbols.movie_rounded), findsWidgets);
   });
 }
