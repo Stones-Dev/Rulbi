@@ -40,6 +40,10 @@
   "@navSettings": {
     "description": "DesktopShell navigation rail destination: settings (ui-spec §2.15)."
   },
+  "navDevices": "Devices",
+  "@navDevices": {
+    "description": "MobileShell settings screen entry: pairing/devices (ui-spec §2.12) — S7 · Móvil base. No equivalent destination exists on DesktopShell yet."
+  },
   "commonSave": "Save",
   "@commonSave": {
     "description": "Generic confirm/save action, reused across forms."
