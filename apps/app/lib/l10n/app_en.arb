@@ -44,6 +44,53 @@
   "@navDevices": {
     "description": "MobileShell settings screen entry: pairing/devices (ui-spec §2.12) — S7 · Móvil base. No equivalent destination exists on DesktopShell yet."
   },
+  "devicesScanHint": "Scan the QR code shown on your TV to see its pairing details.",
+  "@devicesScanHint": {
+    "description": "DevicesScreen idle state (S7 · Móvil base) — explains what the QR button does before pairing has any real destination."
+  },
+  "devicesScanQrButton": "Scan QR",
+  "@devicesScanQrButton": {
+    "description": "DevicesScreen idle state: starts the camera scanner (ui-spec §3.1)."
+  },
+  "devicesScanAgainButton": "Scan again",
+  "@devicesScanAgainButton": {
+    "description": "DevicesScreen: shared retry/rescan action, reused after a result or any error state."
+  },
+  "devicesScanResultTitle": "Device found",
+  "@devicesScanResultTitle": {
+    "description": "DevicesScreen result state: a pairing QR was scanned and parsed successfully."
+  },
+  "devicesScanResultDetails": "{name} · {host}:{port}",
+  "@devicesScanResultDetails": {
+    "description": "DevicesScreen result state — name/host/port from the parsed PairingQrPayload. The token is never shown (P5): it's a single-use ephemeral secret.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "host": {
+        "type": "String"
+      },
+      "port": {
+        "type": "int"
+      }
+    }
+  },
+  "devicesScanInvalidQr": "This isn't a Rulbi pairing QR code. Try scanning the code shown on your TV.",
+  "@devicesScanInvalidQr": {
+    "description": "DevicesScreen error: PairingQrPayload.fromQrString threw InvalidPairingQrCodeException — the scanned code isn't this app's pairing format at all."
+  },
+  "devicesScanUnsupportedVersion": "This QR code is from a newer version of the app that this device doesn't support yet.",
+  "@devicesScanUnsupportedVersion": {
+    "description": "DevicesScreen error: PairingQrPayload.fromQrString threw UnsupportedPairingPayloadVersionException — a valid pairing QR, but a future protocol version."
+  },
+  "devicesScanCameraPermissionDenied": "Camera access is needed to scan a QR code.",
+  "@devicesScanCameraPermissionDenied": {
+    "description": "DevicesScreen error: mobile_scanner's errorBuilder reported MobileScannerErrorCode.permissionDenied."
+  },
+  "devicesScanCameraError": "The camera couldn't be started on this device.",
+  "@devicesScanCameraError": {
+    "description": "DevicesScreen error: mobile_scanner's errorBuilder reported any MobileScannerErrorCode other than permissionDenied (e.g. unsupported, genericError)."
+  },
   "commonSave": "Save",
   "@commonSave": {
     "description": "Generic confirm/save action, reused across forms."
