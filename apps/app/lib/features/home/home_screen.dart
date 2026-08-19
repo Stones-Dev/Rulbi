@@ -18,14 +18,31 @@ import 'now_on_your_channels_row.dart';
 /// Home desktop (ui-spec §2.2): las tres filas —"Continuar viendo"
 /// (S5 · Ola 1), "Favoritos" y "Ahora en tus canales" (S5 · Ola 2)— juntas
 /// cierran la tarea "Home desktop" (su criterio original exigía las tres).
+///
+/// Reutilizada tal cual por `MobileShell` (S7 · Móvil base) — sin lógica
+/// nueva, solo [contentPadding] parametrizado: por defecto
+/// `IptvSpacing.containerDesktop`, que `MobileShell` sustituye por
+/// `IptvSpacing.containerMobile`. Se pasa por parámetro en vez de leerlo de
+/// un `FormFactor`/`IptvDensity` ambiental para que `HomeScreen` siga sin
+/// depender de qué shell la aloja (mismo criterio que `onGoToSources`).
 class HomeScreen extends ConsumerWidget {
-  const HomeScreen({required this.onGoToSources, super.key});
+  const HomeScreen({
+    required this.onGoToSources,
+    this.contentPadding = IptvSpacing.containerDesktop,
+    super.key,
+  });
 
-  /// Cambia la sección del `DesktopShell` a Fuentes — la CTA del estado
-  /// vacío (§2.2: "vacío → CTA a Fuentes"). No hay router en la app
-  /// (`IndexedStack` del shell), así que quien construye `HomeScreen` es
-  /// quien conoce cómo cambiar de sección.
+  /// Cambia la sección del shell a Fuentes — la CTA del estado vacío (§2.2:
+  /// "vacío → CTA a Fuentes"). No hay router en la app (`IndexedStack` del
+  /// shell), así que quien construye `HomeScreen` es quien conoce cómo
+  /// cambiar de sección o abrir la pantalla de Fuentes.
   final VoidCallback onGoToSources;
+
+  /// Padding del contenedor de pantalla (ui-spec §5.2). Antes de S7 este
+  /// valor estaba hardcodeado a 24px en `_HomeContent` — ni el token
+  /// Desktop (32) ni ningún token Mobile; deuda anotada en el cierre de
+  /// S6.5, cerrada de paso aquí.
+  final double contentPadding;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -35,7 +52,7 @@ class HomeScreen extends ConsumerWidget {
     return sourcesAsync.when(
       data: (sources) => sources.isEmpty
           ? _EmptyLibrary(onGoToSources: onGoToSources)
-          : const _HomeContent(),
+          : _HomeContent(contentPadding: contentPadding),
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (_, _) => Center(child: Text(l10n.probeErrorUnknown)),
     );
@@ -43,7 +60,9 @@ class HomeScreen extends ConsumerWidget {
 }
 
 class _HomeContent extends ConsumerStatefulWidget {
-  const _HomeContent();
+  const _HomeContent({required this.contentPadding});
+
+  final double contentPadding;
 
   @override
   ConsumerState<_HomeContent> createState() => _HomeContentState();
@@ -67,15 +86,37 @@ class _HomeContentState extends ConsumerState<_HomeContent> {
     super.dispose();
   }
 
+  /// Pull-to-refresh (S7 · Móvil base, paso 2) — invalida las tres filas y
+  /// espera a que se resuelvan antes de que `RefreshIndicator` se oculte.
+  /// Deliberadamente **no** relee `sourcesStreamProvider` ni dispara un
+  /// refresco de fuentes: eso es una operación cara y sorprendente para un
+  /// gesto de "refrescar la pantalla", y el refresco de fuentes ya tiene su
+  /// sitio en Fuentes (ui-spec §2.10). `favoritesListProvider` es un
+  /// `StreamProvider` sobre drift ya reactivo — invalidarlo solo reinicia
+  /// la suscripción, sin coste real, pero se incluye por completitud (las
+  /// tres filas de Home responden al mismo gesto).
+  Future<void> _handleRefresh() async {
+    ref
+      ..invalidate(continueWatchingProvider)
+      ..invalidate(favoritesListProvider)
+      ..invalidate(nowOnYourChannelsProvider);
+    await Future.wait([
+      ref.read(continueWatchingProvider.future),
+      ref.read(favoritesListProvider.future),
+      ref.read(nowOnYourChannelsProvider.future),
+    ]);
+  }
+
   @override
   Widget build(BuildContext context) {
     final continueWatchingAsync = ref.watch(continueWatchingProvider);
     final favoritesAsync = ref.watch(favoritesListProvider);
     final nowOnYourChannelsAsync = ref.watch(nowOnYourChannelsProvider);
 
-    return Padding(
-      padding: const EdgeInsets.all(24),
+    return RefreshIndicator(
+      onRefresh: _handleRefresh,
       child: ListView(
+        padding: EdgeInsets.all(widget.contentPadding),
         children: [
           continueWatchingAsync.when(
             data: (items) => items.isEmpty

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -252,6 +254,49 @@ void main() {
         tester.element(find.byType(HomeScreen)),
       );
       expect((widget as PlayerScreen).request.startAt, savedPosition);
+    },
+  );
+
+  testWidgets(
+    'pull-to-refresh invalida las tres filas y vuelve a leer de los repositorios (S7 · Móvil base)',
+    (tester) async {
+      final sources = FakeSourceRepository();
+      await sources.upsert(activeSource());
+
+      final channel = channelOf(
+        's1',
+        'dazn1',
+        'DAZN 1',
+        type: ContentType.live,
+      );
+      final channels = FakeChannelListRepository(channels: [channel]);
+
+      await pumpScreen(
+        tester,
+        sources: sources,
+        channels: channels,
+        watchState: FakeWatchStateRepository(),
+      );
+
+      // Único consumidor de `channelsPage` dentro de Home ("Ahora en tus
+      // canales") — su crecimiento tras el refresh prueba que el provider
+      // se invalidó y volvió a pedir datos de verdad, no solo que el
+      // widget no lanzó una excepción.
+      final requestsBefore = channels.pageRequests.length;
+
+      // `show()` no se puede `await` directamente: su animación depende de
+      // un `Ticker` real que solo avanza con `pump()` — awaitarla sin
+      // bombear frames cuelga el test para siempre (nada dispara el
+      // siguiente frame). Se dispara sin esperar y se deja que
+      // `pumpAndSettle()` procese tanto el refresco de los providers como
+      // la animación de la propia flecha.
+      final refreshState = tester.state<RefreshIndicatorState>(
+        find.byType(RefreshIndicator),
+      );
+      unawaited(refreshState.show());
+      await tester.pumpAndSettle();
+
+      expect(channels.pageRequests.length, greaterThan(requestsBefore));
     },
   );
 }

@@ -112,7 +112,10 @@ class _MobileShellState extends ConsumerState<MobileShell> {
             child: IndexedStack(
               index: _selectedIndex,
               children: [
-                HomeScreen(onGoToSources: _openSources),
+                HomeScreen(
+                  onGoToSources: _openSources,
+                  contentPadding: IptvSpacing.containerMobile,
+                ),
                 const ChannelListScreen(),
                 const CatalogScreen(type: ContentType.vod),
                 const CatalogScreen(type: ContentType.series),
