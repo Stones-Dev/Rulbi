@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -102,9 +104,20 @@ class _M3uSourceFormState extends ConsumerState<M3uSourceForm> {
   }
 
   Future<String?> _defaultPickFile() async {
+    // Android filtra `FileType.custom` por MIME type vía el Storage Access
+    // Framework, no por extensión — `.m3u`/`.m3u8` no tienen entrada
+    // estándar en el registro de MIME de Android, así que el picker puede
+    // abrir sin mostrar ningún archivo (gotcha documentado del propio
+    // paquete file_picker, S7 · Móvil base). `FileType.any` evita el
+    // filtrado ahí; en Desktop/Linux se mantiene el filtro estricto que ya
+    // funcionaba. No se valida la extensión tras elegir: el archivo puede
+    // legítimamente no terminar en `.m3u` (nombres arbitrarios al
+    // descargar) y el parser (`M3uProbe`, botón "Probar") ya es quien
+    // decide si el contenido es válido — RNF-02, no aborta con datos
+    // malformados.
     final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['m3u', 'm3u8'],
+      type: Platform.isAndroid ? FileType.any : FileType.custom,
+      allowedExtensions: Platform.isAndroid ? null : ['m3u', 'm3u8'],
     );
     return result?.files.single.path;
   }
@@ -228,6 +241,7 @@ class _M3uSourceFormState extends ConsumerState<M3uSourceForm> {
                 key: M3uSourceForm.nameFieldKey,
                 controller: _nameController,
                 decoration: InputDecoration(labelText: l10n.sourceNameLabel),
+                textInputAction: TextInputAction.next,
                 validator: (value) => (value == null || value.trim().isEmpty)
                     ? l10n.sourceNameRequiredError
                     : null,
@@ -256,6 +270,7 @@ class _M3uSourceFormState extends ConsumerState<M3uSourceForm> {
                   controller: _urlController,
                   decoration: InputDecoration(labelText: l10n.m3uUrlLabel),
                   keyboardType: TextInputType.url,
+                  textInputAction: TextInputAction.next,
                   validator: (_) => _validateOriginField(l10n),
                 )
               else
@@ -284,6 +299,10 @@ class _M3uSourceFormState extends ConsumerState<M3uSourceForm> {
                 controller: _epgUrlController,
                 decoration: InputDecoration(labelText: l10n.epgUrlLabel),
                 keyboardType: TextInputType.url,
+                // `done`, no `next`: el siguiente campo real (User-Agent)
+                // vive dentro del ExpansionTile "Avanzado", colapsado por
+                // defecto — encadenar ahí saltaría a un campo invisible.
+                textInputAction: TextInputAction.done,
                 validator: (value) => _validateEpgUrl(l10n, value),
               ),
               const SizedBox(height: 16),
@@ -301,6 +320,7 @@ class _M3uSourceFormState extends ConsumerState<M3uSourceForm> {
                     key: M3uSourceForm.userAgentFieldKey,
                     controller: _userAgentController,
                     decoration: InputDecoration(labelText: l10n.userAgentLabel),
+                    textInputAction: TextInputAction.done,
                   ),
                 ],
               ),

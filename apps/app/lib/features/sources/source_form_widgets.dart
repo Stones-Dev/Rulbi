@@ -88,25 +88,39 @@ class SourceFormActionBar extends StatelessWidget {
   final VoidCallback? onProbe;
   final VoidCallback? onSave;
 
+  // Target táctil mínimo (RNF-08) — el `minimumSize` por defecto de un
+  // botón Material 3 estándar es 40dp de alto, por debajo del umbral;
+  // fijado explícito en vez de confiar en el padding de tap-target
+  // implícito de la plataforma, que no es igual de fiable en todas.
+  static const _minTouchSize = Size(64, 48);
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final busy = isProbing || isSaving;
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
+    // `Wrap` en vez de `Row` (S7 · Móvil base): tres botones de ancho
+    // variable ("Cancelar" · "Probar conexión" · "Guardar") no siempre
+    // caben en una fila de 360dp de ancho, sobre todo en español. `Wrap`
+    // se comporta igual que `Row` cuando sí caben (Desktop) y baja el
+    // último botón a una segunda línea cuando no, en vez de desbordar.
+    return Wrap(
+      alignment: WrapAlignment.end,
+      spacing: 8,
+      runSpacing: 8,
       children: [
         TextButton(
+          style: TextButton.styleFrom(minimumSize: _minTouchSize),
           onPressed: busy ? null : () => Navigator.of(context).pop(),
           child: Text(l10n.commonCancel),
         ),
-        const SizedBox(width: 8),
         OutlinedButton(
+          style: OutlinedButton.styleFrom(minimumSize: _minTouchSize),
           onPressed: busy ? null : onProbe,
           child: Text(isProbing ? l10n.probingInProgress : probeLabel),
         ),
-        const SizedBox(width: 8),
         FilledButton(
+          style: FilledButton.styleFrom(minimumSize: _minTouchSize),
           onPressed: busy ? null : onSave,
           child: Text(l10n.commonSave),
         ),

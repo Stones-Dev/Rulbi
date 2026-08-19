@@ -184,6 +184,7 @@ class _XtreamSourceFormState extends ConsumerState<XtreamSourceForm> {
                 key: XtreamSourceForm.nameFieldKey,
                 controller: _nameController,
                 decoration: InputDecoration(labelText: l10n.sourceNameLabel),
+                textInputAction: TextInputAction.next,
                 validator: (value) => (value == null || value.trim().isEmpty)
                     ? l10n.sourceNameRequiredError
                     : null,
@@ -194,6 +195,7 @@ class _XtreamSourceFormState extends ConsumerState<XtreamSourceForm> {
                 controller: _hostController,
                 decoration: InputDecoration(labelText: l10n.xtreamHostLabel),
                 keyboardType: TextInputType.url,
+                textInputAction: TextInputAction.next,
                 validator: (_) => _validateHost(l10n),
               ),
               const SizedBox(height: 16),
@@ -201,6 +203,7 @@ class _XtreamSourceFormState extends ConsumerState<XtreamSourceForm> {
                 key: XtreamSourceForm.usernameFieldKey,
                 controller: _usernameController,
                 decoration: InputDecoration(labelText: l10n.xtreamUsernameLabel),
+                textInputAction: TextInputAction.next,
                 validator: (value) => (value == null || value.trim().isEmpty)
                     ? l10n.xtreamUsernameRequiredError
                     : null,
@@ -210,6 +213,7 @@ class _XtreamSourceFormState extends ConsumerState<XtreamSourceForm> {
                 key: XtreamSourceForm.passwordFieldKey,
                 controller: _passwordController,
                 obscureText: _obscurePassword,
+                textInputAction: TextInputAction.done,
                 decoration: InputDecoration(
                   labelText: l10n.xtreamPasswordLabel,
                   helperText: _isEditing ? l10n.xtreamPasswordKeepHint : null,
