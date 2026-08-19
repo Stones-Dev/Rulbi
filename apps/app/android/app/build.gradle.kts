@@ -15,8 +15,10 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.stonesdev.iptv.iptv_app"
+        // Application ID permanente (CLAUDE.md, S7 · Móvil base) — independiente
+        // del nombre comercial (D1, "Rulbi"). No cambiar tras la primera
+        // publicación en Play/Amazon: es el identificador de la app en la tienda.
+        applicationId = "com.stonesdev.iptv"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
