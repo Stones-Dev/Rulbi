@@ -19,6 +19,13 @@ abstract final class IptvSpacing {
   /// area de televisores (ui-spec.md §5.2).
   static const double safeAreaTv = 88;
 
+  /// Padding de contenedor de pantalla en Móvil (S7 · Móvil base).
+  /// **`ui-spec.md §5.2` no define todavía una columna Mobile** — propuesta
+  /// con criterio explícito, no decisión de diseño cerrada (mismo hueco que
+  /// `IptvDensity.mobile`, ver su docstring). 32px (el valor de Desktop) se
+  /// comerían el 18% del ancho útil en una pantalla de 360dp.
+  static const double containerMobile = 16;
+
   /// Radio de esquina por defecto de tarjetas y controles.
   ///
   /// Nota (S6.5, Implementación Desktop rediseñado): los frames de Figma ya

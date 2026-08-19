@@ -61,8 +61,18 @@ class _IptvAppState extends ConsumerState<IptvApp> {
 
   @override
   Widget build(BuildContext context) {
+    final formFactor = FormFactorDetector.detect();
     return IptvMaterialApp(
-      home: switch (FormFactorDetector.detect()) {
+      // Densidad de tokens derivada del mismo form factor que decide el
+      // shell (S7 · Móvil base) — sin esto, IptvTheme.dark() sigue usando
+      // su default (desktop) en todas las plataformas y los tamaños
+      // IptvDensity.mobile/tv nunca llegan a ninguna pantalla.
+      density: switch (formFactor) {
+        FormFactor.tv => IptvDensity.tv,
+        FormFactor.mobile => IptvDensity.mobile,
+        FormFactor.desktop => IptvDensity.desktop,
+      },
+      home: switch (formFactor) {
         FormFactor.tv => const TvShell(),
         FormFactor.mobile => const MobileShell(),
         FormFactor.desktop => const DesktopShell(),
@@ -76,9 +86,19 @@ class _IptvAppState extends ConsumerState<IptvApp> {
 /// en, override manual) con un `home` trivial, sin depender de los shells
 /// reales — ver `test/l10n_test.dart`.
 class IptvMaterialApp extends ConsumerWidget {
-  const IptvMaterialApp({required this.home, super.key});
+  const IptvMaterialApp({
+    required this.home,
+    this.density = IptvDensity.desktop,
+    super.key,
+  });
 
   final Widget home;
+
+  /// Densidad de tokens (tipografía/espaciado) del tema. Por defecto
+  /// `desktop` para no cambiar el comportamiento de `l10n_test.dart` y
+  /// otros tests que construyen `IptvMaterialApp` con un `home` trivial sin
+  /// pasar densidad (ver docstring de la clase).
+  final IptvDensity density;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -87,7 +107,7 @@ class IptvMaterialApp extends ConsumerWidget {
     return MaterialApp(
       onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
       debugShowCheckedModeBanner: false,
-      theme: IptvTheme.dark(),
+      theme: IptvTheme.dark(density: density),
       // D4 requisito 5: override manual (null = sigue la locale del
       // sistema). D4 requisito 4: `supportedLocales` empieza por `en`, así
       // que la resolución por defecto de Flutter cae ahí cuando la locale

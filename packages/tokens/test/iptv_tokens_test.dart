@@ -50,6 +50,7 @@ void main() {
     expect(IptvSpacing.xxxl, 64);
     expect(IptvSpacing.containerDesktop, 32);
     expect(IptvSpacing.safeAreaTv, 88);
+    expect(IptvSpacing.containerMobile, 16);
   });
 
   test('IptvTypography define los 5 roles de ui-spec.md §5.1 para Desktop y TV', () {
@@ -70,6 +71,15 @@ void main() {
     expect(IptvTypography.labelDesktop.fontSize, 12);
     expect(IptvTypography.labelDesktop.letterSpacing, 0.24);
     expect(IptvTypography.labelTv.fontSize, 14);
+
+    // Mobile (S7 · Móvil base) — un escalón por debajo de Desktop, propuesta
+    // sin diseño de Figma que la respalde todavía (ver docstring de
+    // IptvDensity/IptvTypography).
+    expect(IptvTypography.displayMobile.fontSize, 22);
+    expect(IptvTypography.headlineMobile.fontSize, 20);
+    expect(IptvTypography.titleMobile.fontSize, 16);
+    expect(IptvTypography.bodyMobile.fontSize, 14);
+    expect(IptvTypography.labelMobile.fontSize, 11);
 
     // Todos los roles usan la familia empaquetada, no un passthrough de
     // Material 3 por defecto.
@@ -97,6 +107,12 @@ void main() {
     final theme = IptvTypography.textTheme(Brightness.dark, density: IptvDensity.tv);
     expect(theme.headlineSmall?.fontSize, IptvTypography.displayTv.fontSize);
     expect(theme.titleMedium?.fontSize, IptvTypography.titleTv.fontSize);
+  });
+
+  test('IptvTypography.textTheme con densidad mobile usa el escalón de tamaño menor', () {
+    final theme = IptvTypography.textTheme(Brightness.dark, density: IptvDensity.mobile);
+    expect(theme.headlineSmall?.fontSize, IptvTypography.displayMobile.fontSize);
+    expect(theme.titleMedium?.fontSize, IptvTypography.titleMobile.fontSize);
   });
 
   test('IptvTheme.dark() sin argumentos reproduce el comportamiento previo a S6.5', () {

@@ -51,6 +51,13 @@ dependencies:
   # nunca reimplementa nada de `packages/protocols` (P6).
   iptv_protocols: any
 
+  # Emparejamiento QR (ui-spec §3.1, S7 · Móvil base) — mismo criterio de
+  # workspace que `iptv_core`/`iptv_protocols`. Hasta S7 el paquete existía
+  # completo y testeado a nivel de protocolo pero desconectado: `apps/app`
+  # nunca lo había declarado. `PairingQrPayload.fromQrString` (nuevo en S7)
+  # es lo que consume la pantalla de escáner.
+  iptv_pairing: any
+
   # ADR-007 (verificación de migraciones drift en Android runtime): sólo
   # las `dependencies` de un path-dependency entran en la resolución
   # compartida del workspace, nunca sus `dev_dependencies` — así que esto
@@ -91,6 +98,13 @@ dependencies:
   # resolvía como transitiva vía `iptv_protocols` (mismo criterio que en su
   # pubspec: no mueve versión). BSD-3 (P8 ok).
   http: ^1.2.0
+
+  # Escáner QR de emparejamiento (ui-spec §2.12/§3.1, S7 · Móvil base) —
+  # solo móvil (ui-spec §4 "Requisitos de stack derivados": las TVs nunca
+  # escanean). BSD-3-Clause (P8 ok, verificado contra el LICENSE del
+  # paquete). Requiere el permiso CAMERA declarado en
+  # `android/app/src/main/AndroidManifest.xml` (S7, paso 0.1).
+  mobile_scanner: ^7.4.0
 
 dev_dependencies:
   flutter_test:

@@ -12,9 +12,15 @@ import 'iptv_density.dart';
 /// no tener conectividad todavía.
 ///
 /// 5 roles (Display/Headline/Title/Body/Label), cada uno con un tamaño para
-/// Desktop y uno para TV (un escalón más grande). Los valores están
-/// verificados 1:1 contra los text styles del archivo de Figma fusionado
-/// (`get_variable_defs`, S6.5).
+/// Desktop y uno para TV (un escalón más grande). Los valores Desktop/TV
+/// están verificados 1:1 contra los text styles del archivo de Figma
+/// fusionado (`get_variable_defs`, S6.5).
+///
+/// Los tamaños `*Mobile` (S7 · Móvil base) **no** tienen esa verificación
+/// 1:1 contra Figma — no hay diseño de Mobile todavía (hueco de spec
+/// verificado, no asumido; ver docstring de `IptvDensity`). Son un
+/// escalón por debajo de Desktop, siguiendo el mismo patrón "TV = Desktop
+/// +1" ya cerrado en §5.1, propuestos como enmienda pendiente de validar.
 abstract final class IptvTypography {
   static const String fontFamily = 'Inter';
 
@@ -33,6 +39,12 @@ abstract final class IptvTypography {
     height: 44 / 36,
     fontWeight: FontWeight.w700,
   );
+  static const TextStyle displayMobile = TextStyle(
+    fontFamily: fontFamily,
+    fontSize: 22,
+    height: 28 / 22,
+    fontWeight: FontWeight.w700,
+  );
 
   // ---------------------------------------------------------------------
   // Headline — títulos de ficha VOD/Serie.
@@ -47,6 +59,12 @@ abstract final class IptvTypography {
     fontFamily: fontFamily,
     fontSize: 32,
     height: 40 / 32,
+    fontWeight: FontWeight.w700,
+  );
+  static const TextStyle headlineMobile = TextStyle(
+    fontFamily: fontFamily,
+    fontSize: 20,
+    height: 28 / 20,
     fontWeight: FontWeight.w700,
   );
 
@@ -65,6 +83,12 @@ abstract final class IptvTypography {
     height: 32 / 24,
     fontWeight: FontWeight.w600,
   );
+  static const TextStyle titleMobile = TextStyle(
+    fontFamily: fontFamily,
+    fontSize: 16,
+    height: 22 / 16,
+    fontWeight: FontWeight.w600,
+  );
 
   // ---------------------------------------------------------------------
   // Body — metadatos, sinopsis.
@@ -79,6 +103,12 @@ abstract final class IptvTypography {
     fontFamily: fontFamily,
     fontSize: 18,
     height: 26 / 18,
+    fontWeight: FontWeight.w400,
+  );
+  static const TextStyle bodyMobile = TextStyle(
+    fontFamily: fontFamily,
+    fontSize: 14,
+    height: 20 / 14,
     fontWeight: FontWeight.w400,
   );
 
@@ -99,17 +129,39 @@ abstract final class IptvTypography {
     fontWeight: FontWeight.w600,
     letterSpacing: 0.24,
   );
+  static const TextStyle labelMobile = TextStyle(
+    fontFamily: fontFamily,
+    fontSize: 11,
+    height: 16 / 11,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 0.24,
+  );
 
-  static TextStyle display(IptvDensity density) =>
-      density == IptvDensity.tv ? displayTv : displayDesktop;
-  static TextStyle headline(IptvDensity density) =>
-      density == IptvDensity.tv ? headlineTv : headlineDesktop;
-  static TextStyle title(IptvDensity density) =>
-      density == IptvDensity.tv ? titleTv : titleDesktop;
-  static TextStyle body(IptvDensity density) =>
-      density == IptvDensity.tv ? bodyTv : bodyDesktop;
-  static TextStyle label(IptvDensity density) =>
-      density == IptvDensity.tv ? labelTv : labelDesktop;
+  static TextStyle display(IptvDensity density) => switch (density) {
+    IptvDensity.tv => displayTv,
+    IptvDensity.mobile => displayMobile,
+    IptvDensity.desktop => displayDesktop,
+  };
+  static TextStyle headline(IptvDensity density) => switch (density) {
+    IptvDensity.tv => headlineTv,
+    IptvDensity.mobile => headlineMobile,
+    IptvDensity.desktop => headlineDesktop,
+  };
+  static TextStyle title(IptvDensity density) => switch (density) {
+    IptvDensity.tv => titleTv,
+    IptvDensity.mobile => titleMobile,
+    IptvDensity.desktop => titleDesktop,
+  };
+  static TextStyle body(IptvDensity density) => switch (density) {
+    IptvDensity.tv => bodyTv,
+    IptvDensity.mobile => bodyMobile,
+    IptvDensity.desktop => bodyDesktop,
+  };
+  static TextStyle label(IptvDensity density) => switch (density) {
+    IptvDensity.tv => labelTv,
+    IptvDensity.mobile => labelMobile,
+    IptvDensity.desktop => labelDesktop,
+  };
 
   /// `TextTheme` de Material derivado de los 5 roles de arriba.
   ///
