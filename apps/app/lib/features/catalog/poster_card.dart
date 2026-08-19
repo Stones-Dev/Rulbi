@@ -16,10 +16,15 @@ import '../sources/source_providers.dart';
 /// (`features/channels/channel_row.dart`), adaptado a póster en vez de
 /// fila.
 class PosterCard extends ConsumerStatefulWidget {
-  const PosterCard({super.key, required this.channel, this.onTap});
+  const PosterCard({super.key, required this.channel, this.onTap, this.heroTag});
 
   final Channel channel;
   final VoidCallback? onTap;
+
+  /// Ver docstring de `MediaCard.heroTag` — mismo propósito, la transición
+  /// `Hero` hacia el póster de la ficha de detalle (S6.5 paso 7e). `null`
+  /// no envuelve el póster en `Hero`.
+  final String? heroTag;
 
   @override
   ConsumerState<PosterCard> createState() => _PosterCardState();
@@ -74,7 +79,9 @@ class _PosterCardState extends ConsumerState<PosterCard> {
                   children: [
                     ClipRRect(
                       borderRadius: BorderRadius.circular(IptvSpacing.radius),
-                      child: _Poster(channel: channel),
+                      child: widget.heroTag != null
+                          ? Hero(tag: widget.heroTag!, child: _Poster(channel: channel))
+                          : _Poster(channel: channel),
                     ),
                     Positioned(
                       top: 0,

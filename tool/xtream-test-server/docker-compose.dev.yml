@@ -1,15 +1,22 @@
 # Servidor Xtream de pruebas — solo desarrollo, ver README.md.
 #
-# Uso:
-#   docker compose -f docker-compose.dev.yml up --build
+# Uso (desde la raíz del repo, el build context ahora es la raíz — ver
+# Dockerfile — porque necesita copiar docs/design-assets):
+#   docker compose -f tool/xtream-test-server/docker-compose.dev.yml up --build
 #
 # Puerto 8081 a propósito: es el mismo host:puerto que ya hardcodean los
 # tests de packages/protocols (capturados en T1.1 contra un servidor
-# o0Zz/xtreamcodeserver local idéntico a este).
+# o0Zz/xtreamcodeserver local idéntico a este). Puerto 8082: servidor
+# estático auxiliar (dentro del mismo proceso, ver serve.py) que expone los
+# pósters/tv_cards aprobados para cover_url/icon_url (S6.5, verificación
+# visual de MediaCard).
 services:
   xtream-test-server:
-    build: .
+    build:
+      context: ../..
+      dockerfile: tool/xtream-test-server/Dockerfile
     ports:
       - "127.0.0.1:8081:8081"
+      - "127.0.0.1:8082:8082"
     # Sin volúmenes: el contenido es sintético y se regenera en cada build,
     # no hace falta persistirlo entre arranques.

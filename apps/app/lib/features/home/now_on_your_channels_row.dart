@@ -1,9 +1,9 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:iptv_core/iptv_core.dart';
 import 'package:iptv_tokens/iptv_tokens.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../../widgets/media_card.dart';
 import '../epg/epg_progress_bar.dart';
 import '../epg/epg_providers.dart';
 
@@ -13,6 +13,11 @@ import '../epg/epg_providers.dart';
 /// guía sencillamente no aporta subtítulo/barra a su tarjeta (estado
 /// vacío explícito, ver `EpgProgressBar`), nunca una tarjeta con datos
 /// inventados.
+///
+/// S6.5 (Implementación Desktop rediseñado): `MediaCard` + insignia "EN
+/// DIRECTO" (frame canónico `38:3`, `Row/AhoraEnTusCanales` → `LiveBadge`)
+/// en azul de acento — el mockup de Python la tenía en rojo, corregido en
+/// la propia revisión de Figma (`48:2`, caption `54:35`) antes de fusionar.
 class NowOnYourChannelsRow extends StatelessWidget {
   const NowOnYourChannelsRow({
     super.key,
@@ -36,15 +41,23 @@ class NowOnYourChannelsRow extends StatelessWidget {
         ),
         const SizedBox(height: IptvSpacing.md),
         SizedBox(
-          height: 236,
+          height: MediaCard.height,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: channels.length,
             separatorBuilder: (_, _) => const SizedBox(width: IptvSpacing.lg),
-            itemBuilder: (context, index) => _NowCard(
-              channel: channels[index],
-              epgController: epgController,
-            ),
+            itemBuilder: (context, index) {
+              final channel = channels[index];
+              return MediaCard(
+                itemKey: Key('nowOnYourChannels.${channel.ref.serialized}'),
+                imageUrl: channel.logo,
+                fallbackLabel: channel.name,
+                fallbackIcon: Symbols.live_tv_rounded,
+                title: channel.name,
+                badge: _LiveBadge(label: l10n.homeLiveBadge),
+                footer: EpgProgressBar(tvgId: channel.tvgId, controller: epgController, channel: channel),
+              );
+            },
           ),
         ),
       ],
@@ -52,69 +65,20 @@ class NowOnYourChannelsRow extends StatelessWidget {
   }
 }
 
-class _NowCard extends StatelessWidget {
-  const _NowCard({required this.channel, required this.epgController});
+class _LiveBadge extends StatelessWidget {
+  const _LiveBadge({required this.label});
 
-  final Channel channel;
-  final EpgNowController epgController;
-
-  @override
-  Widget build(BuildContext context) {
-    final logo = channel.logo;
-
-    return SizedBox(
-      key: Key('nowOnYourChannels.${channel.ref.serialized}'),
-      width: 310,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(IptvSpacing.radius),
-            child: logo == null
-                ? _PosterFallback(name: channel.name)
-                : CachedNetworkImage(
-                    imageUrl: logo.toString(),
-                    width: 310,
-                    height: 174,
-                    fit: BoxFit.cover,
-                    memCacheWidth: 620,
-                    placeholder: (_, _) => _PosterFallback(name: channel.name),
-                    errorWidget: (_, _, _) => _PosterFallback(name: channel.name),
-                  ),
-          ),
-          const SizedBox(height: IptvSpacing.sm),
-          Text(
-            channel.name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 4),
-          EpgProgressBar(tvgId: channel.tvgId, controller: epgController, channel: channel),
-        ],
-      ),
-    );
-  }
-}
-
-class _PosterFallback extends StatelessWidget {
-  const _PosterFallback({required this.name});
-
-  final String name;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 310,
-      height: 174,
-      alignment: Alignment.center,
-      color: IptvColors.surface,
-      child: Icon(
-        Icons.live_tv_outlined,
-        size: 40,
-        color: IptvColors.textSecondary,
-        semanticLabel: name,
+      padding: const EdgeInsets.symmetric(horizontal: IptvSpacing.sm, vertical: 2),
+      decoration: BoxDecoration(
+        color: IptvColors.accent,
+        borderRadius: BorderRadius.circular(4),
       ),
+      child: Text(label, style: IptvTypography.labelDesktop.copyWith(color: IptvColors.onyx.accentOn)),
     );
   }
 }

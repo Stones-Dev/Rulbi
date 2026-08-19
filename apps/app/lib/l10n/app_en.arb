@@ -617,6 +617,10 @@
   "@homeNowOnYourChannelsTitle": {
     "description": "Home desktop row header for the EPG now/next row (ui-spec §2.2: \"Ahora en tus canales\"), S5 · Ola 2."
   },
+  "homeLiveBadge": "LIVE",
+  "@homeLiveBadge": {
+    "description": "\"Now on your channels\" card badge (Figma frame 38:3, Row/AhoraEnTusCanales, node LiveBadge: \"EN DIRECTO\"), S6.5 Implementación Desktop rediseñado — corrected to accent blue in the canonical frame, not the red used in an earlier draft mockup (see 48:2 caption 54:35)."
+  },
 
   "favoritesEmptyTitle": "No favorites yet",
   "@favoritesEmptyTitle": {
@@ -766,6 +770,39 @@
   "@playerAspectRatioTooltip": {
     "description": "Tooltip for the button that cycles BoxFit.contain/cover/fill in the player overlay (ui-spec §2.13: \"relación de aspecto\"), S6."
   },
+  "playerLiveBadge": "LIVE",
+  "@playerLiveBadge": {
+    "description": "Live badge in the player overlay's top bar (Figma frame 42:2, node 42:6: \"DIRECTO\"), S6.5 Implementación Desktop rediseñado paso 6. Deliberately distinct from homeLiveBadge (\"EN DIRECTO\" on the Home card, frame 38:3 node 40:18) — two different Figma components with two different literal strings, not the same copy reused twice."
+  },
+  "playerNowPlayingLabel": "Now: {title}",
+  "@playerNowPlayingLabel": {
+    "description": "First line of the live now/next block in the player overlay's control bar (Figma frame 42:2, node 42:13: \"Ahora: Edición Noche\"), S6.5 paso 6.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "playerUpNextLabel": "Up next {time} · {title}",
+  "@playerUpNextLabel": {
+    "description": "Second line of the live now/next block, only shown when there's a next programme (Figma frame 42:2, node 42:14: \"A continuación 22:30 · Debate Central\"). {time} is pre-formatted HH:mm, S6.5 paso 6.",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "playerShortcutsHelpLive": "Space pause · F fullscreen · ↑↓ zapping · M mute",
+  "@playerShortcutsHelpLive": {
+    "description": "Keyboard shortcuts hint under the control bar in live playback (Figma frame 42:2, node 42:24). Omits ←→ seek on purpose — PlayerController.seekBy is a no-op in live (ui-spec §2.13), unlike the literal Figma copy which lists it anyway; the hint reflects real behaviour, not the mockup's placeholder text. S6.5 paso 6."
+  },
+  "playerShortcutsHelpVod": "Space pause · F fullscreen · ←→ seek · M mute",
+  "@playerShortcutsHelpVod": {
+    "description": "Keyboard shortcuts hint under the control bar in VOD/series playback (Figma frame 45:2, node 45:21), S6.5 paso 6."
+  },
 
   "contentDetailPlayAction": "Play",
   "@contentDetailPlayAction": {
@@ -804,6 +841,27 @@
   "vodDetailDurationMinutes": "{count, plural, =1{1 min} other{{count} min}}",
   "@vodDetailDurationMinutes": {
     "description": "Total runtime shown in VOD detail (ui-spec §2.6: \"duración\"), from XtreamVodInfo.durationSecs, S6.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "vodDetailDurationHoursMinutes": "{hours}h {minutes}m",
+  "@vodDetailDurationHoursMinutes": {
+    "description": "Total runtime of an hour or more, shown in VOD/Series detail (ui-spec §2.6, Figma frame 43:2: \"1h 52m\") — S6.5 paso 7, replaces the plain-minutes format for anything ≥1h.",
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "seriesDetailSeasonCount": "{count, plural, =1{1 season} other{{count} seasons}}",
+  "@seriesDetailSeasonCount": {
+    "description": "Season count in the Series detail meta line (ui-spec §2.7, Figma frame 44:2: \"3 temporadas\") — S6.5 paso 8, derived from episodesBySeason.length (XtreamSeriesInfo.seasons isn't used for grouping, see its docstring).",
     "placeholders": {
       "count": {
         "type": "int"

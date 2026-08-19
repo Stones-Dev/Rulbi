@@ -49,29 +49,36 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
   static const _favoritesIndex = 6;
   static const _sourcesIndex = 7;
 
-  static const _iconsByDestination = [
-    Icons.home_outlined,
-    Icons.live_tv_outlined,
-    Icons.movie_outlined,
-    Icons.video_library_outlined,
-    Icons.search_outlined,
-    Icons.grid_view_outlined,
-    Icons.favorite_border,
-    Icons.source_outlined,
-    Icons.settings_outlined,
+  // Material Symbols Rounded (ui-spec.md §5.4, S6.5): un solo glifo por
+  // destino en vez de dos `Icons.*` distintos (outlined/filled) — el
+  // estado activo/inactivo lo da `fill`/`weight` (ver `_symbolIcon` abajo),
+  // no una segunda constante.
+  static const _symbolsByDestination = [
+    Symbols.home_rounded,
+    Symbols.live_tv_rounded,
+    Symbols.movie_rounded,
+    Symbols.video_library_rounded,
+    Symbols.search_rounded,
+    Symbols.grid_view_rounded,
+    Symbols.favorite_rounded,
+    Symbols.source_rounded,
+    Symbols.settings_rounded,
   ];
 
-  static const _selectedIconsByDestination = [
-    Icons.home,
-    Icons.live_tv,
-    Icons.movie,
-    Icons.video_library,
-    Icons.search,
-    Icons.grid_view,
-    Icons.favorite,
-    Icons.source,
-    Icons.settings,
-  ];
+  /// Tamaño medido en el frame canónico `Desktop / Home` (`38:3`, S6.5) ya
+  /// fusionado — 32px, no los 24px "botón de acción" genéricos de la tabla
+  /// de ui-spec.md §5.4: el rail de escritorio se construyó con el mismo
+  /// tamaño de icono que TV en ese frame concreto.
+  static const double _railIconSize = 32;
+
+  Widget _symbolIcon(int index, {required bool selected}) => Icon(
+    _symbolsByDestination[index],
+    size: _railIconSize,
+    // Peso 600 + relleno en el estado activo, 400 sin relleno en reposo —
+    // mismo patrón que el peso tipográfico de Title/Label (ui-spec §5.4).
+    weight: selected ? 600 : 400,
+    fill: selected ? 1 : 0,
+  );
 
   List<String> _labels(AppLocalizations l10n) => [
     l10n.navHome,
@@ -141,6 +148,16 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
               labelType: extended
                   ? NavigationRailLabelType.none
                   : NavigationRailLabelType.all,
+              // Pill sólido del color de acento + icono legible sobre ese
+              // fondo (`color/accent-on` de Figma, no blanco puro — da más
+              // contraste real que el blanco contra este azul concreto,
+              // ver IptvColors.onyx.accentOn) — el frame canónico 38:3 solo
+              // mostraba el destino Inicio activo, pero el tratamiento se
+              // aplica al que esté seleccionado en cada momento, no solo a
+              // Inicio.
+              indicatorColor: IptvColors.accent,
+              selectedIconTheme: IconThemeData(color: IptvColors.onyx.accentOn),
+              unselectedIconTheme: const IconThemeData(color: IptvColors.textSecondary),
               leading: Padding(
                 padding: const EdgeInsets.symmetric(vertical: IptvSpacing.md),
                 child: Text(
@@ -153,8 +170,8 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
               destinations: [
                 for (var i = 0; i < labels.length; i++)
                   NavigationRailDestination(
-                    icon: Icon(_iconsByDestination[i]),
-                    selectedIcon: Icon(_selectedIconsByDestination[i]),
+                    icon: _symbolIcon(i, selected: false),
+                    selectedIcon: _symbolIcon(i, selected: true),
                     label: Text(labels[i]),
                   ),
               ],

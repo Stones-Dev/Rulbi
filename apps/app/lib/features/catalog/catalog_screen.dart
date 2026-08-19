@@ -76,11 +76,14 @@ class _CatalogScreenState extends ConsumerState<CatalogScreen> {
   /// de serie son pantallas distintas — el selector de temporada y la
   /// lista de episodios no tienen equivalente en VOD.
   void _openDetail(Channel channel) {
+    // Mismo string que la `Key` de `PosterCard` — `Hero` empareja tags
+    // exactos entre origen y destino (S6.5 paso 7e).
+    final heroTag = 'posterCard.${channel.ref.serialized}';
     Navigator.of(context).push<void>(
       MaterialPageRoute(
         builder: (_) => switch (channel.type) {
-          ContentType.series => SeriesDetailScreen(channel: channel),
-          ContentType.vod || ContentType.live => VodDetailScreen(channel: channel),
+          ContentType.series => SeriesDetailScreen(channel: channel, heroTag: heroTag),
+          ContentType.vod || ContentType.live => VodDetailScreen(channel: channel, heroTag: heroTag),
         },
       ),
     );
@@ -177,7 +180,11 @@ class _CatalogGrid extends StatelessWidget {
         final channel = cache.itemAt(index);
         return channel == null
             ? const _PosterSkeleton()
-            : PosterCard(channel: channel, onTap: () => onOpenDetail(channel));
+            : PosterCard(
+                channel: channel,
+                heroTag: 'posterCard.${channel.ref.serialized}',
+                onTap: () => onOpenDetail(channel),
+              );
       },
     );
   }

@@ -30,6 +30,11 @@ void main() {
 
       final info = (result as XtreamOk<XtreamSeriesInfo>).value;
       expect(info.info.name, 'Serie de Prueba');
+      expect(
+        info.info.backdropUrl,
+        isNull,
+        reason: 'fixture real trae backdrop_path: [] — panel sin backdrop (S6.5, paso 7)',
+      );
       expect(info.seasons, hasLength(1));
       expect(
         info.seasons.single.seasonNumber,
@@ -42,6 +47,54 @@ void main() {
       expect(info.episodesBySeason[1]!.first.title, 'Episodio 1');
       expect(info.episodesBySeason[1]!.first.season, 1, reason: 'episode.season SÍ dice 1, distinto de season_number=0');
       expect(info.episodesBySeason[1]!.first.containerExtension, 'mp4');
+      expect(
+        info.episodesBySeason[1]!.first.stillUrl,
+        isNull,
+        reason: 'el fixture real trae info.movie_image: null — panel que no rellena la miniatura por episodio',
+      );
+    });
+
+    test('info.movie_image poblado (S6.5, miniatura de episodio) se parsea a stillUrl', () async {
+      final fake = FakeXtreamTransport()
+        ..enqueue(
+          'get_series_info',
+          jsonResponse({
+            'info': {'series_id': 1, 'name': 'Serie Con Miniaturas'},
+            'seasons': [],
+            'episodes': {
+              '1': [
+                {
+                  'id': '10',
+                  'episode_num': 1,
+                  'title': 'E1',
+                  'season': 1,
+                  'info': {
+                    'duration_secs': 1800,
+                    'movie_image': 'https://panel.example.com/stills/e1.jpg',
+                  },
+                },
+                {
+                  'id': '11',
+                  'episode_num': 2,
+                  'title': 'E2',
+                  'season': 1,
+                  'info': {'duration_secs': 1800, 'movie_image': ''},
+                },
+              ],
+            },
+          }),
+        );
+      final client = _client(fake);
+
+      final result = await client.seriesInfo('1');
+
+      final info = (result as XtreamOk<XtreamSeriesInfo>).value;
+      expect(info.episodesBySeason[1]!.first.stillUrl, 'https://panel.example.com/stills/e1.jpg');
+      expect(
+        info.episodesBySeason[1]![1].stillUrl,
+        isNull,
+        reason: 'movie_image vacío ("") se trata como ausente, igual que el resto de campos opcionales del fichero',
+      );
     });
 
     test('series_id inválido (panel devuelve []) -> XtreamMalformed', () async {

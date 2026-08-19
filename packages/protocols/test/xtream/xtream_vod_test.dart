@@ -40,6 +40,11 @@ void main() {
       expect(info.durationSecs, 5400);
       expect(info.rating, 7.5, reason: 'info.rating es string "7.5" en este fixture, se normaliza a double');
       expect(info.containerExtension, 'mkv');
+      expect(
+        info.backdropUrl,
+        isNull,
+        reason: 'fixture real trae backdrop_path: [null] — sin URL usable (S6.5, paso 7)',
+      );
     });
 
     test('vod_id inválido (panel devuelve []) -> XtreamMalformed, no una ficha vacía inventada', () async {

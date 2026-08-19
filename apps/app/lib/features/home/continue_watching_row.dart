@@ -1,14 +1,15 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:iptv_core/iptv_core.dart';
 import 'package:iptv_tokens/iptv_tokens.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../../widgets/media_card.dart';
 
-/// Fila "Continuar viendo" (ui-spec §2.2, S5 · Ola 1) — adaptada del nodo
-/// Figma `Row/ContinuarViendo` (archivo `2nrXvhb5FRPmvWNznb2tQw`, página
-/// *TV Shell*): tarjetas 310×236 a densidad TV, con póster 310×174, barra
-/// de progreso de 6 px al pie, título y tiempo restante.
+/// Fila "Continuar viendo" (ui-spec §2.2, S5 · Ola 1) — tarjetas
+/// `MediaCard` (S6.5, Implementación Desktop rediseñado): imagen a sangre
+/// completa 220×124, título y barra de progreso superpuestos sobre el
+/// degradado inferior, medidas del frame canónico `Desktop / Home` (`38:3`)
+/// ya fusionado en Figma.
 class ContinueWatchingRow extends StatelessWidget {
   const ContinueWatchingRow({super.key, required this.items, this.onTap});
 
@@ -34,62 +35,35 @@ class ContinueWatchingRow extends StatelessWidget {
         ),
         const SizedBox(height: IptvSpacing.md),
         SizedBox(
-          height: 236,
+          height: MediaCard.height,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: items.length,
             separatorBuilder: (_, _) => const SizedBox(width: IptvSpacing.lg),
-            itemBuilder: (context, index) => _ContinueWatchingCard(
-              item: items[index],
-              onTap: onTap == null ? null : () => onTap!(items[index]),
-            ),
+            itemBuilder: (context, index) {
+              final item = items[index];
+              final channel = item.channel;
+              final isLive = item.duration == Duration.zero;
+
+              return MediaCard(
+                itemKey: Key('continueWatching.${channel.ref.serialized}'),
+                imageUrl: channel.logo,
+                fallbackLabel: channel.name,
+                fallbackIcon: isLive ? Symbols.live_tv_rounded : Symbols.movie_rounded,
+                title: channel.name,
+                progress: isLive ? null : item.fraction,
+                footer: isLive
+                    ? null
+                    : Text(
+                        _remainingLabel(l10n, item.remaining),
+                        style: IptvTypography.labelDesktop.copyWith(color: IptvColors.textSecondary),
+                      ),
+                onTap: onTap == null ? null : () => onTap!(item),
+              );
+            },
           ),
         ),
       ],
-    );
-  }
-}
-
-class _ContinueWatchingCard extends StatelessWidget {
-  const _ContinueWatchingCard({required this.item, this.onTap});
-
-  final ContinueWatchingItem item;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final channel = item.channel;
-    final isLive = item.duration == Duration.zero;
-
-    return InkWell(
-      key: Key('continueWatching.${channel.ref.serialized}'),
-      onTap: onTap,
-      child: SizedBox(
-        width: 310,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _Poster(channel: channel, fraction: isLive ? null : item.fraction),
-            const SizedBox(height: IptvSpacing.sm),
-            Text(
-              channel.name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            if (!isLive) ...[
-              const SizedBox(height: 4),
-              Text(
-                _remainingLabel(l10n, item.remaining),
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: IptvColors.textSecondary,
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
     );
   }
 
@@ -99,78 +73,5 @@ class _ContinueWatchingCard extends StatelessWidget {
     final minutes = totalMinutes % 60;
     if (hours > 0) return l10n.homeRemainingHoursMinutes(hours, minutes);
     return l10n.homeRemainingMinutes(minutes);
-  }
-}
-
-class _Poster extends StatelessWidget {
-  const _Poster({required this.channel, required this.fraction});
-
-  final Channel channel;
-
-  /// `null` para directo: sin barra de progreso (no hay "cuánto queda"
-  /// que mostrar).
-  final double? fraction;
-
-  @override
-  Widget build(BuildContext context) {
-    final logo = channel.logo;
-
-    return Stack(
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(IptvSpacing.radius),
-          child: logo == null
-              ? _PosterFallback(name: channel.name)
-              : CachedNetworkImage(
-                  imageUrl: logo.toString(),
-                  width: 310,
-                  height: 174,
-                  fit: BoxFit.cover,
-                  memCacheWidth: 620,
-                  placeholder: (_, _) => _PosterFallback(name: channel.name),
-                  errorWidget: (_, _, _) => _PosterFallback(name: channel.name),
-                ),
-        ),
-        if (fraction != null)
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                bottom: Radius.circular(IptvSpacing.radius),
-              ),
-              child: LinearProgressIndicator(
-                value: fraction,
-                minHeight: 6,
-                backgroundColor: IptvColors.border,
-                valueColor: const AlwaysStoppedAnimation(IptvColors.accent),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _PosterFallback extends StatelessWidget {
-  const _PosterFallback({required this.name});
-
-  final String name;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 310,
-      height: 174,
-      alignment: Alignment.center,
-      color: IptvColors.surface,
-      child: Icon(
-        Icons.movie_outlined,
-        size: 40,
-        color: IptvColors.textSecondary,
-        semanticLabel: name,
-      ),
-    );
   }
 }

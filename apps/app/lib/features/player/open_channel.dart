@@ -20,17 +20,22 @@ Future<void> openChannel(
   Channel channel, {
   PlaybackQueue? queue,
   Duration startAt = Duration.zero,
+  // S6.5 paso 7e: propagado hasta `VodDetailScreen`/`SeriesDetailScreen`
+  // para que su póster haga una transición `Hero` desde la tarjeta de
+  // origen. `null` (por defecto) no envuelve nada en `Hero` — el directo
+  // no tiene ficha a la que emparejar.
+  String? heroTag,
 }) {
   switch (channel.type) {
     case ContentType.live:
       return openPlayer(context, ref, PlaybackRequest(channel: channel, startAt: startAt, queue: queue));
     case ContentType.vod:
-      return Navigator.of(
-        context,
-      ).push<void>(MaterialPageRoute(builder: (_) => VodDetailScreen(channel: channel)));
+      return Navigator.of(context).push<void>(
+        MaterialPageRoute(builder: (_) => VodDetailScreen(channel: channel, heroTag: heroTag)),
+      );
     case ContentType.series:
-      return Navigator.of(
-        context,
-      ).push<void>(MaterialPageRoute(builder: (_) => SeriesDetailScreen(channel: channel)));
+      return Navigator.of(context).push<void>(
+        MaterialPageRoute(builder: (_) => SeriesDetailScreen(channel: channel, heroTag: heroTag)),
+      );
   }
 }

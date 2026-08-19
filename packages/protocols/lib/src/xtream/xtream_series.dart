@@ -18,6 +18,7 @@ final class XtreamSeries {
     this.genre,
     this.releaseDate,
     this.coverUrl,
+    this.backdropUrl,
     this.rating,
   });
 
@@ -30,6 +31,10 @@ final class XtreamSeries {
   final String? genre;
   final String? releaseDate;
   final String? coverUrl;
+
+  /// Primera URL de `backdrop_path` (S6.5, paso 7/8 — hero a sangre del
+  /// detalle de serie, frame Figma `44:2`). `null` si el panel no lo trae.
+  final String? backdropUrl;
   final double? rating;
 
   static XtreamSeries fromJson(Map<String, Object?> json) => XtreamSeries(
@@ -44,6 +49,7 @@ final class XtreamSeries {
       asFlexibleString(json['releaseDate']) ?? asFlexibleString(json['releasedate']),
     ),
     coverUrl: nonEmptyOrNull(asFlexibleString(json['cover'])),
+    backdropUrl: asFlexibleFirstUrl(json['backdrop_path']),
     rating: asFlexibleDouble(json['rating']),
   );
 
@@ -100,6 +106,7 @@ final class XtreamEpisode {
     this.containerExtension,
     this.durationSecs,
     this.season,
+    this.stillUrl,
   });
 
   final String id;
@@ -114,6 +121,13 @@ final class XtreamEpisode {
   /// reconciliarlo.
   final int? season;
 
+  /// Miniatura del episodio (`info.movie_image`, S6.5 — la pide el frame
+  /// canónico de Detalle Serie fusionado en Figma). Muchos paneles no la
+  /// rellenan: el propio fixture real de T1.1 la trae a `null` en sus 2
+  /// episodios — la UI debe tener un fallback para ese caso, no asumir que
+  /// siempre hay miniatura.
+  final String? stillUrl;
+
   static XtreamEpisode fromJson(Map<String, Object?> json) {
     final info = asFlexibleMap(json['info']);
     return XtreamEpisode(
@@ -123,6 +137,7 @@ final class XtreamEpisode {
       containerExtension: nonEmptyOrNull(asFlexibleString(json['container_extension'])),
       durationSecs: asFlexibleIntOrNull(info['duration_secs']),
       season: asFlexibleIntOrNull(json['season']),
+      stillUrl: nonEmptyOrNull(asFlexibleString(info['movie_image'])),
     );
   }
 
