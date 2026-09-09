@@ -14,8 +14,10 @@ import 'shell/form_factor.dart';
 import 'shell/mobile_shell.dart';
 import 'shell/tv_shell.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   initializePlayback();
+  await FormFactorDetector.initialize();
   runApp(const ProviderScope(child: IptvApp()));
 }
 

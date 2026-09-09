@@ -5,10 +5,21 @@
     <!-- CAMERA: escáner QR de emparejamiento (ui-spec §2.12/§3.1, S7 · Móvil
          base) — mobile_scanner la requiere en tiempo de compilación. -->
     <uses-permission android:name="android.permission.CAMERA"/>
+
+    <!-- LEANBACK / ANDROID TV / FIRE TV (S8 · TV base).
+         required="false" en leanback, touchscreen y cámara es obligatorio para que
+         el mismo APK funcione en móviles táctiles y televisores sin ser filtrado
+         por Google Play ni Amazon Appstore. -->
+    <uses-feature android:name="android.software.leanback" android:required="false"/>
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false"/>
+    <uses-feature android:name="android.hardware.camera" android:required="false"/>
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"/>
+
     <application
         android:label="iptv_app"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:banner="@drawable/banner">
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -29,6 +40,7 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER"/>
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
