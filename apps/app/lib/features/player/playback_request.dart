@@ -26,6 +26,12 @@ final class PlaybackQueue {
     final next = (index + delta).clamp(0, items.length - 1);
     return PlaybackQueue(items: items, index: next);
   }
+
+  /// Nueva cola posicionada directamente en [newIndex].
+  PlaybackQueue jumpTo(int newIndex) {
+    final target = newIndex.clamp(0, items.length - 1);
+    return PlaybackQueue(items: items, index: target);
+  }
 }
 
 /// Lo que hace falta para abrir el reproductor (S6, Bloque C, D4 del plan:

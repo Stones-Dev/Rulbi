@@ -5,8 +5,10 @@ import 'package:iptv_core/iptv_core.dart';
 import 'package:iptv_tokens/iptv_tokens.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../../shell/form_factor.dart';
 import '../../widgets/duration_format.dart';
 import '../epg/epg_providers.dart';
+import 'pip_service.dart';
 import 'player_controller.dart';
 
 /// Overlay autoocultable del reproductor (ui-spec §2.13, S6, Bloque C;
@@ -180,6 +182,21 @@ class _TopBar extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: textTheme.titleMedium?.copyWith(color: IptvColors.textPrimary),
             ),
+          ),
+          if (controller.queue.items.length > 1) ...[
+            _CircleIconButton(
+              itemKey: const Key('playerOverlay.channels'),
+              tooltip: l10n.navLiveTv,
+              icon: Symbols.format_list_bulleted_rounded,
+              onPressed: () => controller.toggleChannelDrawer(),
+            ),
+            const SizedBox(width: IptvSpacing.sm),
+          ],
+          _CircleIconButton(
+            itemKey: const Key('playerOverlay.pip'),
+            tooltip: 'Picture-in-Picture',
+            icon: Symbols.picture_in_picture_alt_rounded,
+            onPressed: () async => await PipService.enterPip(),
           ),
         ],
       ),
@@ -411,12 +428,24 @@ class _BottomBar extends StatelessWidget {
           ),
           const SizedBox(height: IptvSpacing.sm),
           Text(
-            isLive ? l10n.playerShortcutsHelpLive : l10n.playerShortcutsHelpVod,
+            _shortcutsHelpText(l10n, isLive),
             style: IptvTypography.labelDesktop.copyWith(color: IptvColors.textSecondary),
           ),
         ],
       ),
     );
+  }
+
+  String _shortcutsHelpText(AppLocalizations l10n, bool isLive) {
+    if (FormFactorDetector.detect() == FormFactor.tv) {
+      if (controller.channelDrawerVisible) {
+        return 'Back cerrar panel · ↑/↓ seleccionar canal';
+      }
+      return isLive
+          ? 'OK pausar · ↑/↓ zapping rápido · Menú panel de canales · Back salir'
+          : 'OK pausar · ←/→ seek · Menú lista · Back salir';
+    }
+    return isLive ? l10n.playerShortcutsHelpLive : l10n.playerShortcutsHelpVod;
   }
 
   static BoxFit _nextFit(BoxFit current) => switch (current) {

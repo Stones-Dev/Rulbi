@@ -212,6 +212,62 @@ void main() {
         setup.controller.dispose();
       });
     });
+
+    test('jumpTo(index) cambia al canal indicado directamente', () {
+      fakeAsync((async) {
+        final channels = [
+          liveChannel(key: 'a'),
+          liveChannel(key: 'b'),
+          liveChannel(key: 'c'),
+        ];
+        final setup = build(
+          request: PlaybackRequest(
+            channel: channels[0],
+            queue: PlaybackQueue(items: channels, index: 0),
+          ),
+        );
+        setup.controller.initialize();
+        async.flushMicrotasks();
+
+        expect(setup.controller.currentChannel.ref.key, 'a');
+
+        setup.controller.jumpTo(2);
+        async.flushMicrotasks();
+        expect(setup.controller.currentChannel.ref.key, 'c');
+        expect(setup.port.openedUrls.last, channels[2].url);
+
+        // jumpTo fuera de rango es no-op
+        setup.controller.jumpTo(99);
+        async.flushMicrotasks();
+        expect(setup.controller.currentChannel.ref.key, 'c');
+
+        setup.controller.dispose();
+      });
+    });
+
+    test('toggleChannelDrawer y closeChannelDrawer controlan visibilidad del drawer TV', () {
+      fakeAsync((async) {
+        final setup = build(request: PlaybackRequest(channel: liveChannel()));
+        setup.controller.initialize();
+        async.flushMicrotasks();
+
+        expect(setup.controller.channelDrawerVisible, isFalse);
+
+        setup.controller.toggleChannelDrawer();
+        expect(setup.controller.channelDrawerVisible, isTrue);
+
+        setup.controller.toggleChannelDrawer();
+        expect(setup.controller.channelDrawerVisible, isFalse);
+
+        setup.controller.toggleChannelDrawer();
+        expect(setup.controller.channelDrawerVisible, isTrue);
+
+        setup.controller.closeChannelDrawer();
+        expect(setup.controller.channelDrawerVisible, isFalse);
+
+        setup.controller.dispose();
+      });
+    });
   });
 }
 

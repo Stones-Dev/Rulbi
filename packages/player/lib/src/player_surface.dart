@@ -1,35 +1,45 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
+import 'package:iptv_core/iptv_core.dart' as core;
 import 'package:media_kit_video/media_kit_video.dart' as mkv;
 
+import 'android_media3_player.dart';
+import 'android_media3_surface.dart';
 import 'media_kit_player.dart';
 
-/// Superficie de vídeo (S6, Bloque A) — envuelve `Video` de `media_kit_video`
-/// sobre el [MediaKitPlayer] pasado. Deliberadamente sin controles propios
-/// de `media_kit_video` (`NoVideoControls`, D2 del plan): el overlay
-/// (nombre, reloj, buffer, pistas, seek) lo pinta `PlayerOverlay` en
-/// `apps/app`, encima de esta superficie — dos capas de overlay
-/// competirían por los mismos gestos/teclado.
+/// Superficie de vídeo polimórfica (S9): renderiza la textura del motor nativo
+/// correspondiente ([MediaKitPlayer] en Desktop vía libmpv, [AndroidMedia3Player]
+/// en Android vía Media3 / ExoPlayer).
 ///
-/// La relación de aspecto (ui-spec §2.13) es presentación, no una orden al
-/// motor (D2): [fit] es el único punto de entrada, controlado por quien
-/// use este widget.
+/// Deliberadamente sin controles propios del motor: el overlay propio lo pinta
+/// `PlayerOverlay` en `apps/app`, encima de esta superficie (P6, ui-spec §2.13).
 class PlayerSurface extends StatelessWidget {
-  const PlayerSurface({super.key, required this.player, this.fit = BoxFit.contain});
+  const PlayerSurface({
+    super.key,
+    required this.player,
+    this.fit = BoxFit.contain,
+  });
 
-  final MediaKitPlayer player;
+  final core.PlayerPort player;
   final BoxFit fit;
 
   @override
   Widget build(BuildContext context) {
-    return mkv.Video(
-      controller: player.videoController,
-      fit: fit,
-      // `null` = sin controles propios de media_kit_video (equivalente a
-      // `mkv.NoVideoControls`, que la propia librería define como
-      // `const NoVideoControls = null;` — se pasa el literal directo
-      // porque ese `const` tipa como `dynamic` y no encaja en
-      // `VideoControlsBuilder?`).
-      controls: null,
+    final p = player;
+    if (p is MediaKitPlayer) {
+      return mkv.Video(
+        controller: p.videoController,
+        fit: fit,
+        controls: null,
+      );
+    }
+    if (p is AndroidMedia3Player) {
+      return AndroidMedia3Surface(
+        player: p,
+        fit: fit,
+      );
+    }
+    return const SizedBox.expand(
+      child: ColoredBox(color: Colors.black),
     );
   }
 }

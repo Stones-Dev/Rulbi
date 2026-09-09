@@ -7,6 +7,9 @@
 /// [IptvPlayback] (arranque único de media_kit desde `main.dart`).
 library;
 
+export 'src/android_media3_player.dart';
+export 'src/android_media3_surface.dart';
 export 'src/media_kit_player.dart';
-export 'src/player_surface.dart';
 export 'src/playback_bootstrap.dart';
+export 'src/player_surface.dart';
+

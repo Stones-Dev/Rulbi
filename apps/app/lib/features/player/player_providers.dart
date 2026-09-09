@@ -28,9 +28,8 @@ final playbackUrlResolverProvider = Provider<PlaybackUrlResolver>((ref) {
 /// mientras dura `PlayerScreen`, no mientras algo lo observe activamente.
 /// Desviación declarada en el handoff de S6.
 ///
-/// Tipado como [PlayerPort] (no [MediaKitPlayer]) a propósito: es el punto
-/// de inyección que `player_screen_test.dart` sustituye por un
-/// `FakePlayerPort` (`PlayerScreen.createPort`, S6, Bloque C) — el mismo
-/// motivo por el que `MediaKitPlayer` no es testeable en CI sin libmpv
-/// nativo no debe contagiar a los atajos/overlay, que sí lo son.
-PlayerPort createPlayerPort() => MediaKitPlayer();
+/// Tipado como [PlayerPort] a propósito: delega en [IptvPlayback.createPlayer]
+/// para obtener [MediaKitPlayer] en Windows/Linux o [AndroidMedia3Player] en Android,
+/// y es el punto de inyección que `player_screen_test.dart` sustituye por un
+/// `FakePlayerPort`.
+PlayerPort createPlayerPort() => IptvPlayback.createPlayer();

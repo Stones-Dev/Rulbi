@@ -50,6 +50,9 @@ final class PlayerController extends ChangeNotifier {
   bool get canGoPrevious => _queue.hasPrevious;
   bool get canGoNext => _queue.hasNext;
 
+  bool _channelDrawerVisible = false;
+  bool get channelDrawerVisible => _channelDrawerVisible;
+
   /// Presentación pura (D2 del plan: no es una orden al motor) — toggled
   /// por el atajo `F`. Sin `window_manager` en el árbol (fuera de alcance
   /// de esta ola, no estaba en el plan), esto no cambia el estado de la
@@ -58,6 +61,23 @@ final class PlayerController extends ChangeNotifier {
   /// autoocultable — declarado como desviación en el handoff de S6.
   bool _fullscreen = false;
   bool get isFullscreen => _fullscreen;
+
+  void toggleChannelDrawer() {
+    _channelDrawerVisible = !_channelDrawerVisible;
+    if (_channelDrawerVisible) {
+      _overlayHideTimer?.cancel();
+    } else {
+      _resetOverlayTimer();
+    }
+    notifyListeners();
+  }
+
+  void closeChannelDrawer() {
+    if (!_channelDrawerVisible) return;
+    _channelDrawerVisible = false;
+    _resetOverlayTimer();
+    notifyListeners();
+  }
 
   Future<void> initialize() async {
     await _loadChannel(_queue.current, startAt: _initialStartAt);
@@ -86,6 +106,13 @@ final class PlayerController extends ChangeNotifier {
   Future<void> previous() async {
     if (!_queue.hasPrevious) return;
     _queue = _queue.advance(-1);
+    await _loadChannel(_queue.current);
+  }
+
+  Future<void> jumpTo(int index) async {
+    if (index < 0 || index >= _queue.items.length) return;
+    if (index == _queue.index) return;
+    _queue = _queue.jumpTo(index);
     await _loadChannel(_queue.current);
   }
 

@@ -26,6 +26,12 @@ dependencies:
   media_kit_libs_windows_video: ^1.0.11
   media_kit_libs_linux: ^1.2.1
 
+  # Motor Android decidido en S9 · Reproducción Android:
+  # Media3 (ExoPlayer) vía plugin oficial video_player / video_player_android
+  # (androidx.media3:media3-exoplayer) con soporte HLS (.m3u8), MPEG-TS (.ts),
+  # MP4/MKV, cambio de pistas de audio (VideoAudioTrack) y texturas aceleradas por hardware.
+  video_player: ^2.14.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

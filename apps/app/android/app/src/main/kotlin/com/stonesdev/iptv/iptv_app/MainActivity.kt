@@ -1,9 +1,12 @@
 package com.stonesdev.iptv.iptv_app
 
+import android.app.PictureInPictureParams
 import android.app.UiModeManager
 import android.content.Context
 import android.content.pm.PackageManager
 import android.content.res.Configuration
+import android.os.Build
+import android.util.Rational
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -18,6 +21,34 @@ class MainActivity : FlutterActivity() {
                 "isLeanbackDevice" -> {
                     val isTv = isTelevisionDevice()
                     result.success(isTv)
+                }
+                else -> result.notImplemented()
+            }
+        }
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.stonesdev.iptv/pip").setMethodCallHandler { call, result ->
+            when (call.method) {
+                "isPipSupported" -> {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        result.success(packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE))
+                    } else {
+                        result.success(false)
+                    }
+                }
+                "enterPip" -> {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        try {
+                            val params = PictureInPictureParams.Builder()
+                                .setAspectRatio(Rational(16, 9))
+                                .build()
+                            val entered = enterPictureInPictureMode(params)
+                            result.success(entered)
+                        } catch (e: Exception) {
+                            result.error("PIP_ERROR", e.message, null)
+                        }
+                    } else {
+                        result.success(false)
+                    }
                 }
                 else -> result.notImplemented()
             }

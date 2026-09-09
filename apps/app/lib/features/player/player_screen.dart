@@ -7,33 +7,27 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:iptv_core/iptv_core.dart';
 import 'package:iptv_playback/iptv_playback.dart';
 
+import '../../shell/form_factor.dart';
 import '../epg/epg_providers.dart';
 import '../sources/source_providers.dart';
+import 'mobile_player_gestures.dart';
 import 'playback_request.dart';
 import 'player_controller.dart';
 import 'player_overlay.dart';
 import 'player_providers.dart';
+import 'tv_channel_drawer.dart';
 
-/// Superficie de vídeo real, tipada sobre `MediaKitPlayer` (el único
-/// motor de escritorio hoy, ADR-009) — construida en producción por
-/// [createPlayerPort]. `PlayerScreen.buildSurface` es el punto de
-/// inyección que la sustituye en tests (ver docstring de la clase).
+/// Superficie de vídeo real polimórfica (Desktop y Android) — construida
+/// en producción por [createPlayerPort]. `PlayerScreen.buildSurface` es el
+/// punto de inyección que la sustituye en tests.
 Widget _defaultBuildSurface(PlayerPort port, BoxFit fit) =>
-    PlayerSurface(player: port as MediaKitPlayer, fit: fit);
+    PlayerSurface(player: port, fit: fit);
 
-/// Reproductor desktop (ui-spec §2.13, S6): superficie de vídeo +
-/// [PlayerOverlay] autoocultable, atajos de teclado y persistencia de
-/// `watch_state` (vía [PlayerController]). Se abre exclusivamente a través
-/// de `openPlayer` (`open_player.dart`, D4 del plan de la ola) — ninguna
-/// otra pantalla hace `Navigator.push` directo a este widget.
-///
-/// [createPort]/[buildSurface] son puntos de inyección — por defecto
-/// [createPlayerPort] (`MediaKitPlayer` real) y [_defaultBuildSurface]
-/// (el widget `Video` real de media_kit). `player_screen_test.dart` los
-/// sustituye por un `FakePlayerPort` y un marcador de posición: ese motor
-/// nativo no es testeable en CI (necesita libmpv enlazado, ver docstring
-/// de `MediaKitPlayer`), pero los atajos/overlay que este widget cablea sí
-/// lo son — sin este seam, esa cobertura tampoco sería posible.
+/// Reproductor adaptativo (ui-spec §2.13, S6 desktop, S9 Android TV/móvil):
+/// - TV: atajos D-pad (↑/↓ zapping < 2s, select/center play/pause, tecla lista/menú
+///   abre panel lateral de canales Figma 45:22).
+/// - Móvil: gestos táctiles con HUD (brillo, volumen, seek horizontal, doble tap ±10s, PiP).
+/// - Desktop: atajos de teclado y rueda de ratón para volumen.
 class PlayerScreen extends ConsumerStatefulWidget {
   const PlayerScreen({
     super.key,
@@ -68,11 +62,25 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
       request: widget.request,
     );
     _epgController = createEpgNowController(ref);
+
+    final formFactor = FormFactorDetector.detect();
+    if (formFactor == FormFactor.mobile) {
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]);
+    }
+
     unawaited(_controller.initialize());
   }
 
   @override
   void dispose() {
+    final formFactor = FormFactorDetector.detect();
+    if (formFactor == FormFactor.mobile) {
+      SystemChrome.setPreferredOrientations([]);
+    }
+
     _controller.dispose();
     unawaited(_port.dispose());
     _epgController.dispose();
@@ -89,9 +97,72 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = FormFactorDetector.detect() == FormFactor.mobile;
+
+    Widget surface = widget._buildSurface(_port, _fit);
+    if (isMobile) {
+      surface = MobilePlayerGestures(
+        controller: _controller,
+        child: surface,
+      );
+    } else {
+      surface = MouseRegion(
+        onHover: (_) => _controller.show(),
+        child: Listener(
+          onPointerSignal: _handleWheel,
+          child: GestureDetector(
+            onTap: () => _controller.show(),
+            behavior: HitTestBehavior.opaque,
+            child: surface,
+          ),
+        ),
+      );
+    }
+
+    final content = ListenableBuilder(
+      listenable: _controller,
+      builder: (context, _) => Stack(
+        fit: StackFit.expand,
+        children: [
+          surface,
+          StreamBuilder<PlaybackState>(
+            stream: _port.state,
+            initialData: _port.currentState,
+            builder: (context, stateSnapshot) => StreamBuilder<PlayerTracks>(
+              stream: _port.tracks,
+              initialData: PlayerTracks.empty,
+              builder: (context, tracksSnapshot) => PlayerOverlay(
+                controller: _controller,
+                playbackState: stateSnapshot.data ?? _port.currentState,
+                tracks: tracksSnapshot.data ?? PlayerTracks.empty,
+                boxFit: _fit,
+                onBoxFitChanged: (fit) => setState(() => _fit = fit),
+                epgController: _controller.currentChannel.type == ContentType.live
+                    ? _epgController
+                    : null,
+              ),
+            ),
+          ),
+          if (_controller.channelDrawerVisible)
+            TvChannelDrawer(
+              controller: _controller,
+              onClose: () => _controller.closeChannelDrawer(),
+            ),
+        ],
+      ),
+    );
+
     return CallbackShortcuts(
       bindings: {
         const SingleActivator(LogicalKeyboardKey.space): () {
+          unawaited(_controller.togglePlayPause());
+          _controller.show();
+        },
+        const SingleActivator(LogicalKeyboardKey.select): () {
+          unawaited(_controller.togglePlayPause());
+          _controller.show();
+        },
+        const SingleActivator(LogicalKeyboardKey.enter): () {
           unawaited(_controller.togglePlayPause());
           _controller.show();
         },
@@ -104,8 +175,12 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
           _controller.show();
         },
         const SingleActivator(LogicalKeyboardKey.arrowLeft): () {
-          unawaited(_controller.seekBy(const Duration(seconds: -10)));
-          _controller.show();
+          if (_controller.channelDrawerVisible) {
+            _controller.closeChannelDrawer();
+          } else {
+            unawaited(_controller.seekBy(const Duration(seconds: -10)));
+            _controller.show();
+          }
         },
         const SingleActivator(LogicalKeyboardKey.arrowRight): () {
           unawaited(_controller.seekBy(const Duration(seconds: 10)));
@@ -122,50 +197,30 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
           unawaited(_controller.next());
           _controller.show();
         },
+        // Tecla lista / Menú en mando de TV abre/cierra panel lateral (Figma 45:22)
+        const SingleActivator(LogicalKeyboardKey.keyL): () {
+          _controller.toggleChannelDrawer();
+        },
+        const SingleActivator(LogicalKeyboardKey.contextMenu): () {
+          _controller.toggleChannelDrawer();
+        },
       },
       child: Focus(
         autofocus: true,
-        child: Scaffold(
-          backgroundColor: Colors.black,
-          body: MouseRegion(
-            onHover: (_) => _controller.show(),
-            child: Listener(
-              onPointerSignal: _handleWheel,
-              child: GestureDetector(
-                onTap: () => _controller.show(),
-                behavior: HitTestBehavior.opaque,
-                child: ListenableBuilder(
-                  listenable: _controller,
-                  builder: (context, _) => Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      widget._buildSurface(_port, _fit),
-                      StreamBuilder<PlaybackState>(
-                        stream: _port.state,
-                        initialData: _port.currentState,
-                        builder: (context, stateSnapshot) => StreamBuilder<PlayerTracks>(
-                          stream: _port.tracks,
-                          initialData: PlayerTracks.empty,
-                          builder: (context, tracksSnapshot) => PlayerOverlay(
-                            controller: _controller,
-                            playbackState: stateSnapshot.data ?? _port.currentState,
-                            tracks: tracksSnapshot.data ?? PlayerTracks.empty,
-                            boxFit: _fit,
-                            onBoxFitChanged: (fit) => setState(() => _fit = fit),
-                            epgController: _controller.currentChannel.type == ContentType.live
-                                ? _epgController
-                                : null,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+        child: PopScope(
+          canPop: !_controller.channelDrawerVisible,
+          onPopInvokedWithResult: (didPop, _) {
+            if (!didPop && _controller.channelDrawerVisible) {
+              _controller.closeChannelDrawer();
+            }
+          },
+          child: Scaffold(
+            backgroundColor: Colors.black,
+            body: content,
           ),
         ),
       ),
     );
   }
 }
+
