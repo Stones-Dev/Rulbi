@@ -120,15 +120,20 @@ class _RunningView extends ConsumerWidget {
           style: Theme.of(context).textTheme.headlineSmall,
         ),
         const SizedBox(height: 32),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        // `Wrap`, no `Row` (S7, verificación E2E) — mismo motivo que
+        // sources_screen.dart: "Cancelar importación" + "Continuar en
+        // segundo plano" en ES no caben en una línea en móvil; un `Row`
+        // centrado desborda en vez de envolver.
+        Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 12,
+          runSpacing: 12,
           children: [
             OutlinedButton(
               onPressed: () =>
                   ref.read(importControllerProvider.notifier).cancel(),
               child: Text(l10n.importCancelButton),
             ),
-            const SizedBox(width: 12),
             FilledButton(
               onPressed: () => Navigator.of(context).pop(),
               child: Text(l10n.importBackgroundButton),

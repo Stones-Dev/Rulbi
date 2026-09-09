@@ -253,6 +253,52 @@ void main() {
     expect(container.read(importControllerProvider), isA<ImportRunning>());
   });
 
+  // Regresión de la verificación E2E de S7 (Antigravity + reproducción
+  // propia en emulador Android): "Cancelar importación" + "Continuar en
+  // segundo plano" en un `Row` centrado desbordaban ~59px a un ancho de
+  // móvil real (cadenas ES largas) — el harness por defecto usa el ancho
+  // de escritorio de `flutter_test` (800px), donde nunca se manifestaba.
+  testWidgets(
+    'los botones de _RunningView no desbordan a ancho de móvil (ES)',
+    (tester) async {
+      // No usa pumpSourceForm: hace pumpAndSettle() por dentro, y
+      // ImportRunning se queda pintando un LinearProgressIndicator()
+      // indeterminado (animación infinita) — mismo motivo por el que
+      // "cancelar"/"Segundo plano" más abajo construyen el árbol a mano
+      // con pumpFewFrames (ver docstring de ese helper).
+      addTearDown(() => tester.view.resetPhysicalSize());
+      tester.view.physicalSize = const Size(360, 800);
+      tester.view.devicePixelRatio = 1.0;
+
+      final sources = FakeSourceRepository();
+      final channels = FakeChannelRepository();
+      final rawController = StreamController<Channel>();
+      addTearDown(() {
+        if (!rawController.isClosed) rawController.close();
+      });
+      final importSource = FakeImportChannelSource(channels: rawController.stream);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: baseOverrides(
+            sources: sources,
+            channels: channels,
+            m3uSource: importSource,
+          ),
+          child: MaterialApp(
+            locale: const Locale('es'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: ImportScreen(source: newM3uSource()),
+          ),
+        ),
+      );
+      await pumpFewFrames(tester);
+
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('claves i18n en español (Importación completa)', (tester) async {
     final sources = FakeSourceRepository();
     final channels = FakeChannelRepository();

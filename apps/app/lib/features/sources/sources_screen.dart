@@ -21,7 +21,13 @@ import 'xtream_source_form.dart';
 /// **no** dispara import automático — el usuario pulsa *Actualizar* si
 /// quiere reimportar.
 class SourcesScreen extends ConsumerWidget {
-  const SourcesScreen({super.key});
+  const SourcesScreen({super.key, this.showSectionTitle = true});
+
+  /// `false` cuando quien empuja esta pantalla ya pone el título "Fuentes"
+  /// en su propio `AppBar` (ver `pushedScreenRoute`, S7 fix post-E2E) — evita
+  /// que "Fuentes" salga duplicado. `DesktopShell` la embebe sin `AppBar`
+  /// propio, así que sigue con el valor por defecto `true`.
+  final bool showSectionTitle;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -31,8 +37,9 @@ class SourcesScreen extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.all(24),
       child: sourcesAsync.when(
-        data: (sources) =>
-            sources.isEmpty ? const _EmptyState() : _SourcesList(sources: sources),
+        data: (sources) => sources.isEmpty
+            ? const _EmptyState()
+            : _SourcesList(sources: sources, showSectionTitle: showSectionTitle),
         loading: () => const Center(child: CircularProgressIndicator()),
         // watchAll() sobre drift no debería fallar en operación normal;
         // fallback genérico en vez de una pantalla en blanco (RNF-09).
@@ -127,38 +134,58 @@ class _EmptyState extends StatelessWidget {
 }
 
 class _SourcesList extends StatelessWidget {
-  const _SourcesList({required this.sources});
+  const _SourcesList({required this.sources, required this.showSectionTitle});
 
   final List<Source> sources;
+  final bool showSectionTitle;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
 
+    // `Wrap` en `Flexible` (no directo en el `Row`): un `Row` da a sus
+    // hijos no-flex `maxWidth: infinity`, así que sin acotar el `Wrap`
+    // nunca envuelve — recibe anchura infinita y coloca los dos botones en
+    // una sola línea, que en móvil (locale ES: "Añadir fuente M3U" +
+    // "Añadir fuente Xtream") desborda por la derecha (S7, verificación
+    // E2E). El título también en `Expanded` con ellipsis por si el ancho
+    // que le queda al `Wrap` fuera aún más justo.
+    final actions = Wrap(
+      spacing: IptvSpacing.sm,
+      runSpacing: IptvSpacing.sm,
+      children: [
+        OutlinedButton.icon(
+          icon: const Icon(Icons.playlist_add),
+          label: Text(l10n.sourcesAddM3uButton),
+          onPressed: () => _addM3uSource(context),
+        ),
+        OutlinedButton.icon(
+          icon: const Icon(Icons.dns_outlined),
+          label: Text(l10n.sourcesAddXtreamButton),
+          onPressed: () => _addXtreamSource(context),
+        ),
+      ],
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(l10n.navSources, style: Theme.of(context).textTheme.headlineSmall),
-            Wrap(
-              spacing: IptvSpacing.sm,
-              children: [
-                OutlinedButton.icon(
-                  icon: const Icon(Icons.playlist_add),
-                  label: Text(l10n.sourcesAddM3uButton),
-                  onPressed: () => _addM3uSource(context),
+        if (showSectionTitle)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  l10n.navSources,
+                  style: Theme.of(context).textTheme.headlineSmall,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                OutlinedButton.icon(
-                  icon: const Icon(Icons.dns_outlined),
-                  label: Text(l10n.sourcesAddXtreamButton),
-                  onPressed: () => _addXtreamSource(context),
-                ),
-              ],
-            ),
-          ],
-        ),
+              ),
+              Flexible(child: actions),
+            ],
+          )
+        else
+          Align(alignment: Alignment.centerRight, child: actions),
         const SizedBox(height: IptvSpacing.md),
         Expanded(
           child: ListView.separated(
@@ -188,19 +215,25 @@ class _SourceRow extends ConsumerWidget {
     return ListTile(
       key: Key('sourceRow.${source.id}'),
       leading: Icon(isXtream ? Icons.dns_outlined : Icons.playlist_play),
-      title: Row(
+      // `Wrap`, no `Row` (S7, verificación E2E) — mismo motivo que ya
+      // documenta `subtitle` más abajo: en móvil, el `trailing` de 4
+      // acciones (switch + 3 `IconButton`) deja tan poco ancho a `title`
+      // que el `Chip` (no flexible) desborda aunque el nombre sí lo sea.
+      // Antes quedaba enmascarado por el crash de "No Material widget
+      // found" — al arreglar eso quedó expuesto este overflow, real y
+      // distinto del de la cabecera.
+      title: Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: IptvSpacing.sm,
         children: [
-          Flexible(child: Text(source.name, overflow: TextOverflow.ellipsis)),
-          const SizedBox(width: IptvSpacing.sm),
+          Text(source.name, overflow: TextOverflow.ellipsis),
           Chip(
             label: Text(isXtream ? l10n.sourceTypeXtream : l10n.sourceTypeM3u),
             visualDensity: VisualDensity.compact,
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
-          if (lastStatusOk == false) ...[
-            const SizedBox(width: IptvSpacing.sm),
+          if (lastStatusOk == false)
             const Icon(Icons.error_outline, color: Colors.redAccent, size: 18),
-          ],
         ],
       ),
       // `Wrap`, no `Row`: nombre/tipo/contador/fecha juntos no siempre

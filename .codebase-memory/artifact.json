@@ -1,11 +1,11 @@
 {
     "schema_version": 2,
-    "commit": "417b024da6e16b3fc5d953449b919a3a654ef521",
-    "indexed_at": "2026-08-07T02:40:19Z",
+    "commit": "c81678ae9eb73eb2acdc33e2e98d01c21f2a143e",
+    "indexed_at": "2026-09-04T12:50:03Z",
     "project": "C-Users-Usuario-Documents-GitHub-IPTVapp",
-    "nodes": 903,
-    "edges": 1975,
-    "original_size": 3670016,
-    "compressed_size": 370934,
+    "nodes": 2809,
+    "edges": 9710,
+    "original_size": 9895936,
+    "compressed_size": 1388808,
     "compression_level": 3
 }

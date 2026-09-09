@@ -54,6 +54,22 @@ docker compose -f docker-compose.dev.yml up --build
 
 Espera el log `Xtream test server listo — credenciales test/test, puerto 8081`.
 
+### Sin Docker (alternativa, S7)
+
+Si Docker Desktop no está arriba y hace falta un ciclo rápido:
+
+```bash
+tool/xtream-test-server/run-local.sh
+```
+
+Requiere `ffmpeg` y un Python real (no el alias de la Microsoft Store en
+Windows — comprueba con `python --version`) instalados en el host; instala
+`xtreamcodeserver==1.1.0` con pip y genera las fixtures una sola vez en
+`tool/xtream-test-server/.local-run/` (no se commitea). **No probado de
+extremo a extremo** en la sesión que lo escribió — la máquina no tenía
+`ffmpeg`; revisa el comentario de cabecera del script si `make-fixtures.sh`
+falla. Docker sigue siendo la vía soportada de verdad.
+
 ### Probar antes de tocar la app
 
 ```bash

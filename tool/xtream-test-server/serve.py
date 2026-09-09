@@ -37,8 +37,14 @@ from xtreamcodeserver.stream.filesystemstream import XTreamCodeFileSystemStream
 logging.basicConfig(level=logging.INFO)
 _LOGGER = logging.getLogger(__name__)
 
-MEDIA_ROOT = "/media"
-IMAGES_ROOT = "/images"
+# Rutas absolutas por defecto (así es como las monta el Dockerfile). El
+# script sin Docker (run-local.sh/.ps1, S7) las sobreescribe con
+# XTREAM_MEDIA_ROOT/XTREAM_IMAGES_ROOT apuntando a un directorio del
+# propio checkout — parametrizado en vez de asumir siempre /media e
+# /images, que en Windows nativo resolverían contra la raíz de la unidad
+# actual (p. ej. C:\media) en lugar de fallar limpiamente.
+MEDIA_ROOT = os.environ.get("XTREAM_MEDIA_ROOT", "/media")
+IMAGES_ROOT = os.environ.get("XTREAM_IMAGES_ROOT", "/images")
 LOGIN = "test"
 PASSWORD = "test"
 ADDR = "0.0.0.0"

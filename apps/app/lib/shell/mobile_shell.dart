@@ -11,6 +11,7 @@ import '../features/settings/settings_screen.dart';
 import '../features/sources/import_status_bar.dart';
 import '../features/sources/sources_screen.dart';
 import '../l10n/app_localizations.dart';
+import 'pushed_screen_route.dart';
 
 /// Shell táctil (S7 · Móvil base, paso 1): `NavigationBar` inferior de
 /// **5 destinos exactos** (ui-spec §1: Inicio · TV en directo · Cine ·
@@ -76,9 +77,12 @@ class _MobileShellState extends ConsumerState<MobileShell> {
   }
 
   void _openSources() {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute<void>(builder: (_) => const SourcesScreen()));
+    Navigator.of(context).push(
+      pushedScreenRoute(
+        title: (l10n) => l10n.navSources,
+        child: const SourcesScreen(showSectionTitle: false),
+      ),
+    );
   }
 
   void _openSettings() {

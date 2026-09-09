@@ -119,4 +119,44 @@ void main() {
       expect(find.text('Devices'), findsOneWidget);
     },
   );
+
+  // Regresión de la verificación E2E de S7 (Antigravity, emulador Android):
+  // este test previo nunca pulsaba el tile — solo comprobaba que el texto
+  // aparecía — así que el "No Material widget found" al empujar
+  // SourcesScreen sin Scaffold quedaba sin ejercer. Cubre los dos puntos de
+  // entrada de mobile_shell.dart: el tile de Ajustes y la CTA del Home
+  // vacío (`onGoToSources`), que empuja SourcesScreen directa sin pasar por
+  // Ajustes.
+  testWidgets(
+    'pulsar el tile de Fuentes en Ajustes navega sin excepciones',
+    (tester) async {
+      await tester.pumpWidget(wrap(const MobileShell()));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byTooltip('Settings'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Sources'));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.byType(BackButton), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'la CTA "Go to Sources" del Home vacío navega sin excepciones',
+    (tester) async {
+      await tester.pumpWidget(wrap(const MobileShell()));
+      await tester.pumpAndSettle();
+
+      // FakeSourceRepository empieza vacío (sin upsert) -> Home muestra
+      // _EmptyLibrary con la CTA.
+      await tester.tap(find.text('Go to Sources'));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.byType(BackButton), findsOneWidget);
+    },
+  );
 }

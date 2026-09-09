@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:iptv_tokens/iptv_tokens.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../../shell/pushed_screen_route.dart';
 import '../favorites/favorites_screen.dart';
 import '../sources/sources_screen.dart';
 import 'devices_screen.dart';
@@ -32,15 +33,19 @@ class SettingsScreen extends StatelessWidget {
             icon: Symbols.source_rounded,
             label: l10n.navSources,
             onTap: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(builder: (_) => const SourcesScreen()),
+              pushedScreenRoute(
+                title: (l10n) => l10n.navSources,
+                child: const SourcesScreen(showSectionTitle: false),
+              ),
             ),
           ),
           _SettingsTile(
             icon: Symbols.favorite_rounded,
             label: l10n.navFavorites,
             onTap: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => const FavoritesScreen(),
+              pushedScreenRoute(
+                title: (l10n) => l10n.navFavorites,
+                child: const FavoritesScreen(),
               ),
             ),
           ),

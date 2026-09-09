@@ -4,6 +4,10 @@ Este repo implementa el reproductor IPTV multiplataforma (Flutter/Dart, monorepo
 
 **Nota de nombres**: el nombre de trabajo del proyecto es "iptv-player" en el vault, pero el repo real (ya existente en GitHub, `Stones-Dev/IPTVapp`) es `IPTVapp`. El paquete raíz de Dart se llama `iptv_player`. El identificador de aplicación (bundle/application ID, `--org` de `flutter create`) es **`com.stonesdev.iptv`** — permanente, independiente del nombre comercial (D1, aún abierta). El nombre comercial sigue siendo una decisión abierta (D1).
 
+## Idioma de comunicación — obligatorio
+
+Toda comunicación con el usuario —resúmenes, preguntas, mensajes de error, explicaciones, lo que sea— va **siempre en español**. Excepción: el propio código, nombres de variables/funciones, y contenido técnico que deba citarse en su idioma original (mensajes de error de una herramienta, nombres de paquetes, etc.).
+
 ## Jerarquía de fuentes
 
 **Vault (qué/por qué) > Notion (cuándo/estado) > Figma (cómo se ve) > repo+codebase-memory-mcp (código).**
