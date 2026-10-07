@@ -6,14 +6,14 @@
 *Desktop (Windows, Linux, macOS) • Mobile (Android, iOS) • Smart TV (Android TV, Fire TV, LG webOS)*
 
 [![CI](https://github.com/Stones-Dev/Rulbi/actions/workflows/ci.yml/badge.svg)](https://github.com/Stones-Dev/Rulbi/actions)
-[![License: LGPL / MIT / BSD-3](https://img.shields.io/badge/License-Open--Source-blue.svg)](https://github.com/Stones-Dev/Rulbi)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![Flutter Version](https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter)](https://flutter.dev)
 [![Dart Version](https://img.shields.io/badge/Dart-3.5+-0175C2?logo=dart)](https://dart.dev)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/Stones-Dev/Rulbi/pulls)
 
 ---
 
-[English](#-english) • [Español](#-español)
+[English](#english) • [Español](#español)
 
 ---
 
@@ -31,11 +31,11 @@
 - [About Rulbi](#about-rulbi)
 - [Why Rulbi? (Key Differences)](#why-rulbi-key-differences)
 - [Core Features](#core-features)
-- [Architecture & Tech Stack](#architecture--tech-stack)
+- [Architecture & Tech Stack](#architecture-tech-stack)
 - [Monorepo Structure](#monorepo-structure)
-- [Supported Platforms & Form Factors](#supported-platforms--form-factors)
-- [Getting Started & Build Instructions](#getting-started--build-instructions)
-- [Testing & Quality Assurance](#testing--quality-assurance)
+- [Supported Platforms & Form Factors](#supported-platforms-form-factors)
+- [Getting Started & Build Instructions](#getting-started-build-instructions)
+- [Testing & Quality Assurance](#testing-quality-assurance)
 - [Undated Product Roadmap](#undated-product-roadmap)
 - [Contributing](#contributing)
 - [License](#license)
@@ -109,17 +109,18 @@ apps/app  ──►  packages/{player, data, pairing}  ──►  packages/proto
 ```
 Rulbi/
 ├── apps/
-│   └── app/               # Main Flutter application (TvShell, MobileShell, DesktopShell)
+│   └── app/               # iptv_app: Main Flutter application (TvShell, MobileShell, DesktopShell)
 ├── packages/
-│   ├── core/              # Pure Dart domain: entities (Source, Channel, EpgProgram), ports (PlayerPort)
-│   ├── protocols/         # Streaming parsers for M3U, XMLTV, and Xtream Codes HTTP client
-│   ├── data/              # Drift / SQLite schema, FTS5 search index, credential storage
-│   ├── player/            # Platform playback implementations (media_kit / libmpv, Media3, webOS)
-│   ├── pairing/           # Serverless local pairing, QR/PIN payload, encrypted WS, LWW sync engine
-│   └── tokens/            # Visual tokens: Inter typography, color palette, TV focus rings
+│   ├── core/              # iptv_core: Pure Dart domain (entities, use cases, PlayerPort abstraction)
+│   ├── protocols/         # iptv_protocols: Streaming parsers (M3U, XMLTV) and Xtream client
+│   ├── data/              # iptv_data: Local persistence (Drift / SQLite + FTS5), repos, secure storage
+│   ├── player/            # iptv_player: Platform playback adapters (media_kit / libmpv, Media3)
+│   ├── pairing/           # iptv_pairing: Serverless local pairing, encrypted WS, LWW sync engine
+│   └── tokens/            # iptv_tokens: Design tokens (Inter typography, color palette, TV focus rings)
+├── docs/                  # Architecture Decision Records (ADR-001..ADR-009), benchmarks, packaging specs
 ├── installer/             # Inno Setup scripts (Windows) & Debian package scripts (Linux)
 ├── tool/                  # Developer utilities and test mock servers
-└── .specify/              # Spec-Driven Development (SDD) design docs & specifications
+└── .specify/              # Spec-Driven Development (SDD) specifications & constitution
 ```
 
 ---
@@ -162,7 +163,9 @@ melos bootstrap
 Rulbi uses code generation for Drift database models and Flutter localizations:
 ```bash
 # Generate database schema in packages/data
+# Note: packages/data maintains isolated resolution; run flutter pub get before build_runner
 cd packages/data
+flutter pub get
 dart run build_runner build --delete-conflicting-outputs
 
 # Generate localized strings in apps/app
@@ -172,15 +175,18 @@ cd ../..
 ```
 
 ### 3. Run the Application
+The primary application target lives inside `apps/app`. Navigate to `apps/app` to launch the platform target:
 ```bash
+cd apps/app
+
 # Run on Windows Desktop
-flutter run -d windows -t apps/app/lib/main.dart
+flutter run -d windows
 
 # Run on Linux Desktop
-flutter run -d linux -t apps/app/lib/main.dart
+flutter run -d linux
 
 # Run on Android Device / Emulator / Android TV
-flutter run -d android -t apps/app/lib/main.dart
+flutter run -d android
 ```
 
 ---
@@ -190,15 +196,17 @@ flutter run -d android -t apps/app/lib/main.dart
 Rulbi enforces **Test-Driven Development (TDD)** for protocol parsing and local sync engines against real-world golden files.
 
 ```bash
-# Run static analysis across all monorepo packages
+# Run static analysis across monorepo packages
 melos run analyze
 
 # Run pure Dart and Flutter unit tests
 melos run test
 
-# Run Drift database tests specifically
+# Run Drift database static analysis and tests in packages/data
 cd packages/data
+dart analyze --fatal-infos .
 flutter test
+cd ../..
 ```
 
 ---
@@ -282,7 +290,7 @@ Rulbi is an open-source project. Its core packages (`core`, `protocols`, `pairin
 - [Testing y Control de Calidad](#testing-y-control-de-calidad)
 - [Roadmap de Producto (Sin fechas)](#roadmap-de-producto-sin-fechas)
 - [Cómo Contribuir](#cómo-contribuir)
-- [Licencia](#licencia-1)
+- [Licencia](#licencia)
 
 ---
 
@@ -353,17 +361,18 @@ apps/app  ──►  packages/{player, data, pairing}  ──►  packages/proto
 ```
 Rulbi/
 ├── apps/
-│   └── app/               # Aplicación Flutter principal (TvShell, MobileShell, DesktopShell)
+│   └── app/               # iptv_app: Aplicación Flutter principal (TvShell, MobileShell, DesktopShell)
 ├── packages/
-│   ├── core/              # Dominio puro en Dart: entidades (Source, Channel, EpgProgram), puertos (PlayerPort)
-│   ├── protocols/         # Parsers en streaming de M3U, XMLTV y cliente HTTP para Xtream Codes
-│   ├── data/              # Esquema Drift / SQLite, índice FTS5 y almacén seguro de credenciales
-│   ├── player/            # Implementaciones del reproductor por plataforma (libmpv, Media3, webOS)
-│   ├── pairing/           # Emparejamiento LAN, payload QR/PIN, canal WS cifrado y motor de sync LWW
-│   └── tokens/            # Tokens visuales: tipografía Inter, colores y estilo de foco para TV
+│   ├── core/              # iptv_core: Dominio puro en Dart (entidades, casos de uso, abstracción PlayerPort)
+│   ├── protocols/         # iptv_protocols: Parsers en streaming de M3U, XMLTV y cliente Xtream Codes
+│   ├── data/              # iptv_data: Esquema Drift / SQLite, índice FTS5 y almacén seguro de credenciales
+│   ├── player/            # iptv_player: Implementaciones del reproductor por plataforma (libmpv, Media3)
+│   ├── pairing/           # iptv_pairing: Emparejamiento LAN, payload QR/PIN, canal WS cifrado y sync LWW
+│   └── tokens/            # iptv_tokens: Tokens visuales: tipografía Inter, colores y estilo de foco para TV
+├── docs/                  # Registros de Decisiones Arquitectónicas (ADR-001..ADR-009), benchmarks y empaquetado
 ├── installer/             # Scripts de empaquetado para Windows (Inno Setup) y Linux (.deb / portable)
 ├── tool/                  # Servidores de pruebas y utilidades de automatización
-└── .specify/              # Documentación y especificaciones del proyecto bajo metodología SDD
+└── .specify/              # Especificaciones y constitución del proyecto bajo metodología SDD
 ```
 
 ---
@@ -406,7 +415,9 @@ melos bootstrap
 Rulbi utiliza generación de código para la base de datos Drift y los textos localizados:
 ```bash
 # Generar el esquema de base de datos en packages/data
+# Nota: packages/data tiene resolución independiente; ejecuta flutter pub get antes de build_runner
 cd packages/data
+flutter pub get
 dart run build_runner build --delete-conflicting-outputs
 
 # Generar las clases de internacionalización en apps/app
@@ -416,15 +427,18 @@ cd ../..
 ```
 
 ### 3. Ejecutar la Aplicación
+La aplicación Flutter principal reside en `apps/app`. Sitúate en el directorio `apps/app` para ejecutar el target de plataforma:
 ```bash
+cd apps/app
+
 # Ejecutar en Windows de escritorio
-flutter run -d windows -t apps/app/lib/main.dart
+flutter run -d windows
 
 # Ejecutar en Linux de escritorio
-flutter run -d linux -t apps/app/lib/main.dart
+flutter run -d linux
 
 # Ejecutar en Móvil o emulador Android / Android TV
-flutter run -d android -t apps/app/lib/main.dart
+flutter run -d android
 ```
 
 ---
@@ -434,15 +448,17 @@ flutter run -d android -t apps/app/lib/main.dart
 Rulbi sigue **Desarrollo Guiado por Pruebas (TDD)** en sus motores de protocolos y sincronización, validando cada cambio contra un banco de pruebas de *golden files* reales.
 
 ```bash
-# Ejecutar análisis estático en todos los paquetes
+# Ejecutar análisis estático en los paquetes del monorepo
 melos run analyze
 
 # Ejecutar tests unitarios de Dart y Flutter
 melos run test
 
-# Ejecutar tests específicos de la base de datos
+# Ejecutar análisis estático y tests de base de datos en packages/data
 cd packages/data
+dart analyze --fatal-infos .
 flutter test
+cd ../..
 ```
 
 ---
